@@ -5,5 +5,5 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = "__all__"
-        extra_kwards = {"user": {"read_only" : True }}
+        read_only_fields = ["user", "status"]
         

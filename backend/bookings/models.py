@@ -11,7 +11,7 @@ class Booking(models.Model):
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
     # venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
-    # vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    # vendors = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     event_date = models.DateTimeField()
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
