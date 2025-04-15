@@ -3,7 +3,7 @@ import { styled, alpha } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 
 
-export default function SearchBar(){
+export default function SearchBar(props){
     const Search = styled('div')(({ theme }) => ({
         position: 'relative',
         borderRadius: theme.shape.borderRadius,
@@ -54,6 +54,7 @@ export default function SearchBar(){
             <StyledInputBase
               placeholder="Search…"
               inputProps={{ 'aria-label': 'search' }}
+              onChange={(e) => props.setSearchTerm(e.target.value)}
             />
           </Search>
       )

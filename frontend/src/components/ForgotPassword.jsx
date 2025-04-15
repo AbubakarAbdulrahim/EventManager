@@ -45,7 +45,18 @@ export default function ForgotPassword({ open, handleClose }) {
       </DialogContent>
       <DialogActions sx={{ pb: 3, px: 3 }}>
         <Button onClick={handleClose}>Cancel</Button>
-        <Button variant="contained" type="submit">
+        <Button 
+        variant="contained" 
+        type="submit"
+        sx={{
+              backgroundColor: '#0A7273',
+              color: '#fff',
+              backgroundImage: 'none',
+              boxShadow: '1px 1px 2px 0  #033043',
+              border:'none',
+              '&:hover': { backgroundColor: '#085c5c' }
+              }}
+        >
           Continue
         </Button>
       </DialogActions>

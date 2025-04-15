@@ -18,6 +18,7 @@ import AppTheme from '../theme/AppTheme';
 import ColorModeSelect from '../theme/ColorModeSelect';
 import AppleIcon from '@mui/icons-material/Apple';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../components/CustomIcons';
+import { useNavigate } from 'react-router-dom';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -77,6 +78,7 @@ export default function Login(props) {
     uppercase: "",
   });
   const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -96,6 +98,9 @@ export default function Login(props) {
       email: data.get('email'),
       password: data.get('password'),
     });
+
+    navigate("/dashboard")
+
   };
 
   const setErrorState = (field, condition, message) => {

@@ -1,17 +1,17 @@
+import { useState } from "react";
 import { Container } from "@mui/material";
 import DrawerAppBar from "../components/DrawerAppBar";
 import SearchBar from "../components/SearchBar";
 import LabelBottomNavigation from "../components/LabelBottomNavigation";
+import EventPlanningDashboard from "../components/EventPlanningDashboard";
 
 export default function Dashboard() {
+  const [searchTerm, setSearchTerm] = useState("");
     return (
       <div className="container">
-        <DrawerAppBar/>
-      <Container sx={{p:3}}>
-        <div className="search">
-          {/* <SearchBar/> */}
-        </div>
-      </Container>
+      <DrawerAppBar setSearchTerm ={setSearchTerm} />
+
+      <EventPlanningDashboard searchTerm={searchTerm} />
 
       <LabelBottomNavigation/>
 

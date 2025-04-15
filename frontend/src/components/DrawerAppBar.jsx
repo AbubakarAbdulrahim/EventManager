@@ -17,36 +17,50 @@ import RssFeedIcon from '@mui/icons-material/RssFeed';
 import InputBase from '@mui/material/InputBase';
 import { styled, alpha } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
-// import { colors } from '@mui/material';
+import { useState } from 'react';
+import { Tooltip } from '@mui/material';
+import { Avatar, Menu } from '@mui/material';
+import { MenuItem } from '@mui/material';
+import { Person } from '@mui/icons-material';
+import { TextField } from '@mui/material';
+import { Link } from 'react-router-dom';
 
 const drawerWidth = 240;
-const navItems = ['Home', 'Articles', 'All Posts', 'About'];
+const navItems = ['Home', 'Favorites', 'History', 'Profile', 'About'];
+const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 function DrawerAppBar(props) {
   const { window } = props;
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
   };
 
-  const Search = styled('div')(({ theme }) => ({
-    position: 'relative',
-    borderRadius: theme.shape.borderRadius,
-    backgroundColor: alpha(theme.palette.common.white, 0.15),
-    '&:hover': {
-      backgroundColor: alpha(theme.palette.common.white, 0.25),
-    },
-    marginLeft: 0,
-    width: '100%',
-    [theme.breakpoints.up('md')]: {
-      marginLeft: theme.spacing(1),
-      width: 'auto',
-    },
+  const handleProfile = (setting) => {
+    setting === 'Account' && setProfileOpen(true)
+  }
+
+  const [anchorElUser, setAnchorElUser] = useState(null);
+  const handleOpenUserMenu = (event) => {
+    setAnchorElUser(event.currentTarget);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  const ProfileAvatar = styled(Avatar)(({ theme }) => ({
+    backgroundColor: '#0984e3',
+    width: theme.spacing(7),
+    height: theme.spacing(7),
+    marginBottom: theme.spacing(2)
   }));
-  
+
   const SearchIconWrapper = styled('div')(({ theme }) => ({
-    padding: theme.spacing(0, 2),
+    padding: 0,
     height: '100%',
     position: 'absolute',
     pointerEvents: 'none',
@@ -55,47 +69,51 @@ function DrawerAppBar(props) {
     justifyContent: 'center',
   }));
   
-  const StyledInputBase = styled(InputBase)(({ theme }) => ({
-    color: 'inherit',
-    width: '100%',
-    '& .MuiInputBase-input': {
-      padding: theme.spacing(1, 1, 1, 0),
-      // vertical padding + font size from searchIcon
-      paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-      transition: theme.transitions.create('width'),
-      [theme.breakpoints.up('md')]: {
-        width: '12ch',
-        '&:focus': {
-          width: '20ch',
-        },
-      },
-    },
-  }));
+  
 
   const drawer = (
-    <Box  sx={{ textAlign: 'center', backgroundColor: '#033043', color: '#fff', flexGrow: 1, px:3 }}>
+    <Box sx={{ textAlign: 'center', backgroundColor: '#033043', color: '#fff', flexGrow: 1, px:3 }}>
       <Typography variant="h6" sx={{ my: 2}}>
-        EventMaster
+        EventMaster 
       </Typography>
       <Divider />
       <List>
         {navItems.map((item) => (
           <ListItem key={item} disablePadding>
-            <ListItemButton sx={{ textAlign: 'center' }}>
+            <ListItemButton sx={{ textAlign: 'center', textTransform:'none' }}>
               <ListItemText primary={item} />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
-      <Search sx={{display: { xs: 'flex', md: 'none' }, }}>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Search…"
-              inputProps={{ 'aria-label': 'search' }}
-            />
-          </Search>
+      <Box sx={{display: { xs: 'flex', md: 'none' },
+        position: 'relative',
+        borderRadius: "4px",
+        px:'5px',
+        color:'#fff',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        '&:hover': {
+          backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        },
+        marginLeft: 0,
+        maxWidth: '100%',
+      }}>
+      <SearchIconWrapper>
+        <SearchIcon />
+      </SearchIconWrapper>
+      <InputBase
+      sx={{marginLeft:3,
+      color: 'inherit',
+      width: '100%',
+      '& .MuiInputBase-input': {
+              padding: 1,}
+      }}
+        placeholder="Search…"
+        inputProps={{ 'aria-label': 'search' }}
+        onChange={(e) => {props.setSearchTerm(e.target.value); setSearchTerm(e.target.value)}}
+        value={searchTerm}
+      />
+    </Box>
     </Box>
   );
 
@@ -163,20 +181,76 @@ function DrawerAppBar(props) {
           </Typography>
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             {navItems.map((item) => (
-              <Button key={item} sx={{ color: '#fff' }}>
+              <Button 
+                LinkComponent={item !== 'Profile' && Link}
+                to={(item ==='Home' ? "/" : "/" + item.toLowerCase())}
+                onClick={item === 'Profile' && handleOpenUserMenu} key={item} sx={{ fontSize:'1em', color: '#fff', textTransform:'none'}}>
                 {item}
               </Button>
             ))}
           </Box>
-          <Search sx={{display: { xs: 'none', md: 'flex' } }}>
+          <Box sx={{display: { xs: 'none', md: 'flex' },
+              position: 'relative',
+              borderRadius: "4px",
+              px:'5px',
+              color:'#fff',
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              },
+              marginLeft: 0,
+              maxWidth: '100%',
+           }}>
             <SearchIconWrapper>
               <SearchIcon />
             </SearchIconWrapper>
-            <StyledInputBase
+            <InputBase
+            sx={{marginLeft:2,
+            color: 'inherit',
+            '& .MuiInputBase-input': {
+              padding: 1,
+              transition: "width .2s ease",
+              width: '12ch',
+              '&:focus': {
+                  width: '20ch',
+                },
+              },
+            }}
               placeholder="Search…"
               inputProps={{ 'aria-label': 'search' }}
+              onChange={(e) => {props.setSearchTerm(e.target.value); setSearchTerm(e.target.value)}}
+              value={searchTerm}
             />
-          </Search>
+          </Box>
+          <Box sx={{display: {xs:'flex', sm:'none'} }}>
+            <Tooltip title="Open settings">
+              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                <Avatar alt="Remy Sharp" src="/image1.jpg" />
+              </IconButton>
+            </Tooltip>
+            <Menu
+              sx={{ mt: '45px' }}
+              id="menu-appbar"
+              anchorEl={anchorElUser}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorElUser)}
+              onClose={handleCloseUserMenu}
+            >
+              {settings.map((setting) => (
+                <MenuItem key={setting} onClick={ ()=> handleProfile(setting)}>
+                  <Typography sx={{ textAlign: 'center' }}>{setting}</Typography>
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
         </Toolbar>
       </AppBar>
       <nav>
@@ -196,7 +270,40 @@ function DrawerAppBar(props) {
           {drawer}
         </Drawer>
       </nav>
-      
+
+
+      {/* Profile Drawer */}
+      <Drawer anchor="right" open={profileOpen} onClose={() => setProfileOpen(false)}>
+        <Box sx={{ width: 350, p: 4 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>Profile Settings</Typography>
+          <ProfileAvatar>
+            <Person sx={{ fontSize: 32 }} />
+          </ProfileAvatar>
+          <TextField 
+            fullWidth 
+            label="Name" 
+            margin="normal" 
+            variant="outlined" 
+            sx={{ mb: 2 }}
+          />
+          <TextField 
+            fullWidth 
+            label="Email" 
+            margin="normal" 
+            variant="outlined" 
+            sx={{ mb: 3 }}
+          />
+          <Button 
+            variant="contained" 
+            
+            fullWidth
+            sx={{ textTransform: 'none', py: 1.5, backgroundColor:"#033043"}}
+          >
+            Save Changes
+          </Button>
+        </Box>
+      </Drawer>
+
     </>
   );
 }

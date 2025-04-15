@@ -20,13 +20,14 @@ export default function LabelBottomNavigation() {
       <BottomNavigationAction
         label="Home"
         value="home"
+        href='/'
         icon={<Home sx={{color:'#fff'}}/>}
         sx={{'&.Mui-selected': {color:'#fff'}}}
       />
       <BottomNavigationAction
         label="Favorites"
         value="favorites"
-        icon={<Dashboard sx={{color:'#fff'}} />}
+        icon={<FavoriteIcon sx={{color:'#fff'}} />}
         sx={{'&.Mui-selected': {color:'#fff'}}}
       />
       <BottomNavigationAction

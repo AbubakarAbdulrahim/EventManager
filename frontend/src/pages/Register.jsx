@@ -20,6 +20,7 @@ import AppleIcon from '@mui/icons-material/Apple';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../components/CustomIcons';
 import { Select, MenuItem } from '@mui/material';
 import { useTheme } from '@emotion/react';
+import { useNavigate } from 'react-router-dom';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -78,20 +79,15 @@ export default function Register(props) {
     specialChar: "",
     uppercase: "",
   });
-  const [open, setOpen] = React.useState(false);
   const [fullname, setFullname] = React.useState({
     fName:"",
     lName:""
   });
+  const [emailAddress, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
   const [role, setRole] = React.useState("");
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const navigate = useNavigate();
 
   const handleSubmit = (event) => {
     if (emailError || Object.values(passwordError).some(error => error)) {
@@ -103,6 +99,9 @@ export default function Register(props) {
       email: data.get('email'),
       password: data.get('password'),
     });
+
+    navigate("/login")
+
   };
 
   const setErrorState = (field, condition, message) => {
@@ -110,17 +109,18 @@ export default function Register(props) {
     setPasswordErrorMessage(prevVal => ({ ...prevVal, [field]: !condition ? message : '' }));
   };
 
-  const validateInputs = () => {
+  const validateInputs = (events) => {
     const email = document.getElementById('email');
-    const password = document.getElementById('password');
+    const passwordInput = document.getElementById('password');
+    const {name, value} = events.target;
 
     let isValid = true;
 
     const checks = {
-      length: password.value.length >= 8,
-      alphanum: /[A-Za-z]/.test(password.value) && /\d/.test(password.value),
-      specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
-      uppercase: /[A-Z]/.test(password.value),
+      length: passwordInput.value.length >= 8,
+      alphanum: /[A-Za-z]/.test(passwordInput.value) && /\d/.test(passwordInput.value),
+      specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(passwordInput.value),
+      uppercase: /[A-Z]/.test(passwordInput.value),
     };
 
     if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
@@ -143,6 +143,9 @@ export default function Register(props) {
     }else{
       isValid =true;
     }
+    // setEmail(value);
+    // setPassword(value);
+    // console.log(name, value, emailAddress, password)
 
     return isValid;
   };
@@ -193,6 +196,7 @@ export default function Register(props) {
                 required
                 fullWidth
                 variant="outlined"
+                onChange={validateInputs}
               />
             </FormControl>
             <FormControl>
@@ -252,7 +256,7 @@ export default function Register(props) {
             <FormControl>
               <FormLabel sx={{color:'#0A7273'}} htmlFor="password">Confirm Password</FormLabel>
               <TextField
-                name="confrimPassword"
+                name="confirmPassword"
                 placeholder="••••••••"
                 type="password"
                 id="confirmPassword"
@@ -263,23 +267,6 @@ export default function Register(props) {
                 variant="outlined"
               />
             </FormControl>
-            <Box sx={{display:'flex', justifyContent:'space-between'}}>
-              <FormControlLabel
-                sx={{color:"#0a7273"}}
-                control={<Checkbox value="remember" sx={{'&.Mui-checked': { backgroundColor: '#0A7273' }, '&.Mui-checked:hover': { backgroundColor: 'rgba(10, 114, 115, 0.8)' },}} />}
-                label="Remember me"
-              />
-              <Link
-                component="button"
-                type="button"
-                onClick={handleClickOpen}
-                variant="body2"
-                color='#0a7273'
-              >
-                Forgot your password?
-              </Link>
-            </Box>
-            <ForgotPassword open={open} handleClose={handleClose} />
             <Button
               type="submit"
               fullWidth
