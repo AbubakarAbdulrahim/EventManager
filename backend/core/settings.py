@@ -14,6 +14,8 @@ SECRET_KEY = 'django-insecure-e5vr94@4)7ivgb_t7&k$ernv2b1ln@pcjjd@fn#82(^-kp9o_k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+AUTH_USER_MODEL = 'users.User'
+
 ALLOWED_HOSTS = ["*"] # set to allows every host for now
 
 # rest framework stuffs
@@ -28,8 +30,8 @@ REST_FRAMEWORK = {
 
 # tokens expiry periods
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),  # smalller
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),  # larger
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # smalller
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),  # larger
 }
 
 
@@ -44,8 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'users', # users app
     'bookings', # bookings app
+    'venues',  # venues app
+    'transactions', # trxns app
     'rest_framework', # rest framework app
-    'corsheaders' # headers app
+    'corsheaders', # headers app
+    'background_task', # background tasks app
 ]
 
 MIDDLEWARE = [

@@ -1,21 +1,23 @@
 from django.db import models
 from users.models import User
+from venues.models import Venue
 
-
+# booking table
 class Booking(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
-        ('confirmed', 'Confirmed'),
+        ('accepted', 'Accepted'),
         ('completed', 'Completed'),
         ('canceled', 'Canceled'),
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
-    # venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
+    venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
     # vendors = models.ForeignKey(Vendor, on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
     event_date = models.DateTimeField()
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # on display
     def __str__(self):
         return f'Booking {self.id} - {self.status}'
