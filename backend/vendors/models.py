@@ -21,6 +21,7 @@ class Vendor(models.Model):
     service_name = models.CharField(max_length=255, choices=SERVICE_CHOICES)
     location = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    contact = models.CharField(max_length=12)
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.location}"  # Assumes custom user has `get_full_name()`
 
@@ -41,8 +42,8 @@ class VendorPackage(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="packages")
     service_type = models.CharField(max_length=20, choices=SERVICE_CHOICES)
     service_mode = models.CharField(max_length=255, null=True, blank=True, help_text="e.g., Indoor, Buffet, Traditional")
-    capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Number of guests")
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Number of guests", default=0)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     is_available = models.BooleanField(default=True)
 
     def __str__(self):

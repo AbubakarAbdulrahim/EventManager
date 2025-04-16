@@ -18,8 +18,7 @@ class TransactionListCreateView(generics.ListCreateAPIView):
     # on creating
     def perform_create(self, serializer):
         serializer.save()
-        print(serializer.errors)
-
+        
 # detail view
 class TransactionRetrieveView(generics.RetrieveAPIView):
     queryset = Transaction.objects.all()
