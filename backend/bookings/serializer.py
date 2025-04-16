@@ -5,6 +5,8 @@ from .models import Booking
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
-        fields = ["user", "venue", "status", "event_date", "total_price", "created_at"]
-        read_only_fields = ["user", "status"]
-        
+        fields = ("user", "vendor_package", "status", "event_time", "event_date", "total_price", "created_at")
+        extra_kwargs = {
+            "status" : {"read_only" : True},
+            "created_at": {"read_only": True}
+        }

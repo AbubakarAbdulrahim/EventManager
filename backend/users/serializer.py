@@ -7,20 +7,26 @@ User = get_user_model()  # gettting current user model
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User # serializer model
-        fields = ("id", "username", "password", "full_name", "email") # serializer fields
+        fields = ("id", "full_name", "username", "email", "password", "role" ) # serializer fields
         extra_kwargs = {
-            "username" : {"required" : True},
-            "full_name" : {"required" : True},
+            "role" : {"read_only": True},
             "password": {"write_only" : True}, # write only password
-            "role" : {"read_only" : True} # read only role
         }
 
-    # on creating the serializer
+    # on creating
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data) # create user
+        full_name = validated_data['full_name']
+        username = validated_data['username']
+        email = validated_data['email']
+        password = validated_data['password']
+        role = 'customer'  # default role
+        user = User.objects.create_user(
+            full_name=full_name,
+            username=username,
+            email=email,
+            password=password,
+            role=role
+        ) # create user
         validated_data.pop('date_joined', None) # remove date_joined
-        if user.role != "Vendor":
-            user.role = "Customer" # set default role
-        user.save() # save the changes 
         return user
     

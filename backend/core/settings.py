@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'users', # users app
     'bookings', # bookings app
-    'venues',  # venues app
+    'vendors',  # vendors app
     'transactions', # trxns app
     'rest_framework', # rest framework app
     'corsheaders', # headers app

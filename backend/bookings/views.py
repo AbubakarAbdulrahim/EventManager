@@ -6,7 +6,9 @@ from .models import Booking
 from .serializer import BookingSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .tasks import notify_venue, notify_admins, notify_user
-from users.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 # helper func -> get admin emails
 def get_admin_emails():
@@ -117,7 +119,7 @@ class RejectBookingView(APIView):
 
     # on post
     def post(self, request, booking_id):
-        if request.user.role != "venue_owner":
+        if request.user.role != "vendor":
             return Response({"message": "Invalid request"}, status=404)
         booking = get_object_or_404(Booking, id=booking_id, venue__owner=request.user)
         if not validate_status_change(booking, ["Confirmed", "Rejected", "Completed"]):
