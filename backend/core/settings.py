@@ -32,6 +32,11 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # smalller
     "REFRESH_TOKEN_LIFETIME": timedelta(days=3),  # larger
+    "ROTATE_REFRESH_TOKEN": False,
+    "BLACKLIST_AFTER_ROTATION" : True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_COOKIE": "access_token",
+    "AUTH_COOKIE_HTTP_ONLY": True,
 }
 
 
@@ -51,6 +56,7 @@ INSTALLED_APPS = [
     'rest_framework', # rest framework app
     'corsheaders', # headers app
     'background_task', # background tasks app
+    'rest_framework_simplejwt.token_blacklist', # secured token hands
 ]
 
 MIDDLEWARE = [
@@ -140,3 +146,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # cors headers stuffs 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
+
+
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
