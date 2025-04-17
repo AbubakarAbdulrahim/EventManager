@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -18,10 +19,8 @@ import AppTheme from '../theme/AppTheme';
 import ColorModeSelect from '../theme/ColorModeSelect';
 import AppleIcon from '@mui/icons-material/Apple';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../components/CustomIcons';
-import { useNavigate } from 'react-router-dom';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import { useState } from 'react';
+import { Select, MenuItem } from '@mui/material';
+import { useTheme } from '@emotion/react';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -65,48 +64,28 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
-const validationSchema = yup.object({
-  email: yup
-    .string('Enter your email')
-    .email('Enter a valid email')
-    .required('Email is required'),
-  password: yup.string()
-    // .string('Enter your password')
-    .min(8, 'Password should be of minimum 8 characters length')
-    .required('Password is required')
-    .matches(/[A-Z]/, "Must contain at least one uppercase letter")
-    .matches(/[a-zA-Z]/, "Must contain at least one letter")
-    .matches(/\d/, "Must contain at least one number")
-    .matches(/[!@#$%^&*(),.?":{}|<>]/, "Must contain at least one special character")
-});
-
-export default function Login(props) {
+export default function Register(props) {
+  const [emailError, setEmailError] = useState(false);
+  const [emailErrorMessage, setEmailErrorMessage] = useState('');
+  const [passwordError, setPasswordError] = useState({
+    length: false,
+    alphanum: false,
+    specialChar: false,
+    uppercase: false,
+  });
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState({
+    length: "",
+    alphanum: "",
+    specialChar: "",
+    uppercase: "",
+  });
+  const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-      email: "",
-      password: "",
-    });
-  const formik = useFormik({
-    initialValues: {
-      email: '',
-      password: '',
-    },
-    validationSchema: validationSchema,
-    onSubmit: (values) => {
-      setFormData(values)
-      alert(JSON.stringify(values, null, 2));
-      navigate("/dashboard")
-    },
-  })
-
-  const {password} = formik.values
-  const checks = {
-    length: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    alphanumeric: /[a-zA-Z]/.test(password) && /\d/.test(password),
-    specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-  };
-  const [open, setOpen] = React.useState(false);
-  const navigate = useNavigate();
+    username: "",
+    email: "",
+    password: "",
+    role: "user",
+  });
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -116,8 +95,67 @@ export default function Login(props) {
     setOpen(false);
   };
 
+  const handleSubmit = (event) => {
+    if (emailError || Object.values(passwordError).some(error => error)) {
+      event.preventDefault();
+      return;
+    }
+    setFormData({ ...formData, [event.target.name]: event.target.value });
+    console.log(formData);
+    
+    
+  };
+
+  const setErrorState = (field, condition, message) => {
+    setPasswordError(prevVal => ({ ...prevVal, [field]: !condition }));
+    setPasswordErrorMessage(prevVal => ({ ...prevVal, [field]: !condition ? message : '' }));
+  };
+
+  const validateInputs = () => {
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+
+    let isValid = true;
+
+    const checks = {
+      length: password.value.length >= 8,
+      alphanum: /[A-Za-z]/.test(password.value) && /\d/.test(password.value),
+      specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
+      uppercase: /[A-Z]/.test(password.value),
+    };
+
+    if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
+      setEmailError(true);
+      setEmailErrorMessage('Please enter a valid email address.');
+      isValid = false;
+    } else {
+      setEmailError(false);
+      setEmailErrorMessage('');
+      isValid=true
+    }
+
+    setErrorState('uppercase', checks.uppercase, 'Password must contain at least one uppercase.');
+    setErrorState('alphanum', checks.alphanum, 'Password must contain letters and numbers.');
+    setErrorState('specialChar', checks.specialChar, 'Password must contain at least one special character.');
+    setErrorState('length', checks.length, 'Password must be at least 8 characters long.');
+
+    if (!checks.uppercase || !checks.alphanum || !checks.specialChar || !checks.length) {
+      isValid = false;
+    }else{
+      isValid =true;
+    }
+
+    return isValid;
+  };
+
+
+  
+
+
+
+  
   return (
-    <AppTheme {...props}>
+      <AppTheme {...props}>
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="space-between">
         <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
@@ -129,11 +167,12 @@ export default function Login(props) {
             variant="h4"
             sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color:'#0A7273' }}
           >
-            Welcome Back!
+            Sign up!
           </Typography>
           <Box
             component="form"
-            onSubmit={formik.handleSubmit}
+            onSubmit={handleSubmit}
+            // method='post'
             noValidate
             sx={{
               display: 'flex',
@@ -143,10 +182,24 @@ export default function Login(props) {
             }}
           >
             <FormControl>
+              <FormLabel sx={{color:'#0A7273'}} htmlFor="fullname">Fullname</FormLabel>
+              <TextField
+                id="fullname"
+                type="text"
+                name="fullname"
+                placeholder="enter your fullname"
+                autoComplete="name"
+                autoFocus
+                required
+                fullWidth
+                variant="outlined"
+              />
+            </FormControl>
+            <FormControl>
               <FormLabel sx={{color:'#0A7273'}} htmlFor="email">Email</FormLabel>
               <TextField
-                // error={emailError}
-                // helperText={emailErrorMessage}
+                error={emailError}
+                helperText={emailErrorMessage}
                 id="email"
                 type="email"
                 name="email"
@@ -156,15 +209,25 @@ export default function Login(props) {
                 required
                 fullWidth
                 variant="outlined"
-                // color={emailError ? 'error' : 'primary'}
-                // onChange={validateInputs}
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.email && Boolean(formik.errors.email)}
-                helperText={formik.touched.email && formik.errors.email}
+                color={emailError ? 'error' : 'primary'}
+                onChange={validateInputs}
               />
             </FormControl>
+            <FormControl fullWidth className='select'>
+            <FormLabel sx={{color:'#0A7273', '&.Mui-focused': { color: '#0A7273' }}} htmlFor="role" className='select'>What are you signing up for?</FormLabel>
+            <Select
+                value={formData.role}
+                autoFocus
+                required            
+                displayEmpty
+                // onChange={HandleRole}
+            >
+                <MenuItem value="" disabled>Select your service</MenuItem>
+                <MenuItem value={"user"}>Book Services</MenuItem>
+                <MenuItem value={"vendor"}>Offer Services</MenuItem>
+            </Select>
+            </FormControl>
+            
             <FormControl>
               <FormLabel sx={{color:'#0A7273'}} htmlFor="password">Password</FormLabel>
               <TextField
@@ -177,27 +240,28 @@ export default function Login(props) {
                 required
                 fullWidth
                 variant="outlined"
-                // onChange={validateInputs}
-                value={password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.password && Boolean(formik.errors.password)}
-                helperText={formik.touched.password && "Password does not meet requirements"}
+                onChange={validateInputs}
               />
-              <Box ml={1} mt={1}>
-              <Typography variant="body2" color={checks.length ? "success.main" : "error"}>
-                • Minimum 8 characters
-              </Typography>
-              <Typography variant="body2" color={checks.uppercase ? "success.main" : "error"}>
-                • At least one uppercase letter
-              </Typography>
-              <Typography variant="body2" color={checks.alphanumeric ? "success.main" : "error"}>
-                • Must contain alphanumeric (letter and number)
-              </Typography>
-              <Typography variant="body2" color={checks.specialChar ? "success.main" : "error"}>
-                • At least one special character
-              </Typography>
-            </Box>
+              <>
+                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.uppercase}</Typography>
+                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.alphanum}</Typography>
+                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.length}</Typography>
+                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.specialChar}</Typography>
+              </>
+            </FormControl>
+            <FormControl>
+              <FormLabel sx={{color:'#0A7273'}} htmlFor="password">Confirm Password</FormLabel>
+              <TextField
+                name="confrimPassword"
+                placeholder="••••••••"
+                type="password"
+                id="confirmPassword"
+                autoComplete="current-password"
+                autoFocus
+                required
+                fullWidth
+                variant="outlined"
+              />
             </FormControl>
             <Box sx={{display:'flex', justifyContent:'space-between'}}>
               <FormControlLabel
@@ -228,10 +292,8 @@ export default function Login(props) {
                 border:'none',
                 '&:hover': { backgroundColor: '#085c5c' }
                 }}
-              
-              // color='#000'
             >
-              Sign in
+              Register
             </Button>
           </Box>
           <Divider >or</Divider>
@@ -264,13 +326,13 @@ export default function Login(props) {
             </Button>
           </Box>
             <Typography sx={{ textAlign: 'center', color:'#0a7273' }}>
-              Don&apos;t have an account?{' '}
+              Already have an account?{' '}
               <Link
-                href="/register"
+                href="/login"
                 variant="body2"
                 sx={{ alignSelf: 'center', color:'#033043' }}
               >
-                Sign up
+                Login
               </Link>
             </Typography>
         </Card>
