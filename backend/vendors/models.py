@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+import time
 
 User = get_user_model()
 SERVICE_CHOICES = (
@@ -22,6 +23,7 @@ class Vendor(models.Model):
     location = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     contact = models.CharField(max_length=12)
+    
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.location}"  # Assumes custom user has `get_full_name()`
 
@@ -35,6 +37,17 @@ class VendorImages(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
+class VendorAvailability(models.Model):
+    ''' 
+    stores availability of vendors
+    '''
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    day = models.CharField(max_length=3)  # mon, tue, etc.
+    start_time = models.TimeField()
+    end_time = models.TimeField(default=time(23, 59))  # defaults to 12:00 AM
+
+
+
 class VendorPackage(models.Model):
     """
     represents a vendor's service package, including pricing, capacity, and service type.
@@ -44,7 +57,8 @@ class VendorPackage(models.Model):
     service_mode = models.CharField(max_length=255, null=True, blank=True, help_text="e.g., Indoor, Buffet, Traditional")
     capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Number of guests", default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    is_available = models.BooleanField(default=True)
+    duration = models.CharField(max_length=20, default="per_event", null=True, blank=True)
+    
 
     def __str__(self):
         name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"

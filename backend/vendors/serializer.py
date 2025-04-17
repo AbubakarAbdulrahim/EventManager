@@ -1,8 +1,18 @@
 from rest_framework import serializers
-from .models import Vendor, VendorImages, VendorPackage
+from .models import Vendor, VendorImages, VendorPackage, VendorAvailability
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+DAYS_OF_WEEK = [
+    ('Mon', 'Monday'),
+    ('Tue', 'Tuesday'),
+    ('Wed', 'Wednesday'),
+    ('Thu', 'Thursday'),
+    ('Fri', 'Friday'),
+    ('Sat', 'Saturday'),
+    ('Sun', 'Sunday'),
+]
 
 # vendor info serializer
 class VendorSerializer(serializers.ModelSerializer):
@@ -10,7 +20,7 @@ class VendorSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField() # to readable string
     class Meta:
         model = Vendor
-        Fields = [
+        fields = [
             "id", 
             "user", 
             "service_name", 
@@ -44,8 +54,8 @@ class VendorPackageSerializer(serializers.ModelSerializer):
             "service_type", 
             "service_mode", 
             "capacity", 
-            "price", 
-            "is_available"
+            "price",
+            "duration"
         ]
         
 # vendor detail serilizer
@@ -60,8 +70,29 @@ class VendorDetailSerializer(serializers.ModelSerializer):
             "service_name", 
             "location", 
             "created_at", 
-            "contact"
+            "contact",
+            "images",
+            "packages",
         ]
         extra_kwargs = {
             "created_at" : {"read_only" : True}
         }
+
+class VendorAvailabilitySerializer(serializers.ModelSerializer):
+    day = serializers.CharField(choices=DAYS_OF_WEEK)
+    class Meta:
+        model = VendorAvailability
+        fields = [
+            "id",
+            "vendor",
+            "day",
+            "start_time",
+            "end_time",
+            ]
+        extra_kwargs = {
+            "vendor" : {"read_only" : True},
+        }
+
+    def create(self, validated_data):
+        vendor = self.context['request'].user.vendor_profile  # Automatically assign the vendor
+        return VendorAvailability.objects.create(vendor=vendor, **validated_data)
