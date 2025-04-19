@@ -92,11 +92,11 @@ export default function Login(props) {
     const { user, loading, login } = useAuth();
     const [error, setError] = useState(null);
 
-    // useEffect(() => {
-    //   if (!loading && user) {
-    //     navigate('/dashboard');
-    //   }
-    // }, [user,loading, navigate]);
+    useEffect(() => {
+      if (!loading && user) {
+        navigate('/dashboard');
+      }
+    }, [user,loading, navigate]);
   const formik = useFormik({
     initialValues: {
       username: '',
@@ -109,7 +109,7 @@ export default function Login(props) {
 
         await login(values);
         // If login is successful, redirect to dashboard
-        navigate('/dashboard');
+        // navigate('/dashboard');
         // Optionally, you can also show a success message or perform other actions here
         
       } catch (error) {

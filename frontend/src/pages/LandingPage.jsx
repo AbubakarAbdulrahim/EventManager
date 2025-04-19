@@ -7,6 +7,14 @@ import FlutterwaveDemo from "../components/FlutterDemo";
 import SuccessDialog from "../components/SuccessDialog";
 import ErrorDialog from "../components/ErrorDialog";
 
+function EnvTest() {
+  return (
+    <div>
+      API URL: {import.meta.env.VITE_API_URL}
+    </div>
+  );
+}
+
 export default function LandingPage() {
     return (
       <div>
@@ -14,7 +22,9 @@ export default function LandingPage() {
         <SearchBar/>
         {/* <EventPlanningDashboard/> */}
         <BookingProcess/>
-        <ErrorDialog open={true}  title={"Registration failed"}/>
+        <EnvTest/>
+        {/* <ErrorDialog open={true}  title={"Registration failed"}/> */}
+
         {/* <FlutterwaveDemo/> */}
         {/* <BookingDialog service={{title:"venue"}}/> */}
       </div>

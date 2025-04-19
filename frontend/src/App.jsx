@@ -11,6 +11,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme/theme'
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from "./components/ProtectedRoutes";
+import Unauthorized from "./pages/Unauthorized";
 
 function App() {
   
@@ -25,13 +26,13 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute roles={['user', 'admin', 'vendor']}>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/favorites" element={<Favorites/>}></Route>
-
+        <Route path="/dashboard" element={
+          <ProtectedRoute roles={['user', 'admin', 'vendor']}>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/favorites" element={<Favorites/>}></Route>
+        <Route path="/unauthorized" element={<Unauthorized/>} />
       </Routes>
       </ServiceProvider>
       </BookingsProvider>
