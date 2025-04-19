@@ -79,7 +79,7 @@ class VendorDetailSerializer(serializers.ModelSerializer):
         }
 
 class VendorAvailabilitySerializer(serializers.ModelSerializer):
-    day = serializers.CharField(choices=DAYS_OF_WEEK)
+    day = serializers.ChoiceField(choices=DAYS_OF_WEEK)
     class Meta:
         model = VendorAvailability
         fields = [

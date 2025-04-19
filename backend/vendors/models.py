@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-import time
+from datetime import time
 
 User = get_user_model()
 SERVICE_CHOICES = (
