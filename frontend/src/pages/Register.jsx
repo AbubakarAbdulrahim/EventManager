@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -20,6 +20,8 @@ import { Select, MenuItem, FormHelperText } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import SuccessDialog from '../components/SuccessDialog';
+import ErrorDialog from '../components/ErrorDialog';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -70,26 +72,27 @@ export default function Register(props) {
     full_name: "",
     email: "",
     confirmPassword: "",
-    role: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
 
-  const [close, setClose] = useState(false);
   const [open, setOpen] = useState(false);
+  const [openError, setOpenError] = useState(false)
 
   const [errors, setErrors] = useState({
     full_name: false,
+    username: false,
     email: false,
     password: false,
     confirmPassword: false,
-    role: false,
   });
 
   const [errorMessages, setErrorMessages] = useState({
     full_name: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "",
   });
 
   const [passwordRequirements, setPasswordRequirements] = useState({
@@ -112,6 +115,12 @@ export default function Register(props) {
         newErrors.full_name = value.trim() === '';
         newMessages.full_name = value.trim() === '' ? 'Full name is required' : '';
         isValid = !newErrors.full_name;
+        break;
+        
+        case 'username':
+          newErrors.username = value.trim() === '';
+          newMessages.username = value.trim() === '' ? 'Username is required' : '';
+          isValid = !newErrors.username;
         break;
 
       case 'email':
@@ -140,19 +149,12 @@ export default function Register(props) {
         isValid = passwordsMatch;
         break;
 
-      case 'role':
-        newErrors.role = value === '';
-        newMessages.role = value === '' ? 'Please select a role' : '';
-        isValid = value !== '';
-        break;
-
       default:
         break;
     }
 
     setErrors(prev => ({ ...prev, [name]: newErrors[name] }));
     setErrorMessages(prev => ({ ...prev, [name]: newMessages[name] }));
-    console.log("new eroores msg",newMessages)
     if (name === 'password') setPasswordRequirements(newPasswordReqs);
     return isValid;
   };
@@ -165,7 +167,7 @@ export default function Register(props) {
 
   const validateAllFields = () => {
     let isFormValid = true;
-    const fieldNames = ['full_name', 'email', 'password', 'confirmPassword', 'role'];
+    const fieldNames = ['full_name', 'username', 'email', 'password', 'confirmPassword'];
     
     fieldNames.forEach(name => {
       const isValid = validateField(name, formData[name]);
@@ -176,10 +178,12 @@ export default function Register(props) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setUsernameError("");
+
     const isFormValid = validateAllFields();
     
     if (!isFormValid) {
-      console.log(errors, errorMessages, passwordRequirements);
       return; // Prevent submission if any errors
     }
     console.log('Form submitted:', formData);
@@ -189,23 +193,26 @@ export default function Register(props) {
       });
       console.log(response.data)
         // return res.data;
-      
-      if (response.status === 201) {
+        if (response.status === 201) {
         setOpen(true);
-        setTimeout(() => {
-          setClose(true);
-        }, 1000);
-  
+        setTimeout(()=>{navigate("/login")}, 2000)
+        
       } else {
-        // alert(response.statusText)
+        alert(response.statusText)
         console.error('Registration failed:', response.status);
       }
     } catch (error) {
       // Handle network or server error
+      setOpenError(true)
+      setUsernameError('Username already taken');
+      
+
       console.error('Error during registration:', error.message);
     }
-    // navigate("/login");
+    setTimeout(()=>{setLoading(false)}, 2000)
   };
+
+  
 
   const passwordReqsMet = Object.values(passwordRequirements).every(Boolean);
 
@@ -219,7 +226,7 @@ export default function Register(props) {
           <Typography
             component="h1"
             variant="h4"
-            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color: '#0A7273' }}
+            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color: '#033043' }}
           >
             Sign up!
           </Typography>
@@ -235,8 +242,9 @@ export default function Register(props) {
             }}
           >
             {/* Full Name Field */}
+            
             <FormControl error={errors.full_name}>
-              <FormLabel sx={{ color: '#0A7273' }}>Full Name</FormLabel>
+              <FormLabel sx={{ color: '#033043' }}>Full Name</FormLabel>
               <TextField
                 name="full_name"
                 value={formData.full_name}
@@ -247,14 +255,16 @@ export default function Register(props) {
                 required
               />
             </FormControl>
-            <FormControl>
-              <FormLabel sx={{ color: '#0A7273' }}>Username</FormLabel>
+            
+            <FormControl error={errors.username}>
+              <FormLabel sx={{ color: '#033043' }}>Username</FormLabel>
               <TextField
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                // error={errors.full_name}
-                // helperText={errorMessages.full_name}
+                error={errors.username || usernameError}
+                helperText={errors.username ? errorMessages.username : usernameError}
+                // helperText={errorMessages.username}
                 autoFocus
                 required
               />
@@ -262,7 +272,7 @@ export default function Register(props) {
 
             {/* Email Field */}
             <FormControl error={errors.email}>
-              <FormLabel sx={{ color: '#0A7273' }}>Email</FormLabel>
+              <FormLabel sx={{ color: '#033043' }}>Email</FormLabel>
               <TextField
                 name="email"
                 type="email"
@@ -274,26 +284,9 @@ export default function Register(props) {
               />
             </FormControl>
 
-            {/* Role Field */}
-            <FormControl error={errors.role}>
-              <FormLabel sx={{color:'#0A7273', '&.Mui-focused': { color: '#0A7273' }}}>What are you signing up for?</FormLabel>
-              <Select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                displayEmpty
-                required
-              >
-                <MenuItem value="" disabled>Select your service</MenuItem>
-                <MenuItem value={"user"}>Book Services</MenuItem>
-                <MenuItem value={"vendor"}>Offer Services</MenuItem>
-              </Select>
-              {errors.role && <FormHelperText error>{errorMessages.role}</FormHelperText>}
-            </FormControl>
-
             {/* Password Field */}
             <FormControl error={errors.password}>
-              <FormLabel sx={{ color: '#0A7273' }}>Password</FormLabel>
+              <FormLabel sx={{ color: '#033043' }}>Password</FormLabel>
               <TextField
                 name="password"
                 type="password"
@@ -324,7 +317,7 @@ export default function Register(props) {
 
             {/* Confirm Password Field */}
             <FormControl error={errors.confirmPassword}>
-              <FormLabel sx={{ color: '#0A7273' }}>Confirm Password</FormLabel>
+              <FormLabel sx={{ color: '#033043' }}>Confirm Password</FormLabel>
               <TextField
                 name="confirmPassword"
                 type="password"
@@ -341,15 +334,18 @@ export default function Register(props) {
               fullWidth
               variant="contained"
               sx={{
-                backgroundColor: '#0A7273',
+                backgroundColor: '#033043',
                 color: '#fff',
                 backgroundImage: 'none',
                 boxShadow: '1px 1px 2px 0  #033043',
                 border:'none',
-                '&:hover': { backgroundColor: '#085c5c' }
+                '&:hover': { backgroundColor: '#013d56' }
               }}
             >
-              Register
+              {loading ? 
+                  <CircularProgress sx={{ color: '#033043'}} size={30} />
+                  : 'Register'
+                }
             </Button>
           </Box>
 
@@ -382,7 +378,7 @@ export default function Register(props) {
             </Button>
           </Box>
 
-          <Typography sx={{ textAlign: 'center', color: '#0a7273' }}>
+          <Typography sx={{ textAlign: 'center', color: '#033043' }}>
             Already have an account?{' '}
             <Link href="/login" sx={{ color: '#033043' }}>
               Login
@@ -390,7 +386,8 @@ export default function Register(props) {
           </Typography>
         </Card>
       </SignInContainer>
-      <SuccessDialog open={open} close={close} url={'/login'} title={'Registration successful! Please log in.'} />
+      <SuccessDialog open={open} handleClose={()=> {setOpen(false)}} url={'/login'} title={'Registration successful! Please log in.'} />
+      <ErrorDialog open={openError} handleClose={()=>{setOpenError(false)}} title={'Registration failed'}/>
     </AppTheme>
   );
 }

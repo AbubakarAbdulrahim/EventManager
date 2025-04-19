@@ -9,10 +9,13 @@ import Favorites from "./pages/Favorites";
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme/theme'
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from "./components/ProtectedRoutes";
 
 function App() {
   
   return (
+    <AuthProvider>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BookingsProvider>
@@ -22,13 +25,18 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute roles={['user', 'admin', 'vendor']}>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
           <Route path="/favorites" element={<Favorites/>}></Route>
 
       </Routes>
       </ServiceProvider>
       </BookingsProvider>
     </ThemeProvider>
+    </AuthProvider>
   )
 }
 

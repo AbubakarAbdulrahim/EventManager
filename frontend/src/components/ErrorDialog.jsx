@@ -1,10 +1,10 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Avatar} from '@mui/material';
 import React from 'react';
-import { Check } from '@mui/icons-material';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useNavigate } from 'react-router-dom';
 import {motion} from 'framer-motion';
 
-export default function SuccessDialog({open, handleClose, url, title, body, action}) {
+export default function ErrorDialog({open, handleClose, url, title, body, action}) {
     const navigate = useNavigate();
     
     return (
@@ -13,21 +13,22 @@ export default function SuccessDialog({open, handleClose, url, title, body, acti
             <DialogTitle sx={{ color: '#033043', fontWeight: 600 }}>
             </DialogTitle>
             <DialogContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3 }}>
-                    <Avatar sx={{ m: 1, bgcolor: '#4caf50', display: 'flex', justifyContent: 'center', alignItems: 'center', width: 56, height: 56 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <Avatar sx={{ bgcolor: '#e53935', display: 'flex', justifyContent: 'center', alignItems: 'center', width: 56, height: 56 }}>
                     <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", duration: 1 }}
                     >
-                        <Check sx={{color:"#fff", fontSize:"2em"}}/>
+                        <ClearIcon sx={{color:"#fff", fontSize:"2em"}}/>
                     </motion.div>
                     </Avatar>
                     <Typography sx={{ mt: 2, mb: 1, fontSize:'1.2em' }} textAlign={'center'} color="text.primary">
                         {title}
                     </Typography>
                     {body && <Typography variant="body2" textAlign={'center'} color="text.secondary">
-                        Your booking has been successfully completed. Thank you for choosing us!
+                        {/* Your booking has been successfully completed. Thank you for choosing us! */}
+                        {body}
                     </Typography>}
                 </Box>
                 

@@ -5,6 +5,7 @@ import SearchBar from "../components/SearchBar";
 import BookingProcess from "../components/BookingProcess";
 import FlutterwaveDemo from "../components/FlutterDemo";
 import SuccessDialog from "../components/SuccessDialog";
+import ErrorDialog from "../components/ErrorDialog";
 
 export default function LandingPage() {
     return (
@@ -13,7 +14,7 @@ export default function LandingPage() {
         <SearchBar/>
         {/* <EventPlanningDashboard/> */}
         <BookingProcess/>
-        <SuccessDialog/>
+        <ErrorDialog open={true}  title={"Registration failed"}/>
         {/* <FlutterwaveDemo/> */}
         {/* <BookingDialog service={{title:"venue"}}/> */}
       </div>

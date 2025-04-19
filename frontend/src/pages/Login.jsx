@@ -21,7 +21,10 @@ import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../components/CustomIcon
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Alert } from '@mui/material';
+import Snackbar from '@mui/material/Snackbar';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -66,10 +69,9 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 }));
 
 const validationSchema = yup.object({
-  email: yup
-    .string('Enter your email')
-    .email('Enter a valid email')
-    .required('Email is required'),
+  username: yup
+    .string('Enter your username')
+    .required('username is required'),
   password: yup.string()
     // .string('Enter your password')
     .min(8, 'Password should be of minimum 8 characters length')
@@ -82,19 +84,58 @@ const validationSchema = yup.object({
 
 export default function Login(props) {
   const [formData, setFormData] = useState({
-      email: "",
+      username: "",
       password: "",
     });
+    const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
+    const { user, loading, login } = useAuth();
+    const [error, setError] = useState(null);
+
+    // useEffect(() => {
+    //   if (!loading && user) {
+    //     navigate('/dashboard');
+    //   }
+    // }, [user,loading, navigate]);
   const formik = useFormik({
     initialValues: {
-      email: '',
+      username: '',
       password: '',
     },
     validationSchema: validationSchema,
-    onSubmit: (values) => {
-      setFormData(values)
-      alert(JSON.stringify(values, null, 2));
-      navigate("/dashboard")
+    onSubmit: async (values) => {
+      console.log(values);
+      try {
+
+        await login(values);
+        // If login is successful, redirect to dashboard
+        navigate('/dashboard');
+        // Optionally, you can also show a success message or perform other actions here
+        
+      } catch (error) {
+        console.error('Login failed:', error);
+        if (error.response) {
+          // Server responded with 4xx/5xx status
+          const { data } = error.response;
+          
+          if (error.response.status === 400) {
+            setError(data.detail || 'Invalid email or password format');
+          } else if (error.response.status === 401) {
+            setError('Invalid credentials');
+          } else {
+            setError('Login failed. Please try again later.');
+          }
+        } else if (error.request) {
+          // No response received
+          setError('Network error. Please check your connection.');
+        } else {
+          // Other errors
+          setError('An unexpected error occurred.');
+        }
+      }
+    
+      // alert(JSON.stringify(values, null, 2));
+      // navigate("/dashboard")
     },
   })
 
@@ -105,8 +146,7 @@ export default function Login(props) {
     alphanumeric: /[a-zA-Z]/.test(password) && /\d/.test(password),
     specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
   };
-  const [open, setOpen] = React.useState(false);
-  const navigate = useNavigate();
+  
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -127,7 +167,7 @@ export default function Login(props) {
           <Typography
             component="h1"
             variant="h4"
-            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color:'#0A7273' }}
+            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color:'#033043' }}
           >
             Welcome Back!
           </Typography>
@@ -143,30 +183,30 @@ export default function Login(props) {
             }}
           >
             <FormControl>
-              <FormLabel sx={{color:'#0A7273'}} htmlFor="email">Email</FormLabel>
+              <FormLabel sx={{color:'#033043'}} htmlFor="username">Username</FormLabel>
               <TextField
                 // error={emailError}
                 // helperText={emailErrorMessage}
-                id="email"
-                type="email"
-                name="email"
-                placeholder="your@email.com"
-                autoComplete="email"
+                id="username"
+                type="text"
+                name="username"
+                placeholder="Enter your username"
+                autoComplete="username"
                 autoFocus
                 required
                 fullWidth
                 variant="outlined"
                 // color={emailError ? 'error' : 'primary'}
                 // onChange={validateInputs}
-                value={formik.values.email}
+                value={formik.values.username}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                error={formik.touched.email && Boolean(formik.errors.email)}
-                helperText={formik.touched.email && formik.errors.email}
+                error={formik.touched.username && Boolean(formik.errors.username)}
+                helperText={formik.touched.username && formik.errors.username}
               />
             </FormControl>
             <FormControl>
-              <FormLabel sx={{color:'#0A7273'}} htmlFor="password">Password</FormLabel>
+              <FormLabel sx={{color:'#033043'}} htmlFor="password">Password</FormLabel>
               <TextField
                 name="password"
                 placeholder="••••••••"
@@ -201,8 +241,8 @@ export default function Login(props) {
             </FormControl>
             <Box sx={{display:'flex', justifyContent:'space-between'}}>
               <FormControlLabel
-                sx={{color:"#0a7273"}}
-                control={<Checkbox value="remember" sx={{'&.Mui-checked': { backgroundColor: '#0A7273' }, '&.Mui-checked:hover': { backgroundColor: 'rgba(10, 114, 115, 0.8)' },}} />}
+                sx={{color:"#033043"}}
+                control={<Checkbox value="remember" sx={{'&.Mui-checked': { backgroundColor: '#033043' }, '&.Mui-checked:hover': { backgroundColor: 'rgba(10, 114, 115, 0.8)' },}} />}
                 label="Remember me"
               />
               <Link
@@ -210,7 +250,7 @@ export default function Login(props) {
                 type="button"
                 onClick={handleClickOpen}
                 variant="body2"
-                color='#0a7273'
+                color='#033043'
               >
                 Forgot your password?
               </Link>
@@ -221,12 +261,12 @@ export default function Login(props) {
               fullWidth
               variant="contained"
               sx={{
-                backgroundColor: '#0A7273',
+                backgroundColor: '#033043',
                 color: '#fff',
                 backgroundImage: 'none',
                 boxShadow: '1px 1px 2px 0  #033043',
                 border:'none',
-                '&:hover': { backgroundColor: '#085c5c' }
+                '&:hover': { backgroundColor: '#013d56' }
                 }}
               
               // color='#000'
@@ -263,7 +303,7 @@ export default function Login(props) {
               
             </Button>
           </Box>
-            <Typography sx={{ textAlign: 'center', color:'#0a7273' }}>
+            <Typography sx={{ textAlign: 'center', color:'#033043' }}>
               Don&apos;t have an account?{' '}
               <Link
                 href="/register"
@@ -275,6 +315,18 @@ export default function Login(props) {
             </Typography>
         </Card>
       </SignInContainer>
+      {error && (
+        <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={2000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setError(null)}  severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+      )}
     </AppTheme>
   );
 }
