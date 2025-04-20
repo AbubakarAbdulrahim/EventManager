@@ -150,7 +150,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-
-
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False

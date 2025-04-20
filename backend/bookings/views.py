@@ -88,9 +88,9 @@ class ApprovedBookingView(APIView):
 
     # on post
     def post(self, request, booking_id):
-        if request.user.role != "venue_owner":
+        if request.user.role != "vendor":
             return Response({"message": "Invalid request"}, status=404)
-        booking = get_object_or_404(Booking, id=booking_id, venue__owner=request.user) # get booking by existence
+        booking = get_object_or_404(Booking, id=booking_id, vendor_package__vendor=request.user) # get booking by existence
         if booking.status != "Pending":
             return Response({"message":"Booking is already processed!"}, status=400)
         booking.status = "Accepted"
@@ -121,7 +121,7 @@ class RejectBookingView(APIView):
     def post(self, request, booking_id):
         if request.user.role != "vendor":
             return Response({"message": "Invalid request"}, status=404)
-        booking = get_object_or_404(Booking, id=booking_id, venue__owner=request.user)
+        booking = get_object_or_404(Booking, id=booking_id, vendor_package__vendor=request.user)
         if not validate_status_change(booking, ["Confirmed", "Rejected", "Completed"]):
             return Response({"message": "Booking cannot be modified"}, status=400)
         booking.status = "Rejected"
