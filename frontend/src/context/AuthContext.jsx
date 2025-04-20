@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const authAxios = axios.create({
+    baseURL: 'http://localhost:8000',
     withCredentials: true,
   });
 
@@ -73,9 +74,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await authAxios.post('/user/token/refresh/', {
-        withCredentials: true
-      });
+      const response = await authAxios.post('/user/token/refresh/');
       console.log(response)
       const newAccessToken = response.data.access;
       setAccessToken(newAccessToken);
@@ -120,6 +119,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
     // const hasPotentialSession = document.cookie.includes('refresh');
+    // console.log(hasPotentialSession)
     // if (hasPotentialSession) {
       initializeAuth();
     // } else {
