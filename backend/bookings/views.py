@@ -63,7 +63,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
 
     # on create
     def perform_create(self, serializer):
-        user=self.request.user            
+        user=self.request.user 
         booking = serializer.save(user= user, status="Pending")
         
         # notifying the venue by email

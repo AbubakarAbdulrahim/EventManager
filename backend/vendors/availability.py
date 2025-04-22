@@ -1,4 +1,3 @@
-from datetime import timedelta
 from .models import VendorAvailability
 from bookings.models import Booking
 

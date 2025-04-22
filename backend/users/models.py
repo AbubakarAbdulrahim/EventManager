@@ -15,6 +15,7 @@ class User(AbstractUser):
     groups = models.ManyToManyField(Group, related_name='user_groups', blank=True)
     user_permissions = models.ManyToManyField(Permission, related_name='user_permissions')
     date_joined = models.DateTimeField(auto_now_add=True)
+    phone_number = models.CharField(max_length=11, unique=True, null=True, blank=True)
 
     def __str__(self):
         return f'{self.full_name} - {self.role}'

@@ -95,6 +95,7 @@ const AddService = () => {
     type: Yup.string().required('Service type is required'),
     name: Yup.string().required('Service name is required'),
     location: Yup.string().required('Location is required'),
+    serviceInfo: Yup.string().required('Service information is required'),
     price: Yup.number()
       .required('Price is required')
       .positive('Price must be positive'),
@@ -181,6 +182,7 @@ const AddService = () => {
       type: '',
       name: '',
       location: '',
+      serviceInfo: '',
       price: '',
       mainImage: null,
       additionalImages: [],
@@ -727,6 +729,22 @@ const AddService = () => {
                   onBlur={formik.handleBlur}
                   error={formik.touched.name && Boolean(formik.errors.name)}
                   helperText={formik.touched.name && formik.errors.name}
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <TextField
+                fullWidth
+                label="Service Information"
+                name="serviceInfo"
+                multiline
+                rows={4}
+                value={formik.values.serviceInfo}
+                onChange={formik.handleChange}
+                placeholder="Any other information you'd like us to know about your services"
+                onBlur={formik.handleBlur}
+                error={formik.touched.name && Boolean(formik.errors.serviceInfo)}
+                helperText={formik.touched.name && formik.errors.serviceInfo}
                 />
               </Grid>
               

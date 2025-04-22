@@ -92,17 +92,13 @@ const validationSchemas = {
     phone: Yup.string().required('Phone number is required'),
   }),
   1: Yup.object({
-    businessName: Yup.string().required('Business name is required'),
-    businessAddress: Yup.string().required('Business address is required'),
-    yearsInBusiness: Yup.number().min(0, 'Cannot be negative'),
+    business_name: Yup.string().required('Business name is required'),
+    address: Yup.string().required('Business address is required'),
+    years_in_business: Yup.number().min(0, 'Cannot be negative'),
   }),
   2: Yup.object({
-    certifications: Yup.string().when('hasCertifications', {
-      is: true,
-      then: () => Yup.string().required('Please list your certifications'),
-      otherwise: () => Yup.string()
+    certification_list: Yup.string().required('Please list your certifications'),
     }),
-  }),
   3: Yup.object({
     agreeToTerms: Yup.boolean()
       .oneOf([true], 'You must agree to the terms and conditions')
@@ -133,14 +129,13 @@ export default function VendorApplication() {
       phone: '',
       
       // Business Information
-      businessName: '',
-      businessAddress: '',
-      yearsInBusiness: '',
+      business_name: '',
+      address: '',
+      years_in_business: '',
       
       // Additional Info
-      hasCertifications: false,
-      certifications: '',
-      additionalInfo: '',
+      certification_list: '',
+      
       
       // Terms & Conditions
       agreeToTerms: false
@@ -339,12 +334,12 @@ export default function VendorApplication() {
                   required
                   fullWidth
                   label="Business Name"
-                  name="businessName"
-                  value={formik.values.businessName}
+                  name="business_name"
+                  value={formik.values.business_name}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.businessName && Boolean(formik.errors.businessName)}
-                  helperText={formik.touched.businessName && formik.errors.businessName}
+                  error={formik.touched.business_name && Boolean(formik.errors.business_name)}
+                  helperText={formik.touched.business_name && formik.errors.business_name}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -359,12 +354,12 @@ export default function VendorApplication() {
                   required
                   fullWidth
                   label="Business Address"
-                  name="businessAddress"
-                  value={formik.values.businessAddress}
+                  name="address"
+                  value={formik.values.address}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.businessAddress && Boolean(formik.errors.businessAddress)}
-                  helperText={formik.touched.businessAddress && formik.errors.businessAddress}
+                  error={formik.touched.address && Boolean(formik.errors.address)}
+                  helperText={formik.touched.address && formik.errors.address}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -379,13 +374,13 @@ export default function VendorApplication() {
                 <TextField
                   fullWidth
                   label="Years in Business"
-                  name="yearsInBusiness"
+                  name="years_in_business"
                   type="number"
-                  value={formik.values.yearsInBusiness}
+                  value={formik.values.years_in_business}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.yearsInBusiness && Boolean(formik.errors.yearsInBusiness)}
-                  helperText={formik.touched.yearsInBusiness && formik.errors.yearsInBusiness}
+                  error={formik.touched.years_in_business && Boolean(formik.errors.years_in_business)}
+                  helperText={formik.touched.years_in_business && formik.errors.years_in_business}
                   InputProps={{ inputProps: { min: 0 } }}
                 />
               </Grid>
@@ -400,49 +395,24 @@ export default function VendorApplication() {
               Additional Information
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={formik.values.hasCertifications}
-                      onChange={formik.handleChange}
-                      name="hasCertifications"
-                    />
-                  }
-                  label="I have professional certifications or licenses"
-                />
-              </Grid>
               
-              {formik.values.hasCertifications && (
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="List Your Certifications"
-                    name="certifications"
-                    multiline
-                    rows={2}
-                    value={formik.values.certifications}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    error={formik.touched.certifications && Boolean(formik.errors.certifications)}
-                    helperText={formik.touched.certifications && formik.errors.certifications}
-                    placeholder="Please list any relevant certifications or licenses you hold"
-                  />
-                </Grid>
-              )}
               
-              <Grid item xs={12}>
+              
+            <Grid item xs={12}>
                 <TextField
-                  fullWidth
-                  label="Additional Information"
-                  name="additionalInfo"
-                  multiline
-                  rows={4}
-                  value={formik.values.additionalInfo}
-                  onChange={formik.handleChange}
-                  placeholder="Any other information you'd like us to know about your services"
+                fullWidth
+                label="List Your Certifications"
+                name="certification_list"
+                multiline
+                rows={2}
+                value={formik.values.certification_list}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.certification_list && Boolean(formik.errors.certification_list)}
+                helperText={formik.touched.certification_list && formik.errors.certification_list}
+                placeholder="Please list any relevant certifications or licenses you hold"
                 />
-              </Grid>
+            </Grid>
               
               <Grid item xs={12}>
                 <Typography variant="subtitle2" gutterBottom>
@@ -529,15 +499,15 @@ export default function VendorApplication() {
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <Typography variant="subtitle2">Business Name:</Typography>
-                    <Typography>{formik.values.businessName}</Typography>
+                    <Typography>{formik.values.business_name}</Typography>
                   </Grid>
                   <Grid item xs={12}>
                     <Typography variant="subtitle2">Business Address:</Typography>
-                    <Typography>{formik.values.businessAddress}</Typography>
+                    <Typography>{formik.values.address}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="subtitle2">Years in Business:</Typography>
-                    <Typography>{formik.values.yearsInBusiness || 'N/A'}</Typography>
+                    <Typography>{formik.values.years_in_business || 'N/A'}</Typography>
                   </Grid>
                 </Grid>
               </CardContent>
@@ -547,22 +517,11 @@ export default function VendorApplication() {
               <CardHeader title="Additional Information" />
               <CardContent>
                 <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="subtitle2">Has Certifications:</Typography>
-                    <Typography>{formik.values.hasCertifications ? 'Yes' : 'No'}</Typography>
-                  </Grid>
-                  {formik.values.hasCertifications && (
-                    <Grid item xs={12}>
+                <Grid item xs={12}>
                       <Typography variant="subtitle2">Certifications:</Typography>
-                      <Typography>{formik.values.certifications}</Typography>
-                    </Grid>
-                  )}
-                  {formik.values.additionalInfo && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2">Additional Information:</Typography>
-                      <Typography>{formik.values.additionalInfo}</Typography>
-                    </Grid>
-                  )}
+                      <Typography>{formik.values.certification_list}</Typography>
+                </Grid>
+                
                   {certificateFiles.length > 0 && (
                     <Grid item xs={12}>
                       <Typography variant="subtitle2">Uploaded Files:</Typography>

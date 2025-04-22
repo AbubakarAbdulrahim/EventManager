@@ -11,6 +11,6 @@ urlpatterns = [
     path('vendor-packages/<int:pk>/', views.VendorPackageRetrieveUpdateDestroyView.as_view(), name='vendorpackage-detail'),
 
     # vendor image endpoints
-    path('vendor-images/', views.VendorImageListCreateView.as_view(), name='vendorimage-list-create'),
-    path('vendor-images/<int:pk>/', views.VendorImageRetrieveUpdateDestroyView.as_view(), name='vendorimage-detail'),
+    path('vendor-images/', views.VendorPackageImagesListCreateView.as_view(), name='vendorpackageimage-list-create'),
+    path('vendor-images/<int:pk>/', views.VendorPackageImagesRetrieveUpdateDestroyView.as_view(), name='vendorpackageimage-detail'),
 ]

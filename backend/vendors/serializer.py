@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Vendor, VendorImages, VendorPackage, VendorAvailability
+from .models import Vendor, VendorPackageImages, VendorPackage, VendorAvailability
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -14,85 +14,93 @@ DAYS_OF_WEEK = [
     ('Sun', 'Sunday'),
 ]
 
-# vendor info serializer
+# Vendor info serializer
 class VendorSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
 
-    user = serializers.StringRelatedField() # to readable string
     class Meta:
         model = Vendor
         fields = [
             "id", 
             "user", 
             "service_name", 
-            "location", 
-            "created_at"
+            "address", 
+            "created_at",
+            "business_detail",
+            "years_in_business",
+            "certification_list"
         ]
         extra_kwargs = {
-            "user" : {"read_only" : True},
-            "created_at" : {"read_only" : True},
+            "user": {"read_only": True},
+            "created_at": {"read_only": True},
         }
 
-# vendor image serializer
-class VendorImageSerializer(serializers.ModelSerializer):
+# Vendor package image serializer
+class VendorPackageImagesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VendorImages
+        model = VendorPackageImages
         fields = [
             "id", 
             "image", 
             "uploaded_at"
         ]
         extra_kwargs = {
-            "uploaded_at" : {"read_only" : True}
+            "uploaded_at": {"read_only": True}
         }
 
-# vendor package serializer
+# Vendor availability serializer
+class VendorAvailabilitySerializer(serializers.ModelSerializer):
+    day = serializers.ChoiceField(choices=DAYS_OF_WEEK)
+
+    class Meta:
+        model = VendorAvailability
+        fields = [
+            "id",
+            "vendor_package",
+            "day",
+            "start_time",
+            "end_time",
+        ]
+        extra_kwargs = {
+            "vendor_package": {"read_only": False},
+        }
+
+# Vendor package serializer
 class VendorPackageSerializer(serializers.ModelSerializer):
+    availability = VendorAvailabilitySerializer(many=True, read_only=True)
+
     class Meta:
         model = VendorPackage
         fields = [
             "id", 
+            "service_name",
             "service_type", 
             "service_mode", 
             "capacity", 
             "price",
-            "duration"
+            "location",
+            "availability"
         ]
-        
-# vendor detail serilizer
+
+# Vendor detail serializer
 class VendorDetailSerializer(serializers.ModelSerializer):
-    images = VendorImageSerializer(many=True, read_only=True)
+    images = VendorPackageImagesSerializer(many=True, read_only=True)
     packages = VendorPackageSerializer(many=True, read_only=True)
+
     class Meta:
         model = Vendor
         fields = [
             "id", 
             "user", 
             "service_name", 
-            "location", 
-            "created_at", 
-            "contact",
+            "address", 
+            "created_at",
+            "years_in_business",
+            "business_detail",
+            "certification_list",
             "images",
             "packages",
         ]
         extra_kwargs = {
-            "created_at" : {"read_only" : True}
+            "created_at": {"read_only": True}
         }
-
-class VendorAvailabilitySerializer(serializers.ModelSerializer):
-    day = serializers.ChoiceField(choices=DAYS_OF_WEEK)
-    class Meta:
-        model = VendorAvailability
-        fields = [
-            "id",
-            "vendor",
-            "day",
-            "start_time",
-            "end_time",
-            ]
-        extra_kwargs = {
-            "vendor" : {"read_only" : True},
-        }
-
-    def create(self, validated_data):
-        vendor = self.context['request'].user.vendor_profile  # Automatically assign the vendor
-        return VendorAvailability.objects.create(vendor=vendor, **validated_data)

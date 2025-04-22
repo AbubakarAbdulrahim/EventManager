@@ -72,19 +72,19 @@ class UserUpdateView(generics.UpdateAPIView):
     def perform_update(self, serializer):
         return super().perform_update(serializer)
 
-# retrieve delete view
+# user retrieve view
 class UserRetrieveView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
-# delete user view
+# user delete view
 class UserDestroyView(generics.DestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
-# create user view
+# user create view
 class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
