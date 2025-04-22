@@ -94,10 +94,15 @@ const validationSchemas = {
   1: Yup.object({
     business_name: Yup.string().required('Business name is required'),
     address: Yup.string().required('Business address is required'),
-    years_in_business: Yup.number().min(0, 'Cannot be negative'),
+    years_in_business: Yup.number()
+    .typeError('Years in business must be a number')
+    .min(0, 'Cannot be negative'),
   }),
   2: Yup.object({
     certification_list: Yup.string().required('Please list your certifications'),
+    certification_images: Yup.array()
+    .min(1, 'Please upload at least one certification')
+    .required('Please upload your certifications'),
     }),
   3: Yup.object({
     agreeToTerms: Yup.boolean()
@@ -106,10 +111,9 @@ const validationSchemas = {
 };
 
 export default function VendorApplication() {
-  const { user } = useAuth();
+  const { user, apply } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [openSuccess, setOpenSuccess] = useState(false);
-  const [certificateFiles, setCertificateFiles] = useState([]);
   const [fileError, setFileError] = useState('');
   const [submissionComplete, setSubmissionComplete] = useState(false);
 
@@ -135,6 +139,7 @@ export default function VendorApplication() {
       
       // Additional Info
       certification_list: '',
+      certification_images: [],
       
       
       // Terms & Conditions
@@ -143,7 +148,7 @@ export default function VendorApplication() {
     validationSchema: validationSchemas[activeStep],
     validateOnChange: false,
     validateOnBlur: true,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       if (activeStep === steps.length - 2) { // Check if it's the last step before success
         // Prepare form data for backend submission
         const formDataToSend = new FormData();
@@ -154,16 +159,20 @@ export default function VendorApplication() {
         });
         
         // Add certificate files
-        certificateFiles.forEach((file, index) => {
-          formDataToSend.append(`certificate_${index}`, file);
-        });
+        
         
         // Log FormData for debugging
         console.log('Submitting form with data:', values);
-        console.log('Files included:', certificateFiles);
         
-        // Here you would send formDataToSend to your backend
-        // axios.post('/api/vendor/application', formDataToSend)
+        
+        try {
+
+            await apply(values);
+            
+
+          } catch (error) {
+            console.error(error);
+          }
         
         // Show final success step instead of dialog
         setSubmissionComplete(true);
@@ -176,38 +185,43 @@ export default function VendorApplication() {
     },
   });
 
-  const handleCertificateUpload = (event) => {
+  const handleCertificateUpload = (event, setFieldValue) => {
     const files = Array.from(event.target.files);
+    
     setFileError('');
-    
-    // Validate each file
+  
     const validFiles = files.filter(file => {
-      // Check file type
-      if (!['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) {
-        setFileError('Only JPG, PNG, and PDF files are allowed');
-        return false;
-      }
-      
-      // Check file size
-      if (file.size > MAX_FILE_SIZE) {
-        setFileError(`File "${file.name}" exceeds the 500KB size limit`);
-        return false;
-      }
-      
-      return true;
-    });
-    
+        if (!['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) {
+          setFileError('Only JPG, PNG, and PDF files are allowed');
+          return false;
+        }
+  
+        if (file.size > MAX_FILE_SIZE) {
+          setFileError(`File "${file.name}" exceeds the 500KB size limit`);
+          return false;
+        }
+  
+        return true;
+      })
+      .map((file, index) => {
+        const extension = file.name.split('.').pop();
+        const newName = `certificate_${Date.now()}_${index}.${extension}`;
+        return new File([file], newName, { type: file.type });
+      });
+  
     if (validFiles.length > 0) {
-      setCertificateFiles(prevFiles => [...prevFiles, ...validFiles]);
+      setFieldValue('certification_images',  [...validFiles]);
     }
+    // console.log(validFiles)
   };
-
-  const handleRemoveFile = (index) => {
-    setCertificateFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+  const handleRemoveFile = (index, values, setFieldValue) => {
+    const updatedFiles = values.certification_images.filter((_, i) => i !== index);
+    setFieldValue('certification_images', updatedFiles);
   };
 
   const handleNext = () => {
     const errors = validateCurrentStep();
+    console.log(errors)
     if (Object.keys(errors).length === 0) {
       setActiveStep((prevStep) => prevStep + 1);
     } else {
@@ -428,36 +442,43 @@ export default function VendorApplication() {
                   <VisuallyHiddenInput 
                     type="file" 
                     accept="image/jpeg,image/png,application/pdf"
-                    onChange={handleCertificateUpload}
+                    onChange={(e)=>{handleCertificateUpload(e, formik.setFieldValue)}}
                     multiple
+                    error={Boolean(formik.errors.certification_images)}
+                    helperText={formik.errors.certification_images}
                   />
                 </Button>
-                
+                {formik.touched.certification_images && formik.errors.certification_images && (
+                <Typography color="error" variant="caption" sx={{ mt: 1, display: 'block' }}>
+                    {formik.errors.certification_images}
+                </Typography>
+                )}
                 {fileError && (
                   <Alert severity="error" sx={{ mb: 2 }}>
                     {fileError}
                   </Alert>
                 )}
                 
-                {certificateFiles.length > 0 && (
-                  <List sx={{ bgcolor: 'background.paper' }}>
-                    {certificateFiles.map((file, index) => (
-                      <ListItem
+                {formik.values.certification_images.length > 0 && (
+                <List sx={{ bgcolor: 'background.paper' }}>
+                    {formik.values.certification_images.map((file, index) => (
+                    <ListItem
                         key={index}
                         secondaryAction={
-                          <IconButton edge="end" onClick={() => handleRemoveFile(index)}>
+                        <IconButton edge="end" onClick={() => handleRemoveFile(index, formik.values, formik.setFieldValue)}>
                             <Delete />
-                          </IconButton>
+                        </IconButton>
                         }
-                      >
+                    >
                         <ListItemText 
-                          primary={file.name} 
-                          secondary={formatFileSize(file.size)} 
+                        primary={file.name} 
+                        secondary={formatFileSize(file.size)} 
                         />
-                      </ListItem>
+                    </ListItem>
                     ))}
-                  </List>
+                </List>
                 )}
+
                 <Typography variant="caption" display="block" sx={{ mt: 1 }}>
                   You can upload multiple files (business license, certifications, portfolio, etc.). Each file must be under 500KB.
                 </Typography>
@@ -522,11 +543,11 @@ export default function VendorApplication() {
                       <Typography>{formik.values.certification_list}</Typography>
                 </Grid>
                 
-                  {certificateFiles.length > 0 && (
+                  {formik.values.certification_images.length > 0 && (
                     <Grid item xs={12}>
                       <Typography variant="subtitle2">Uploaded Files:</Typography>
                       <List dense>
-                        {certificateFiles.map((file, index) => (
+                        {formik.values.certification_images.map((file, index) => (
                           <ListItem key={index}>
                             <ListItemText 
                               primary={file.name} 
