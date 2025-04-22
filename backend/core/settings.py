@@ -32,7 +32,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # smalller
     "REFRESH_TOKEN_LIFETIME": timedelta(days=3),  # larger
-    "ROTATE_REFRESH_TOKEN": False,
+    "ROTATE_REFRESH_TOKEN": True,
     "BLACKLIST_AFTER_ROTATION" : True,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_COOKIE": "access_token",
@@ -145,10 +145,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # cors headers stuffs 
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWS_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "http://localhost:5173"
 ]
+CORS_ALLOW_CREDENTIALS = True
+
 
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False

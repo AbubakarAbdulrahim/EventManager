@@ -1,7 +1,9 @@
 from rest_framework import generics
-from .models import Vendor, VendorImages, VendorPackage
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from .serializer import VendorSerializer, VendorImageSerializer, VendorPackageSerializer
+from .models import Vendor, VendorPackageImages, VendorPackage
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from .serializer import VendorSerializer, VendorPackageImagesSerializer, VendorPackageSerializer
+from rest_framework.views import APIView
+from .availability import is_vendor_available
 
 # vendor list and create view
 class VendorListCreateView(generics.ListCreateAPIView):
@@ -15,7 +17,7 @@ class VendorListCreateView(generics.ListCreateAPIView):
 
 # vendor detail view
 class VendorRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Vendor
+    queryset = Vendor.objects.all()
     serializer_class = VendorSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -23,7 +25,7 @@ class VendorRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 class VendorPackageListCreateView(generics.ListCreateAPIView):
     queryset = VendorPackage.objects.all()
     serializer_class = VendorPackageSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]
 
     # on creating
     def perform_create(self, serializer):
@@ -36,9 +38,9 @@ class VendorPackageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIVi
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 # vendor image list create view
-class VendorImageListCreateView(generics.ListCreateAPIView):
-    queryset = VendorImages.objects.all()
-    serializer_class = VendorImageSerializer
+class VendorPackageImagesListCreateView(generics.ListCreateAPIView):
+    queryset = VendorPackageImages.objects.all()
+    serializer_class = VendorPackageImagesSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     # on creating
@@ -46,23 +48,12 @@ class VendorImageListCreateView(generics.ListCreateAPIView):
         serializer.save()  # Expecting vendor_id in the request
 
 # vendor image detail view
-class VendorImageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = VendorImages.objects.all()
-    serializer_class = VendorImageSerializer
+class VendorPackageImagesRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = VendorPackageImages.objects.all()
+    serializer_class = VendorPackageImagesSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-# # packages for a specific vendor
-# class PackagesByVendorView(generics.ListAPIView):
-#     serializer_class = VendorPackageSerializer
+# checking vendor availabity view
+class CheckingVendorAvailability(APIView):
+    pass
 
-#     def get_queryset(self):
-#         vendor_id = self.kwargs['vendor_id']
-#         return VendorPackage.objects.filter(vendor_id=vendor_id)
-
-# # images for a specific vendor
-# class ImagesByVendorView(generics.ListAPIView):
-#     serializer_class = VendorImageSerializer
-
-#     def get_queryset(self):
-#         vendor_id = self.kwargs['vendor_id']
-#         return VendorImages.objects.filter(vendor_id=vendor_id)
