@@ -2,7 +2,7 @@ from .models import VendorAvailability
 from bookings.models import Booking
 
 
-def is_vendor_available(vendor_package, event_date, start_time, end_time):
+def is_vendor_package_available(vendor_package, event_date, start_time, end_time):
     week_day = event_date.strftime('%a').lower()[:3]  # 'Mon' -> 'mon'
     
     # checks if vendor package availability match with this criteria
