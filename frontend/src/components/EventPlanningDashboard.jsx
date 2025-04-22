@@ -49,12 +49,14 @@ import {
   Snackbar, Alert
 } from '@mui/material';
 import { useBookingContext } from '../context/BookingsContext';
-
+import { useAuth } from '../context/AuthContext';
+import SuccessDialog from './SuccessDialog';
 const SearchSection = styled(Box)(({ theme }) => ({
   padding: theme.spacing(4),
   backgroundColor: '#f5f6fa',
   borderRadius: theme.shape.borderRadius
 }));
+
 
 
 
@@ -156,6 +158,13 @@ const EventPlanningDashboard = ( props) => {
     );
   });
 
+  const groupedServices = filteredServices.reduce((acc, service) => {
+    if (!acc[service.type]) {
+      acc[service.type] = [];
+    }
+    acc[service.type].push(service);
+    return acc;
+  }, {});
   // console.log(filteredServices)
 
   return (
@@ -254,7 +263,7 @@ const EventPlanningDashboard = ( props) => {
                     },}
                   }}
               >
-                <MenuItem value="">Category</MenuItem>
+                <MenuItem value="">All Category</MenuItem>
                 <MenuItem value={"venue"}>Venue</MenuItem>
                 <MenuItem value={"music"}>Music</MenuItem>
                 <MenuItem value={"Caterer"}>Caterers</MenuItem>
@@ -265,18 +274,30 @@ const EventPlanningDashboard = ( props) => {
         </SearchSection>
 
         {/* Services Grid */}
-        <Grid container spacing={3} sx={{ p: 4 }}>
+        {/* <Grid container spacing={3} sx={{ p: 4 }}>
+          {filteredServices.map((service)=> {(service.type === "venue") && <ServicesCard key={service.id} service={service} bookings={bookings} handleBookNow={handleBookNow} handleCancelBooking={handleCancelBooking}/> })}
+        </Grid> */}
+        {/* <Grid container spacing={3} sx={{ p: 4 }}>
           {filteredServices.map((service)=> <ServicesCard key={service.id} service={service} bookings={bookings} handleBookNow={handleBookNow} handleCancelBooking={handleCancelBooking}/>)}
+        </Grid> */}
+        
+        {Object.keys(groupedServices).map((type) => (<div key={type}>
+
+          <Typography variant='h4' sx={{pl:5, pt:2, fontWeight:'550', color:'#0a7273'}} >{type.charAt(0).toUpperCase() + type.slice(1)}s</Typography>
+          <Grid container spacing={3} sx={{ p: 4 }}>
+          {groupedServices[type].map((service) => (
+            <ServicesCard 
+              key={service.id}
+              service={service}
+              bookings={bookings}
+              handleBookNow={handleBookNow}
+              handleCancelBooking={handleCancelBooking}
+            />
+          ))}
         </Grid>
+        </div>
+          ))}
 
-
-        {/* Booking Dialog */}
-        {/* <BookingDialog
-        open={bookingOpen}
-        service={selectedService}
-        onClose={() => {setSelectedService("")}}
-        onConfirm={handleConfirmBooking}
-        /> */}
         {selectedService && (
                 <BookingDialog
                   open={bookingOpen}
@@ -286,17 +307,7 @@ const EventPlanningDashboard = ( props) => {
                   addBooking = {addBooking}
                 />
         )} 
-        <Snackbar
-                open={openSuccess}
-                autoHideDuration={2000}
-                onClose={handleSnackbarClose}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-              >
-                <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: '100%' }}>
-                  Booking Confirmed Successfully!
-                </Alert>
-              </Snackbar>
-
+        <SuccessDialog open={openSuccess} handleClose={handleSnackbarClose} title={'Booking Confirmed Successfully!'} body={"Your booking has been successfully completed. Thank you for choosing us!"} action={'Booking details'} />
 
         
       </div>

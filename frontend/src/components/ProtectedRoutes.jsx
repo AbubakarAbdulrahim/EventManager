@@ -6,7 +6,6 @@ import ErrorBoundary from './ErrorBoundary'
 const ProtectedRoute = ({ children, roles }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
-  
     if (loading) {
       return <div className="loading-spinner">Authenticating...<CircularProgress sx={{ color: '#033043'}} size={30} /></div>;
     }
@@ -15,9 +14,9 @@ const ProtectedRoute = ({ children, roles }) => {
       return <Navigate to="/login" state={{ from: location }} replace />;
     }
   
-    // if (roles && !roles.includes(user.role)) {
-    //   return <Navigate to="/unauthorized" replace />;
-    // }
+    if (roles && !roles.includes(user.role)) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   
     return <ErrorBoundary>{children}</ErrorBoundary>;
   };

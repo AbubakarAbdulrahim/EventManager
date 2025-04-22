@@ -1,137 +1,177 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext();
 
+// Create axios instance with default settings
+const authAxios = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
+});
+
 export const AuthProvider = ({ children }) => {
-  const [accessToken, setAccessToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const accessTokenRef = useRef(accessToken);
+  const axiosInterceptorRef = useRef(null);
 
-  const authAxios = axios.create({
-    baseURL: 'http://localhost:8000',
-    withCredentials: true,
-  });
+  // Sync accessToken with ref
+  useEffect(() => {
+    accessTokenRef.current = accessToken;
+  }, [accessToken]);
 
-  authAxios.interceptors.request.use(
-    (config) => {
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
+  // Initial auth check on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        await refreshToken();
+      } catch (error) {
+        // Initial auth check failed, user remains logged out
       }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
+      setLoading(false);
+    };
+    
+    initializeAuth();
+  }, []);
 
-  authAxios.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
-      const isRefreshEndpoint = originalRequest.url === '/user/token/refresh/';
-
-      if (error.response?.status === 401 && !originalRequest._retry && !isRefreshEndpoint) {
-        originalRequest._retry = true;
-        try {
-          const newAccessToken = await refreshToken();
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return authAxios(originalRequest);
-        } catch (refreshError) {
-          logout();
-          return Promise.reject(refreshError);
+  // Setup axios interceptors
+  useEffect(() => {
+    // Add request interceptor
+    axiosInterceptorRef.current = authAxios.interceptors.request.use(
+      (config) => {
+        if (accessTokenRef.current) {
+          config.headers.Authorization = `Bearer ${accessTokenRef.current}`;
         }
-      }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
 
-      if (isRefreshEndpoint && error.response?.status === 401) {
-        logout();
+    // Add response interceptor
+    const responseInterceptor = authAxios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        // If unauthorized and not already retried
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          
+          try {
+            await refreshToken();
+            originalRequest.headers.Authorization = `Bearer ${accessTokenRef.current}`;
+            return authAxios(originalRequest);
+          } catch (refreshError) {
+            await logout();
+            return Promise.reject(refreshError);
+          }
+        }
+        
+        return Promise.reject(error);
       }
+    );
 
-      return Promise.reject(error);
-    }
-  );
+    return () => {
+      authAxios.interceptors.request.eject(axiosInterceptorRef.current);
+      authAxios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
 
   const login = async (credentials) => {
     try {
-      const response = await axios.post('/user/token/', credentials, {
-        withCredentials: true,
-      });
-      const newAccessToken = response.data.access;
-      setAccessToken(newAccessToken);
-
-      // Manually decode token and fetch user data with the new token
-      const decodedToken = jwtDecode(newAccessToken);
+      setLoading(true);
+      const response = await authAxios.post('/user/token/', credentials);
+      const { access } = response.data;
+      setAccessToken(access);
+      
+      const decodedToken = jwtDecode(access);
       const userId = decodedToken.user_id;
       
       // Use the new token directly in the request headers
       const userResponse = await authAxios.get(`/user/${userId}/`, {
-        headers: { Authorization: `Bearer ${newAccessToken}` },
+        headers: { Authorization: `Bearer ${access}` },
       });
+      console.log(userResponse)
       setUser(userResponse.data);
-    } catch (error) {
-      throw error;
+      // setUser(user);
+      setError(null);
+      console.log(user)
+      return response.data;
+    } catch (err) {
+      console.log(err.response?.data?.message)
+      const errorMessage = err.response?.data?.message || 'Login failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await authAxios.post('/user/logout/');
+      setAccessToken(null);
+      setUser(null);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Logout failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
   const refreshToken = async () => {
     try {
       const response = await authAxios.post('/user/token/refresh/');
-      console.log(response)
-      const newAccessToken = response.data.access;
-      setAccessToken(newAccessToken);
-      return newAccessToken;
-    } catch (error) {
-      console.log(error);
-      throw error;
+      const { access } = response.data;
+      setAccessToken(access);
+
+
+      // Decode the new token to get user ID
+      const decodedToken = jwtDecode(access);
+      const userId = decodedToken.user_id;
+
+      const userResponse = await authAxios.get(`/user/${userId}/`, {
+        headers: { Authorization: `Bearer ${access}` },
+      });
+      
+      setUser(userResponse.data);
+      setError(null);
+      return access;
+      
+    } catch (err) {
+      setAccessToken(null);
+      setUser(null);
+      const errorMessage = err.response?.data?.message || 'Session expired';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
-  const logout = async () => {
-    setAccessToken(null);
-    setUser(null);
+  const value = {
+    user,
+    accessToken,
+    loading,
+    error,
+    login,
+    logout,
+    authAxios,
   };
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        if (!accessToken) return;
-
-        const decodedToken = jwtDecode(accessToken);
-        const userId = decodedToken.user_id;
-        const response = await authAxios.get(`/user/${userId}/`);
-        setUser(response.data);
-        console.log(response)
-      } catch (error) {
-        console.error('Failed to fetch user data:', error);
-      }
-    };
-
-    fetchUserData();
-  }, [accessToken]); // Fetch user data when accessToken changes
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        await refreshToken();
-      } catch (error) {
-        // Handle failed refresh (user remains logged out)
-      } finally {
-        setLoading(false);
-      }
-    };
-    // const hasPotentialSession = document.cookie.includes('refresh');
-    // console.log(hasPotentialSession)
-    // if (hasPotentialSession) {
-      initializeAuth();
-    // } else {
-    //   setLoading(false);
-    // }
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ authAxios, user, loading, login, logout }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
-};     
+};
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

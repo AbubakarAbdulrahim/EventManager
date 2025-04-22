@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../node_modules/.pnpm/@mui+material@6.4.8_@emotio_37294a75d202913bcab93acec61055c5/node_modules/@mui/material/utils/useEnhancedEffect.js"],
-  "sourcesContent": ["'use client';\n\nimport useEnhancedEffect from '@mui/utils/useEnhancedEffect';\nexport default useEnhancedEffect;"],
-  "mappings": ";;;;;AAGA,IAAOA,6BAAQ;",
-  "names": ["useEnhancedEffect_default"]
-}

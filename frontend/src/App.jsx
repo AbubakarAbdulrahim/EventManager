@@ -12,6 +12,8 @@ import theme from './theme/theme'
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from "./components/ProtectedRoutes";
 import Unauthorized from "./pages/Unauthorized";
+import AddService from "./pages/AddService";
+import VendorApplication from "./pages/VendorApplication";
 
 function App() {
   
@@ -27,8 +29,14 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={
-          <ProtectedRoute roles={['user', 'admin', 'vendor']}>
+          <ProtectedRoute roles={['vendor', 'admin', 'customer']}>
             <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/add_service" element={<AddService/>}></Route>
+        <Route path="/apply" element={
+          <ProtectedRoute roles={['admin', 'customer']}>
+            <VendorApplication/>
           </ProtectedRoute>
         } />
         <Route path="/favorites" element={<Favorites/>}></Route>

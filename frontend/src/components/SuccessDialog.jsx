@@ -27,14 +27,14 @@ export default function SuccessDialog({open, handleClose, url, title, body, acti
                         {title}
                     </Typography>
                     {body && <Typography variant="body2" textAlign={'center'} color="text.secondary">
-                        Your booking has been successfully completed. Thank you for choosing us!
+                        {body}
                     </Typography>}
                 </Box>
                 
             </DialogContent>
             {action &&
             <DialogActions sx={{ pb: 5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Button variant="contained" color="primary" onClick={() => {navigate(url);}} sx={{ width: '80%', borderRadius: 20, fontWeight: 600 }}>
+                <Button variant="contained" color="primary" onClick={() => {navigate(url);}} sx={{ width: '50%', fontWeight: 600 }}>
                     {action}
                 </Button>
             </DialogActions>

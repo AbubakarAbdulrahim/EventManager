@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework import status
 
 User = get_user_model() # getting current user model
@@ -24,14 +25,15 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 secure=False, 
                 samesite= "Lax", 
                 max_age=86400,
-                path="/user/token/refresh"
+                path="/user/token/refresh/"
             )
         return response
 
 # overrided access refresh view
 class RefreshAccessView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.COOKIES.get("refresh")
         if not refresh_token:
             return Response({"error": "No refresh token"}, status=401)
         try:
@@ -43,9 +45,21 @@ class RefreshAccessView(APIView):
 
 # logout view
 class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
+        refresh_token = request.COOKIES.get('refresh')
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()  # blacklists the token
+            except TokenError as e:
+                # Token already expired or invalid
+                pass
+
         response = Response({"detail": "Logged out"}, status=status.HTTP_200_OK)
-        response.delete_cookie("refresh_token")
+        response.delete_cookie("refresh", path="/user/token/refresh/")
+        # response.delete_cookie("access_token")
         return response
 
 # user update view
@@ -79,5 +93,3 @@ class UserCreateView(generics.CreateAPIView):
     # on create
     def perform_create(self, serializer):
         serializer.save()
-    
-
