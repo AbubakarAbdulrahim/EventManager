@@ -2,12 +2,12 @@ from .models import VendorAvailability
 from bookings.models import Booking
 
 
-def is_vendor_available(vendor, event_date, start_time, end_time):
+def is_vendor_available(vendor_package, event_date, start_time, end_time):
     week_day = event_date.strftime('%a').lower()[:3]  # 'Mon' -> 'mon'
     
-    # checks if vendor availability match with this criteria
+    # checks if vendor package availability match with this criteria
     available = VendorAvailability.objects.filter(
-        vendor=vendor,
+        vendor_package=vendor_package,
         day=week_day,
         start_time__lte=start_time,
         end_time__gte=end_time,
@@ -17,12 +17,12 @@ def is_vendor_available(vendor, event_date, start_time, end_time):
     
     '''
     checks through bookings of 
-    the same vendor
+    the same vendor package
     in the same day 
     that starts before the new booking end time -> (thats a conflict)
     '''
     conflict = Booking.objects.filter(
-    vendor_package__vendor=vendor,
+    vendor_package=vendor_package,
     event_date=event_date,
     event_time__lt=end_time,
     ).exists()

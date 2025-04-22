@@ -19,6 +19,12 @@ import ColorModeSelect from '../theme/ColorModeSelect';
 import AppleIcon from '@mui/icons-material/Apple';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../components/CustomIcons';
 import { useNavigate } from 'react-router-dom';
+import { useFormik } from 'formik';
+import * as yup from 'yup';
+import { useState,useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Alert } from '@mui/material';
+import Snackbar from '@mui/material/Snackbar';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -62,23 +68,85 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
+const validationSchema = yup.object({
+  username: yup
+    .string('Enter your username')
+    .required('username is required'),
+  password: yup.string()
+    // .string('Enter your password')
+    .min(8, 'Password should be of minimum 8 characters length')
+    .required('Password is required')
+    .matches(/[A-Z]/, "Must contain at least one uppercase letter")
+    .matches(/[a-zA-Z]/, "Must contain at least one letter")
+    .matches(/\d/, "Must contain at least one number")
+    .matches(/[!@#$%^&*(),.?":{}|<>]/, "Must contain at least one special character")
+});
+
 export default function Login(props) {
-  const [emailError, setEmailError] = React.useState(false);
-  const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
-  const [passwordError, setPasswordError] = React.useState({
-    length: false,
-    alphanum: false,
-    specialChar: false,
-    uppercase: false,
-  });
-  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState({
-    length: "",
-    alphanum: "",
-    specialChar: "",
-    uppercase: "",
-  });
-  const [open, setOpen] = React.useState(false);
+  const [formData, setFormData] = useState({
+      username: "",
+      password: "",
+    });
+    const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
+    const { user, loading, login } = useAuth();
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+      if (!loading && user) {
+        navigate('/dashboard');
+      }
+    }, [user,loading, navigate]);
+  const formik = useFormik({
+    initialValues: {
+      username: '',
+      password: '',
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      console.log(values);
+      try {
+
+        await login(values);
+        // If login is successful, redirect to dashboard
+        // navigate('/dashboard');
+        // Optionally, you can also show a success message or perform other actions here
+        
+      } catch (error) {
+        console.error('Login failed:', error);
+        if (error.response) {
+          // Server responded with 4xx/5xx status
+          const { data } = error.response;
+          
+          if (error.response.status === 400) {
+            setError(data.detail || 'Invalid email or password format');
+          } else if (error.response.status === 401) {
+            setError('Invalid credentials');
+          } else {
+            setError('Login failed. Please try again later.');
+          }
+        } else if (error.request) {
+          // No response received
+          setError('Network error. Please check your connection.');
+        } else {
+          // Other errors
+          setError('An unexpected error occurred.');
+        }
+      }
+    
+      // alert(JSON.stringify(values, null, 2));
+      // navigate("/dashboard")
+    },
+  })
+
+  const {password} = formik.values
+  const checks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    alphanumeric: /[a-zA-Z]/.test(password) && /\d/.test(password),
+    specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  };
+  
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -86,63 +154,6 @@ export default function Login(props) {
 
   const handleClose = () => {
     setOpen(false);
-  };
-
-  const handleSubmit = (event) => {
-    if (emailError || Object.values(passwordError).some(error => error)) {
-      event.preventDefault();
-      return;
-    }
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
-
-    navigate("/dashboard")
-
-  };
-
-  const setErrorState = (field, condition, message) => {
-    setPasswordError(prevVal => ({ ...prevVal, [field]: !condition }));
-    setPasswordErrorMessage(prevVal => ({ ...prevVal, [field]: !condition ? message : '' }));
-  };
-
-  const validateInputs = () => {
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-
-    let isValid = true;
-
-    const checks = {
-      length: password.value.length >= 8,
-      alphanum: /[A-Za-z]/.test(password.value) && /\d/.test(password.value),
-      specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
-      uppercase: /[A-Z]/.test(password.value),
-    };
-
-    if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
-      setEmailError(true);
-      setEmailErrorMessage('Please enter a valid email address.');
-      isValid = false;
-    } else {
-      setEmailError(false);
-      setEmailErrorMessage('');
-      isValid=true
-    }
-
-    setErrorState('uppercase', checks.uppercase, 'Password must contain at least one uppercase.');
-    setErrorState('alphanum', checks.alphanum, 'Password must contain letters and numbers.');
-    setErrorState('specialChar', checks.specialChar, 'Password must contain at least one special character.');
-    setErrorState('length', checks.length, 'Password must be at least 8 characters long.');
-
-    if (!checks.uppercase || !checks.alphanum || !checks.specialChar || !checks.length) {
-      isValid = false;
-    }else{
-      isValid =true;
-    }
-
-    return isValid;
   };
 
   return (
@@ -156,13 +167,13 @@ export default function Login(props) {
           <Typography
             component="h1"
             variant="h4"
-            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color:'#0A7273' }}
+            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color:'#033043' }}
           >
             Welcome Back!
           </Typography>
           <Box
             component="form"
-            onSubmit={handleSubmit}
+            onSubmit={formik.handleSubmit}
             noValidate
             sx={{
               display: 'flex',
@@ -172,25 +183,30 @@ export default function Login(props) {
             }}
           >
             <FormControl>
-              <FormLabel sx={{color:'#0A7273'}} htmlFor="email">Email</FormLabel>
+              <FormLabel sx={{color:'#033043'}} htmlFor="username">Username</FormLabel>
               <TextField
-                error={emailError}
-                helperText={emailErrorMessage}
-                id="email"
-                type="email"
-                name="email"
-                placeholder="your@email.com"
-                autoComplete="email"
+                // error={emailError}
+                // helperText={emailErrorMessage}
+                id="username"
+                type="text"
+                name="username"
+                placeholder="Enter your username"
+                autoComplete="username"
                 autoFocus
                 required
                 fullWidth
                 variant="outlined"
-                color={emailError ? 'error' : 'primary'}
-                onChange={validateInputs}
+                // color={emailError ? 'error' : 'primary'}
+                // onChange={validateInputs}
+                value={formik.values.username}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.username && Boolean(formik.errors.username)}
+                helperText={formik.touched.username && formik.errors.username}
               />
             </FormControl>
             <FormControl>
-              <FormLabel sx={{color:'#0A7273'}} htmlFor="password">Password</FormLabel>
+              <FormLabel sx={{color:'#033043'}} htmlFor="password">Password</FormLabel>
               <TextField
                 name="password"
                 placeholder="••••••••"
@@ -201,19 +217,32 @@ export default function Login(props) {
                 required
                 fullWidth
                 variant="outlined"
-                onChange={validateInputs}
+                // onChange={validateInputs}
+                value={password}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.password && Boolean(formik.errors.password)}
+                helperText={formik.touched.password && "Password does not meet requirements"}
               />
-              <>
-                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.uppercase}</Typography>
-                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.alphanum}</Typography>
-                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.length}</Typography>
-                <Typography fontSize={"0.7rem"} color='error'>{passwordErrorMessage.specialChar}</Typography>
-              </>
+              <Box ml={1} mt={1}>
+              <Typography variant="body2" color={checks.length ? "success.main" : "error"}>
+                • Minimum 8 characters
+              </Typography>
+              <Typography variant="body2" color={checks.uppercase ? "success.main" : "error"}>
+                • At least one uppercase letter
+              </Typography>
+              <Typography variant="body2" color={checks.alphanumeric ? "success.main" : "error"}>
+                • Must contain alphanumeric (letter and number)
+              </Typography>
+              <Typography variant="body2" color={checks.specialChar ? "success.main" : "error"}>
+                • At least one special character
+              </Typography>
+            </Box>
             </FormControl>
             <Box sx={{display:'flex', justifyContent:'space-between'}}>
               <FormControlLabel
-                sx={{color:"#0a7273"}}
-                control={<Checkbox value="remember" sx={{'&.Mui-checked': { backgroundColor: '#0A7273' }, '&.Mui-checked:hover': { backgroundColor: 'rgba(10, 114, 115, 0.8)' },}} />}
+                sx={{color:"#033043"}}
+                control={<Checkbox value="remember" sx={{'&.Mui-checked': { backgroundColor: '#033043' }, '&.Mui-checked:hover': { backgroundColor: 'rgba(10, 114, 115, 0.8)' },}} />}
                 label="Remember me"
               />
               <Link
@@ -221,7 +250,7 @@ export default function Login(props) {
                 type="button"
                 onClick={handleClickOpen}
                 variant="body2"
-                color='#0a7273'
+                color='#033043'
               >
                 Forgot your password?
               </Link>
@@ -232,12 +261,12 @@ export default function Login(props) {
               fullWidth
               variant="contained"
               sx={{
-                backgroundColor: '#0A7273',
+                backgroundColor: '#033043',
                 color: '#fff',
                 backgroundImage: 'none',
                 boxShadow: '1px 1px 2px 0  #033043',
                 border:'none',
-                '&:hover': { backgroundColor: '#085c5c' }
+                '&:hover': { backgroundColor: '#013d56' }
                 }}
               
               // color='#000'
@@ -274,7 +303,7 @@ export default function Login(props) {
               
             </Button>
           </Box>
-            <Typography sx={{ textAlign: 'center', color:'#0a7273' }}>
+            <Typography sx={{ textAlign: 'center', color:'#033043' }}>
               Don&apos;t have an account?{' '}
               <Link
                 href="/register"
@@ -286,6 +315,18 @@ export default function Login(props) {
             </Typography>
         </Card>
       </SignInContainer>
+      {error && (
+        <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={2000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setError(null)}  severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+      )}
     </AppTheme>
   );
 }

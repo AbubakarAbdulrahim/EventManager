@@ -1,39 +1,21 @@
-import React from 'react';
+import React, { use } from 'react';
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Stepper,
-  Step,
-  StepLabel,
-  Box,
-  TextField,
-  Typography,
-  Grid,
-  CircularProgress,
-  Avatar
-} from '@mui/material';
-import {
-  CalendarMonth,
-  Checklist,
-  Check,
-  Schedule
-} from '@mui/icons-material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stepper, Step, StepLabel, Box, TextField, Typography, Grid, CircularProgress, Avatar} from '@mui/material';
+import { CalendarMonth, Checklist, Check, Schedule} from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import {closePaymentModal } from 'flutterwave-react-v3';
 import { getAvailableDatesWithBookings, getAvailableTimeSlots, setIsBooked, availability } from '../services/availability';
+import { useAuth } from '../context/AuthContext';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 const StepIcon = ({ active, completed, icon }) => {
   const icons = {
     1: <CalendarMonth />,
     2: <Schedule />,
     3: <Checklist />,
-    4: <Check />,
+    // 4: <Check />,
   };
 
   return (
@@ -52,15 +34,15 @@ const StepIcon = ({ active, completed, icon }) => {
 };
 
 function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
+  const {user} = useAuth();
   const serviceData = service || {};
   const serviceTitle = serviceData.name || 'Service';
   const steps = [
     { label: 'Date', icon: 1 },
     { label: 'Time', icon: 2 },
     { label: 'Review Details', icon: 3 },
-    { label: 'Confirmation', icon: 4 },
+    // { label: 'Confirmation', icon: 4 },
   ];
-
   const [activeStep, setActiveStep] = useState(0);
   const [showCancelMsg, setShowCancelMsg] = useState(false);
   const [bookingData, setBookingData] = useState({
@@ -75,6 +57,16 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const [loadingDates, setLoadingDates] = useState(true);
   const [loadingTimes, setLoadingTimes] = useState(false);
   const [timeError, setTimeError] = useState(false);
+  
+  useHotkeys('left', () => activeStep > 0 && setActiveStep(s => s - 1), [activeStep]);
+  useHotkeys('enter, right', () => {
+    if ((activeStep === 0 && !bookingData.date) || (activeStep === 1 && !bookingData.time)) {
+      e.preventDefault();
+      handleNext();
+    }
+    activeStep < 2 && setActiveStep(s => s + 1)
+
+  }, [activeStep, bookingData.date, bookingData.time]);
   
   const b = availability.find(service => {
     // Check if the service ID matches
@@ -109,6 +101,12 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
         setLoadingDates(false);
       }, 1000);
     }
+    setBookingData((prev)=>({
+      ...prev,
+      name: user.full_name,
+      email: user.email,
+      phone: user.role
+    }))
   }, [open, service.id ]);
   
   const handleDateChange = (date) => {
@@ -201,12 +199,6 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     setActiveStep((prev) => prev - 1);
   };
 
-  const handleDetailChange = (e) => {
-    setBookingData({
-      ...bookingData,
-      [e.target.name]: e.target.value
-    });
-  };
 
   const renderStepContent = (step) => {
     switch (step) {
@@ -279,40 +271,43 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
           </Box>
         );
 
-      case 2:
-        return (
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Enter Your Details
-            </Typography>
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Name"
-              name="name"
-              value={bookingData.name}
-              onChange={handleDetailChange}
-            />
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Email"
-              name="email"
-              value={bookingData.email}
-              onChange={handleDetailChange}
-            />
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Phone"
-              name="phone"
-              value={bookingData.phone}
-              onChange={handleDetailChange}
-            />
-          </Box>
-        );
+      // case 2:
+      //   return (
+      //     <Box>
+      //       <Typography variant="subtitle1" gutterBottom>
+      //         Enter Your Details
+      //       </Typography>
+      //       <TextField
+      //         fullWidth
+      //         margin="normal"
+      //         label="Name"
+      //         name="fullname"
+      //         value={user.full_name}
+      //         disabled
+      //         // onChange={handleDetailChange}
+      //       />
+      //       <TextField
+      //         fullWidth
+      //         margin="normal"
+      //         label="Email"
+      //         name="email"
+      //         disabled
+      //         value={user.email}
+      //         // onChange={handleDetailChange}
+      //       />
+      //       <TextField
+      //         fullWidth
+      //         margin="normal"
+      //         label="Phone"
+      //         name="phone"
+      //         disabled
+      //         value={'0000'}
+      //         // onChange={handleDetailChange}
+      //       />
+      //     </Box>
+      //   );
 
-      case 3:
+      case 2:
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>

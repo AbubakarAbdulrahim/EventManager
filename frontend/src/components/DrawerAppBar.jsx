@@ -24,23 +24,40 @@ import { MenuItem } from '@mui/material';
 import { Person } from '@mui/icons-material';
 import { TextField } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
 const navItems = ['Home', 'Favorites', 'History', 'Profile', 'About'];
-const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
+const settings = ['Profile', 'Become a vendor', 'Account', 'Dashboard', 'Logout'];
 
 function DrawerAppBar(props) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
+  const {logout} = useAuth()
+  const navigate = useNavigate();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
   };
 
   const handleProfile = (setting) => {
-    setting === 'Account' && setProfileOpen(true)
+    switch(setting){
+      case 'Account':
+        setProfileOpen(true)
+        break;
+      case 'Logout':
+        logout();
+        break;
+      case 'Become a vendor':
+        navigate('/apply')
+        break;
+      default:
+        console.log('Navigating to:', setting);
+    }
+    
   }
 
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -183,7 +200,7 @@ function DrawerAppBar(props) {
             {navItems.map((item) => (
               <Button 
                 LinkComponent={item !== 'Profile' && Link}
-                to={(item ==='Home' ? "/" : "/" + item.toLowerCase())}
+                to={(item ==='Home' ? "/dashboard" : "/" + item.toLowerCase())}
                 onClick={item === 'Profile' && handleOpenUserMenu} key={item} sx={{ fontSize:'1em', color: '#fff', textTransform:'none'}}>
                 {item}
               </Button>

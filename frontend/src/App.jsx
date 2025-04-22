@@ -9,10 +9,16 @@ import Favorites from "./pages/Favorites";
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme/theme'
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from "./components/ProtectedRoutes";
+import Unauthorized from "./pages/Unauthorized";
+import AddService from "./pages/AddService";
+import VendorApplication from "./pages/VendorApplication";
 
 function App() {
   
   return (
+    <AuthProvider>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BookingsProvider>
@@ -22,13 +28,24 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/favorites" element={<Favorites/>}></Route>
-
+        <Route path="/dashboard" element={
+          <ProtectedRoute roles={['vendor', 'admin', 'customer']}>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/add_service" element={<AddService/>}></Route>
+        <Route path="/apply" element={
+          <ProtectedRoute roles={['admin', 'customer']}>
+            <VendorApplication/>
+          </ProtectedRoute>
+        } />
+        <Route path="/favorites" element={<Favorites/>}></Route>
+        <Route path="/unauthorized" element={<Unauthorized/>} />
       </Routes>
       </ServiceProvider>
       </BookingsProvider>
     </ThemeProvider>
+    </AuthProvider>
   )
 }
 

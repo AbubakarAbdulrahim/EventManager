@@ -1,6 +1,6 @@
 from rest_framework import generics
 from .models import Vendor, VendorPackageImages, VendorPackage
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .serializer import VendorSerializer, VendorPackageImagesSerializer, VendorPackageSerializer
 from rest_framework.views import APIView
 from .availability import is_vendor_available
@@ -25,7 +25,7 @@ class VendorRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 class VendorPackageListCreateView(generics.ListCreateAPIView):
     queryset = VendorPackage.objects.all()
     serializer_class = VendorPackageSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     # on creating
     def perform_create(self, serializer):

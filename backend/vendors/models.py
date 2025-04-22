@@ -20,10 +20,9 @@ class Vendor(models.Model):
     Each vendor is linked to a user account.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
-    service_name = models.CharField(max_length=255, choices=SERVICE_CHOICES)
+    business_name = models.CharField(max_length=200)
     address = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    business_detail = models.CharField(max_length=255, default="")
     years_in_business = models.PositiveIntegerField(default=0)
     certification_list = models.CharField(max_length=255, default="")
 
@@ -51,7 +50,7 @@ class VendorPackage(models.Model):
     capacity = models.PositiveIntegerField(null=True, blank=True, default=0, help_text="Number of guests")
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     location = models.CharField(max_length=255)
-
+    additional_info = models.CharField(max_length=255, default="")
     def __str__(self):
         name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"
         mode = f" ({self.service_mode})" if self.service_mode else ""
