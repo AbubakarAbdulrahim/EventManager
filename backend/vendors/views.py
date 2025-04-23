@@ -1,5 +1,5 @@
 from rest_framework import generics
-from .models import Vendor, VendorPackage
+from .models import Vendor, VendorPackage, VendorCertificationImages, VendorPackageImages
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .serializer import(
     VendorActualSerializer, 
@@ -7,7 +7,6 @@ from .serializer import(
     VendorPackageActualSerializer,
     VendorPackageDetailSerializer
 )
-from .models import VendorCertificationImages
 from rest_framework.views import APIView
 from .availability import is_vendor_package_available
 from rest_framework.response import Response
@@ -36,7 +35,7 @@ class VendorListCreateView(generics.ListCreateAPIView):
         images = request.FILES.getlist("certification_images")
         if images:
             for image in images:
-                VendorCertificationImages.objects.create(vendor=vendor, user=request.user)
+                VendorCertificationImages.objects.create(vendor=vendor, vendor__user=request.user)
         return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
 
     # on creating
@@ -54,6 +53,28 @@ class VendorPackageListCreateView(generics.ListCreateAPIView):
     queryset = VendorPackage.objects.all()
     serializer_class = VendorPackageActualSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def post(self, request, *args, **kwargs):
+        data = {
+            "service_name" : request.data.get("service_name"),
+            "service_type" : request.data.get("service_type"),
+            "service_mode" : request.data.get("service_mode"), 
+            "capacity" : request.data.get("capacity"), 
+            "price" : request.data.get("price"),
+            "location" : request.data.get("location"),
+            "availability" : request.data.get("availability")
+        }
+
+        vendor_package_serializer = self.get_serializer(data=data)
+        vendor_package_serializer.is_valid(raise_exception=True)
+        vendor = vendor_package_serializer.save(user=request.user)
+
+        images = request.FILES.getlist("package_images")
+        if images:
+            for image in images:
+                VendorPackageImages.objects.create(vendor=vendor, vendor__user=request.user)
+        return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
+
 
     # on creating
     def perform_create(self, serializer):
