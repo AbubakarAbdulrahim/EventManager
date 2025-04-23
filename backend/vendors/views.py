@@ -36,7 +36,7 @@ class VendorListCreateView(generics.ListCreateAPIView):
         images = request.FILES.getlist("certification_images")
         if images:
             for image in images:
-                VendorCertificationImages.objescts.create(vendor=vendor, user=request.user)
+                VendorCertificationImages.objects.create(vendor=vendor, user=request.user)
         return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
 
     # on creating
