@@ -71,6 +71,7 @@ export default function Register(props) {
     password: "",
     full_name: "",
     email: "",
+    phone_number: '',
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
@@ -83,6 +84,7 @@ export default function Register(props) {
     full_name: false,
     username: false,
     email: false,
+    phone_number: '',
     password: false,
     confirmPassword: false,
   });
@@ -92,6 +94,7 @@ export default function Register(props) {
     username: "",
     email: "",
     password: "",
+    phone_number: '',
     confirmPassword: "",
   });
 
@@ -130,6 +133,17 @@ export default function Register(props) {
         isValid = emailValid;
         break;
 
+      case 'phone_number':
+        const trimmedPhone = value.trim();
+        const phoneValid = /^\+?\d{10,15}$/.test(trimmedPhone); // adjust regex if needed
+        newErrors.phone_number = trimmedPhone === '' || !phoneValid;
+        newMessages.phone_number = trimmedPhone === ''
+          ? 'Phone number is required'
+          : (!phoneValid ? 'Invalid phone number' : '');
+        isValid = !newErrors.phone_number;
+        break;
+        
+
       case 'password':
         newPasswordReqs.length = value.length >= 8;
         newPasswordReqs.uppercase = /[A-Z]/.test(value);
@@ -163,6 +177,7 @@ export default function Register(props) {
     const { name, value } = event.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     validateField(name, value);
+    console.log(formData);
   };
 
   const validateAllFields = () => {
@@ -266,6 +281,20 @@ export default function Register(props) {
                 helperText={errors.username ? errorMessages.username : usernameError}
                 // helperText={errorMessages.username}
                 autoFocus
+                required
+              />
+            </FormControl>
+
+            {/* Phone Number */}
+            <FormControl error={errors.phone_number}>
+              <FormLabel sx={{ color: '#033043' }}>Phone Number</FormLabel>
+              <TextField
+                name="phone_number"
+                type="phone"
+                value={formData.phone_number}
+                onChange={handleChange}
+                error={errors.phone_number}
+                helperText={errorMessages.phone_number}
                 required
               />
             </FormControl>

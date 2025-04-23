@@ -61,7 +61,11 @@ export const AuthProvider = ({ children }) => {
           originalRequest._retry = true;
           
           try {
-            await refreshToken();
+            const refreshedAccessToken = await refreshToken();
+
+          if (!refreshedAccessToken) {
+            return Promise.reject(error);
+          }
             originalRequest.headers.Authorization = `Bearer ${accessTokenRef.current}`;
             return authAxios(originalRequest);
           } catch (refreshError) {
@@ -111,17 +115,38 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    if (!accessTokenRef.current) return; // Prevent loop if already logged out
+    
     try {
       await authAxios.post('/user/logout/');
       setAccessToken(null);
       setUser(null);
       setError(null);
     } catch (err) {
+      console.error("Logout error:", err.message);
       const errorMessage = err.response?.data?.message || 'Logout failed';
       setError(errorMessage);
       throw new Error(errorMessage);
     }
   };
+
+  const apply = async (data) => {
+    try {
+      setLoading(true);
+      const response = await authAxios.post('/vendors/', data);
+      
+      setError(null);
+      console.log(response)
+      return response.data;
+    } catch (err) {
+      console.log(err)
+      const errorMessage = err;
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const refreshToken = async () => {
     try {
@@ -158,6 +183,7 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
+    apply,
     authAxios,
   };
 

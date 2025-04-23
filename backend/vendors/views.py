@@ -1,6 +1,6 @@
 from rest_framework import generics
 from .models import Vendor, VendorPackage, VendorCertificationImages, VendorPackageImages
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from .serializer import(
     VendorActualSerializer, 
     VendorDetailSerializer, 
@@ -17,7 +17,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 class VendorListCreateView(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorActualSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     
     def post(self, request, *args, **kwargs):
@@ -35,7 +35,7 @@ class VendorListCreateView(generics.ListCreateAPIView):
         images = request.FILES.getlist("certification_images")
         if images:
             for image in images:
-                VendorCertificationImages.objects.create(vendor=vendor, vendor__user=request.user)
+                VendorCertificationImages.objects.create(vendor=vendor, image=image)
         return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
 
     # on creating
@@ -72,7 +72,7 @@ class VendorPackageListCreateView(generics.ListCreateAPIView):
         images = request.FILES.getlist("package_images")
         if images:
             for image in images:
-                VendorPackageImages.objects.create(vendor=vendor, vendor__user=request.user)
+                VendorPackageImages.objects.create(vendor=vendor, image=image)
         return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
 
 

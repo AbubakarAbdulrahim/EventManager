@@ -46,9 +46,13 @@ import BookingDialog from './BookingDialog';
 import StarIcon from '@mui/icons-material/Star';
 import { Favorite } from '@mui/icons-material';
 import { FavoriteBorderRounded } from '@mui/icons-material';
+import { useState } from "react";
+import ServiceDetail from "./ServiceDetail";
 
 
 export default function ServicesCard({service, handleBookNow, handleCancelBooking}) {
+  
+  const [openDetail, setOpenDetail] = useState(false)
   const ServiceCard = styled(Card)(({ theme }) => ({
     transition: 'transform 0.2s',
     '&:hover': {
@@ -88,6 +92,11 @@ export default function ServicesCard({service, handleBookNow, handleCancelBookin
       else addToFavorites(service)
   }
 
+    const handleClose = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setOpenDetail(false);
+  }
+
   
     return (
       <Grid item xs={12} sm={6} md={4}>
@@ -95,6 +104,7 @@ export default function ServicesCard({service, handleBookNow, handleCancelBookin
                {booked && (<BookingTag label="Booked" />)}
               <CardMedia
                 component="img"
+                onClick={()=>{setOpenDetail(true)}}
                 height="200"
                 image={service.image}
                 alt={service.name}
@@ -153,6 +163,7 @@ export default function ServicesCard({service, handleBookNow, handleCancelBookin
                 </Box>
               </CardContent>
               </ServiceCard>
+              <ServiceDetail open={openDetail} onClose={handleClose} service={service} onBookNow={handleBookNow} favorite={favorite} addFavorite={addFavorite} />
               </Grid>
           
     )

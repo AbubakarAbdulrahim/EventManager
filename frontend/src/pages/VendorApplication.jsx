@@ -43,6 +43,7 @@ import DrawerAppBar from '../components/DrawerAppBar';
 import LabelBottomNavigation from '../components/LabelBottomNavigation';
 import { useAuth } from '../context/AuthContext';
 import { styled } from '@mui/material/styles';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 // Maximum file size (500KB)
 const MAX_FILE_SIZE = 500 * 1024; // 500KB in bytes
@@ -92,17 +93,18 @@ const validationSchemas = {
     phone: Yup.string().required('Phone number is required'),
   }),
   1: Yup.object({
-    businessName: Yup.string().required('Business name is required'),
-    businessAddress: Yup.string().required('Business address is required'),
-    yearsInBusiness: Yup.number().min(0, 'Cannot be negative'),
+    business_name: Yup.string().required('Business name is required'),
+    address: Yup.string().required('Business address is required'),
+    years_in_business: Yup.number()
+    .typeError('Years in business must be a number')
+    .min(0, 'Cannot be negative'),
   }),
   2: Yup.object({
-    certifications: Yup.string().when('hasCertifications', {
-      is: true,
-      then: () => Yup.string().required('Please list your certifications'),
-      otherwise: () => Yup.string()
+    certification_list: Yup.string().required('Please list your certifications'),
+    certification_images: Yup.array()
+    .min(1, 'Please upload at least one certification')
+    .required('Please upload your certifications'),
     }),
-  }),
   3: Yup.object({
     agreeToTerms: Yup.boolean()
       .oneOf([true], 'You must agree to the terms and conditions')
@@ -110,13 +112,12 @@ const validationSchemas = {
 };
 
 export default function VendorApplication() {
-  const { user } = useAuth();
+  const { user, apply } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [openSuccess, setOpenSuccess] = useState(false);
-  const [certificateFiles, setCertificateFiles] = useState([]);
   const [fileError, setFileError] = useState('');
   const [submissionComplete, setSubmissionComplete] = useState(false);
-
+console.log(user)
   const steps = [
     { label: 'Personal Information', icon: 1 },
     { label: 'Business Details', icon: 2 },
@@ -125,22 +126,33 @@ export default function VendorApplication() {
     { label: 'Submission Complete', icon: 5 }, // New success step
   ];
 
+  useHotkeys('left', () => activeStep > 0 && setActiveStep(s => s - 1), [activeStep]);
+    useHotkeys('enter, right', () => {
+        const errors = validateCurrentStep();
+      if (Object.keys(errors).length === 0) {
+        // e.preventDefault();
+        handleNext();
+      }
+    //   activeStep < 2 && 
+  
+    }, [activeStep]);
+
   const formik = useFormik({
     initialValues: {
       // Personal Information
       fullName: user?.full_name || '',
       email: user?.email || '',
-      phone: '',
+      phone: user?.phone_number || '',
       
       // Business Information
-      businessName: '',
-      businessAddress: '',
-      yearsInBusiness: '',
+      business_name: '',
+      address: '',
+      years_in_business: '',
       
       // Additional Info
-      hasCertifications: false,
-      certifications: '',
-      additionalInfo: '',
+      certification_list: '',
+      certification_images: [],
+      
       
       // Terms & Conditions
       agreeToTerms: false
@@ -148,27 +160,42 @@ export default function VendorApplication() {
     validationSchema: validationSchemas[activeStep],
     validateOnChange: false,
     validateOnBlur: true,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       if (activeStep === steps.length - 2) { // Check if it's the last step before success
         // Prepare form data for backend submission
         const formDataToSend = new FormData();
         
         // Add all form values to FormData
         Object.keys(values).forEach(key => {
-          formDataToSend.append(key, values[key]);
-        });
+            if (key === "certification_images") {
+                console.log(values[key])
+              values[key].forEach(file => {
+                formDataToSend.append("certification_images", file);
+              });
+            } else {
+                console.log(key,":",values[key]);
+              formDataToSend.append(key, values[key]);
+            }
+          });
         
+        // console.log(values)
         // Add certificate files
-        certificateFiles.forEach((file, index) => {
-          formDataToSend.append(`certificate_${index}`, file);
-        });
+        
         
         // Log FormData for debugging
-        console.log('Submitting form with data:', values);
-        console.log('Files included:', certificateFiles);
+        for (const pair of formDataToSend.entries()) {
+            console.log(`${pair[0]}:`, pair[1]);
+          }
         
-        // Here you would send formDataToSend to your backend
-        // axios.post('/api/vendor/application', formDataToSend)
+        
+        try {
+
+            await apply(formDataToSend);
+            
+
+          } catch (error) {
+            console.error(error);
+          }
         
         // Show final success step instead of dialog
         setSubmissionComplete(true);
@@ -181,38 +208,43 @@ export default function VendorApplication() {
     },
   });
 
-  const handleCertificateUpload = (event) => {
+  const handleCertificateUpload = (event, setFieldValue) => {
     const files = Array.from(event.target.files);
+    
     setFileError('');
-    
-    // Validate each file
+  
     const validFiles = files.filter(file => {
-      // Check file type
-      if (!['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) {
-        setFileError('Only JPG, PNG, and PDF files are allowed');
-        return false;
-      }
-      
-      // Check file size
-      if (file.size > MAX_FILE_SIZE) {
-        setFileError(`File "${file.name}" exceeds the 500KB size limit`);
-        return false;
-      }
-      
-      return true;
-    });
-    
+        if (!['image/jpeg', 'image/png'].includes(file.type)) {
+          setFileError('Only JPG and PNG files are allowed');
+          return false;
+        }
+  
+        if (file.size > MAX_FILE_SIZE) {
+          setFileError(`File "${file.name}" exceeds the 500KB size limit`);
+          return false;
+        }
+  
+        return true;
+      })
+      .map((file, index) => {
+        const extension = file.name.split('.').pop();
+        const newName = `certificate_${Date.now()}_${index}.${extension}`;
+        return new File([file], newName, { type: file.type });
+      });
+  
     if (validFiles.length > 0) {
-      setCertificateFiles(prevFiles => [...prevFiles, ...validFiles]);
+      setFieldValue('certification_images',  [...validFiles]);
     }
+    // console.log(validFiles)
   };
-
-  const handleRemoveFile = (index) => {
-    setCertificateFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+  const handleRemoveFile = (index, values, setFieldValue) => {
+    const updatedFiles = values.certification_images.filter((_, i) => i !== index);
+    setFieldValue('certification_images', updatedFiles);
   };
 
   const handleNext = () => {
     const errors = validateCurrentStep();
+    // console.log(errors)
     if (Object.keys(errors).length === 0) {
       setActiveStep((prevStep) => prevStep + 1);
     } else {
@@ -309,7 +341,7 @@ export default function VendorApplication() {
                   fullWidth
                   label="Phone Number"
                   name="phone"
-                  value={formik.values.phone}
+                  value={user.phone_number}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.phone && Boolean(formik.errors.phone)}
@@ -339,12 +371,12 @@ export default function VendorApplication() {
                   required
                   fullWidth
                   label="Business Name"
-                  name="businessName"
-                  value={formik.values.businessName}
+                  name="business_name"
+                  value={formik.values.business_name}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.businessName && Boolean(formik.errors.businessName)}
-                  helperText={formik.touched.businessName && formik.errors.businessName}
+                  error={formik.touched.business_name && Boolean(formik.errors.business_name)}
+                  helperText={formik.touched.business_name && formik.errors.business_name}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -359,12 +391,12 @@ export default function VendorApplication() {
                   required
                   fullWidth
                   label="Business Address"
-                  name="businessAddress"
-                  value={formik.values.businessAddress}
+                  name="address"
+                  value={formik.values.address}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.businessAddress && Boolean(formik.errors.businessAddress)}
-                  helperText={formik.touched.businessAddress && formik.errors.businessAddress}
+                  error={formik.touched.address && Boolean(formik.errors.address)}
+                  helperText={formik.touched.address && formik.errors.address}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -379,13 +411,13 @@ export default function VendorApplication() {
                 <TextField
                   fullWidth
                   label="Years in Business"
-                  name="yearsInBusiness"
+                  name="years_in_business"
                   type="number"
-                  value={formik.values.yearsInBusiness}
+                  value={formik.values.years_in_business}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.yearsInBusiness && Boolean(formik.errors.yearsInBusiness)}
-                  helperText={formik.touched.yearsInBusiness && formik.errors.yearsInBusiness}
+                  error={formik.touched.years_in_business && Boolean(formik.errors.years_in_business)}
+                  helperText={formik.touched.years_in_business && formik.errors.years_in_business}
                   InputProps={{ inputProps: { min: 0 } }}
                 />
               </Grid>
@@ -400,49 +432,24 @@ export default function VendorApplication() {
               Additional Information
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={formik.values.hasCertifications}
-                      onChange={formik.handleChange}
-                      name="hasCertifications"
-                    />
-                  }
-                  label="I have professional certifications or licenses"
-                />
-              </Grid>
               
-              {formik.values.hasCertifications && (
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="List Your Certifications"
-                    name="certifications"
-                    multiline
-                    rows={2}
-                    value={formik.values.certifications}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    error={formik.touched.certifications && Boolean(formik.errors.certifications)}
-                    helperText={formik.touched.certifications && formik.errors.certifications}
-                    placeholder="Please list any relevant certifications or licenses you hold"
-                  />
-                </Grid>
-              )}
               
-              <Grid item xs={12}>
+              
+            <Grid item xs={12}>
                 <TextField
-                  fullWidth
-                  label="Additional Information"
-                  name="additionalInfo"
-                  multiline
-                  rows={4}
-                  value={formik.values.additionalInfo}
-                  onChange={formik.handleChange}
-                  placeholder="Any other information you'd like us to know about your services"
+                fullWidth
+                label="List Your Certifications"
+                name="certification_list"
+                multiline
+                rows={2}
+                value={formik.values.certification_list}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.certification_list && Boolean(formik.errors.certification_list)}
+                helperText={formik.touched.certification_list && formik.errors.certification_list}
+                placeholder="Please list any relevant certifications or licenses you hold"
                 />
-              </Grid>
+            </Grid>
               
               <Grid item xs={12}>
                 <Typography variant="subtitle2" gutterBottom>
@@ -457,37 +464,44 @@ export default function VendorApplication() {
                   Select Files (Max 500KB each)
                   <VisuallyHiddenInput 
                     type="file" 
-                    accept="image/jpeg,image/png,application/pdf"
-                    onChange={handleCertificateUpload}
+                    accept="image/jpeg,image/png"
+                    onChange={(e)=>{handleCertificateUpload(e, formik.setFieldValue)}}
                     multiple
+                    error={Boolean(formik.errors.certification_images)}
+                    helperText={formik.errors.certification_images}
                   />
                 </Button>
-                
+                {formik.touched.certification_images && formik.errors.certification_images && (
+                <Typography color="error" variant="caption" sx={{ mt: 1, display: 'block' }}>
+                    {formik.errors.certification_images}
+                </Typography>
+                )}
                 {fileError && (
                   <Alert severity="error" sx={{ mb: 2 }}>
                     {fileError}
                   </Alert>
                 )}
                 
-                {certificateFiles.length > 0 && (
-                  <List sx={{ bgcolor: 'background.paper' }}>
-                    {certificateFiles.map((file, index) => (
-                      <ListItem
+                {formik.values.certification_images.length > 0 && (
+                <List sx={{ bgcolor: 'background.paper' }}>
+                    {formik.values.certification_images.map((file, index) => (
+                    <ListItem
                         key={index}
                         secondaryAction={
-                          <IconButton edge="end" onClick={() => handleRemoveFile(index)}>
+                        <IconButton edge="end" onClick={() => handleRemoveFile(index, formik.values, formik.setFieldValue)}>
                             <Delete />
-                          </IconButton>
+                        </IconButton>
                         }
-                      >
+                    >
                         <ListItemText 
-                          primary={file.name} 
-                          secondary={formatFileSize(file.size)} 
+                        primary={file.name} 
+                        secondary={formatFileSize(file.size)} 
                         />
-                      </ListItem>
+                    </ListItem>
                     ))}
-                  </List>
+                </List>
                 )}
+
                 <Typography variant="caption" display="block" sx={{ mt: 1 }}>
                   You can upload multiple files (business license, certifications, portfolio, etc.). Each file must be under 500KB.
                 </Typography>
@@ -529,15 +543,15 @@ export default function VendorApplication() {
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <Typography variant="subtitle2">Business Name:</Typography>
-                    <Typography>{formik.values.businessName}</Typography>
+                    <Typography>{formik.values.business_name}</Typography>
                   </Grid>
                   <Grid item xs={12}>
                     <Typography variant="subtitle2">Business Address:</Typography>
-                    <Typography>{formik.values.businessAddress}</Typography>
+                    <Typography>{formik.values.address}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="subtitle2">Years in Business:</Typography>
-                    <Typography>{formik.values.yearsInBusiness || 'N/A'}</Typography>
+                    <Typography>{formik.values.years_in_business || 'N/A'}</Typography>
                   </Grid>
                 </Grid>
               </CardContent>
@@ -547,27 +561,16 @@ export default function VendorApplication() {
               <CardHeader title="Additional Information" />
               <CardContent>
                 <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Typography variant="subtitle2">Has Certifications:</Typography>
-                    <Typography>{formik.values.hasCertifications ? 'Yes' : 'No'}</Typography>
-                  </Grid>
-                  {formik.values.hasCertifications && (
-                    <Grid item xs={12}>
+                <Grid item xs={12}>
                       <Typography variant="subtitle2">Certifications:</Typography>
-                      <Typography>{formik.values.certifications}</Typography>
-                    </Grid>
-                  )}
-                  {formik.values.additionalInfo && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2">Additional Information:</Typography>
-                      <Typography>{formik.values.additionalInfo}</Typography>
-                    </Grid>
-                  )}
-                  {certificateFiles.length > 0 && (
+                      <Typography>{formik.values.certification_list}</Typography>
+                </Grid>
+                
+                  {formik.values.certification_images.length > 0 && (
                     <Grid item xs={12}>
                       <Typography variant="subtitle2">Uploaded Files:</Typography>
                       <List dense>
-                        {certificateFiles.map((file, index) => (
+                        {formik.values.certification_images.map((file, index) => (
                           <ListItem key={index}>
                             <ListItemText 
                               primary={file.name} 
