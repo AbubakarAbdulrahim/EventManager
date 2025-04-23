@@ -27,7 +27,7 @@ class Vendor(models.Model):
     certification_list = models.CharField(max_length=255, default="")
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.service_name}"
+        return f"{self.user.get_full_name()} - {self.business_name}"
 
 
 class VendorCertificationImages(models.Model):

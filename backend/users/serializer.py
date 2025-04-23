@@ -18,6 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
         full_name = validated_data['full_name']
         username = validated_data['username']
         email = validated_data['email']
+        phone_number = validated_data['phone_number']
         password = validated_data['password']
         role = 'customer'  # default role
         user = User.objects.create_user(
@@ -25,7 +26,8 @@ class UserSerializer(serializers.ModelSerializer):
             username=username,
             email=email,
             password=password,
-            role=role
+            role=role,
+            phone_number=phone_number
         ) # create user
         validated_data.pop('date_joined', None) # remove date_joined
         return user

@@ -113,7 +113,7 @@ class VendorDetailSerializer(serializers.ModelSerializer):
             "user",
             "address", 
             "created_at",
-            "business_detail",
+            # "business_detail",
             "years_in_business",
             "certification_list",
             # additional
@@ -135,11 +135,11 @@ class VendorActualSerializer(serializers.ModelSerializer):
         fields = [
             "id", 
             "user", 
-            "service_name", 
+            "business_name", 
             "address", 
             "created_at",
             "years_in_business",
-            "business_detail",
+            # "business_detail",
             "certification_list",
 
             # additional
