@@ -43,6 +43,7 @@ import DrawerAppBar from '../components/DrawerAppBar';
 import LabelBottomNavigation from '../components/LabelBottomNavigation';
 import { useAuth } from '../context/AuthContext';
 import { styled } from '@mui/material/styles';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 // Maximum file size (500KB)
 const MAX_FILE_SIZE = 500 * 1024; // 500KB in bytes
@@ -116,7 +117,7 @@ export default function VendorApplication() {
   const [openSuccess, setOpenSuccess] = useState(false);
   const [fileError, setFileError] = useState('');
   const [submissionComplete, setSubmissionComplete] = useState(false);
-
+console.log(user)
   const steps = [
     { label: 'Personal Information', icon: 1 },
     { label: 'Business Details', icon: 2 },
@@ -125,12 +126,23 @@ export default function VendorApplication() {
     { label: 'Submission Complete', icon: 5 }, // New success step
   ];
 
+  useHotkeys('left', () => activeStep > 0 && setActiveStep(s => s - 1), [activeStep]);
+    useHotkeys('enter, right', () => {
+        const errors = validateCurrentStep();
+      if (Object.keys(errors).length === 0) {
+        // e.preventDefault();
+        handleNext();
+      }
+    //   activeStep < 2 && 
+  
+    }, [activeStep]);
+
   const formik = useFormik({
     initialValues: {
       // Personal Information
       fullName: user?.full_name || '',
       email: user?.email || '',
-      phone: '',
+      phone: user?.phone_number || '',
       
       // Business Information
       business_name: '',
@@ -155,19 +167,30 @@ export default function VendorApplication() {
         
         // Add all form values to FormData
         Object.keys(values).forEach(key => {
-          formDataToSend.append(key, values[key]);
-        });
+            if (key === "certification_images") {
+                console.log(values[key])
+              values[key].forEach(file => {
+                formDataToSend.append("certification_images", file);
+              });
+            } else {
+                console.log(key,":",values[key]);
+              formDataToSend.append(key, values[key]);
+            }
+          });
         
+        // console.log(values)
         // Add certificate files
         
         
         // Log FormData for debugging
-        console.log('Submitting form with data:', values);
+        for (const pair of formDataToSend.entries()) {
+            console.log(`${pair[0]}:`, pair[1]);
+          }
         
         
         try {
 
-            await apply(values);
+            await apply(formDataToSend);
             
 
           } catch (error) {
@@ -191,8 +214,8 @@ export default function VendorApplication() {
     setFileError('');
   
     const validFiles = files.filter(file => {
-        if (!['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) {
-          setFileError('Only JPG, PNG, and PDF files are allowed');
+        if (!['image/jpeg', 'image/png'].includes(file.type)) {
+          setFileError('Only JPG and PNG files are allowed');
           return false;
         }
   
@@ -221,7 +244,7 @@ export default function VendorApplication() {
 
   const handleNext = () => {
     const errors = validateCurrentStep();
-    console.log(errors)
+    // console.log(errors)
     if (Object.keys(errors).length === 0) {
       setActiveStep((prevStep) => prevStep + 1);
     } else {
@@ -318,7 +341,7 @@ export default function VendorApplication() {
                   fullWidth
                   label="Phone Number"
                   name="phone"
-                  value={formik.values.phone}
+                  value={user.phone_number}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.phone && Boolean(formik.errors.phone)}
@@ -441,7 +464,7 @@ export default function VendorApplication() {
                   Select Files (Max 500KB each)
                   <VisuallyHiddenInput 
                     type="file" 
-                    accept="image/jpeg,image/png,application/pdf"
+                    accept="image/jpeg,image/png"
                     onChange={(e)=>{handleCertificateUpload(e, formik.setFieldValue)}}
                     multiple
                     error={Boolean(formik.errors.certification_images)}

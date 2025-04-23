@@ -61,7 +61,11 @@ export const AuthProvider = ({ children }) => {
           originalRequest._retry = true;
           
           try {
-            await refreshToken();
+            const refreshedAccessToken = await refreshToken();
+
+          if (!refreshedAccessToken) {
+            return Promise.reject(error);
+          }
             originalRequest.headers.Authorization = `Bearer ${accessTokenRef.current}`;
             return authAxios(originalRequest);
           } catch (refreshError) {

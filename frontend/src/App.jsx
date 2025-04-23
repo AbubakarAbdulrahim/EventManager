@@ -16,6 +16,7 @@ import AddService from "./pages/AddService";
 import VendorApplication from "./pages/VendorApplication";
 import VendorApplicationAdminPage from "./pages/VendorApplicationAdminPage";
 import ServiceDetail from "./pages/ServiceDetail";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   
@@ -42,8 +43,9 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/vendor-applications" element={<VendorApplicationAdminPage/>}></Route>
-        <Route path="/favorites" element={<Favorites/>}></Route>
         <Route path="/service-detail" element={<ServiceDetail/>}></Route>
+        <Route path="/favorites" element={<Favorites/>}></Route>
+        <Route path="/admin-dashboard" element={<AdminDashboard/>}></Route>
         <Route path="/unauthorized" element={<Unauthorized/>} />
       </Routes>
       </ServiceProvider>
