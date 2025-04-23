@@ -7,16 +7,38 @@ from .serializer import(
     VendorPackageActualSerializer,
     VendorPackageDetailSerializer
 )
+from .models import VendorCertificationImages
 from rest_framework.views import APIView
 from .availability import is_vendor_package_available
 from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # vendor list and create view
 class VendorListCreateView(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorActualSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]
     
+    def post(self, request, *args, **kwargs):
+        data = {
+            "business_name" : request.data.get("business_name"),
+            "address" : request.data.get("address"),
+            "years_in_business" : request.data.get("years_in_business"),
+            "certification_list" : request.data.get("certification_list"),
+        }
+
+        vendor_serializer = self.get_serializer(data=data)
+        vendor_serializer.is_valid(raise_exception=True)
+        vendor = vendor_serializer.save(user=request.user)
+
+        images = request.FILES.getlist("certification_images")
+        if images:
+            for image in images:
+                VendorCertificationImages.objescts.create(vendor=vendor, user=request.user)
+        return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
+
     # on creating
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
