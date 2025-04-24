@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'apiadmin', # custom admin app
     'users', # users app
     'bookings', # bookings app
     'vendors',  # vendors app

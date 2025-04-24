@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import Vendor, VendorPackageImages, VendorPackage, VendorAvailability, VendorCertificationImages
+from .models import (
+    Vendor, 
+    VendorPackageImages, 
+    VendorPackage, 
+    VendorAvailability, 
+    VendorCertificationImages
+)
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -59,10 +65,12 @@ class VendorAvailabilitySerializer(serializers.ModelSerializer):
 # 
 #
 
- 
+
 # vendor package detail serializer
 class VendorPackageDetailSerializer(serializers.ModelSerializer):
     availability = VendorAvailabilitySerializer(many=True)
+    package_images = VendorPackageImagesSerializer(many=True)
+    
     class Meta:
         model = VendorPackage
         fields = [
@@ -77,6 +85,10 @@ class VendorPackageDetailSerializer(serializers.ModelSerializer):
             # additionl 
             "availability"
             ]
+        extra_fields = {
+            "availability" :{"read_only": True},
+            "package_images" : {"read_only": True}
+        }
 
 # vendor package create list serializer
 class VendorPackageActualSerializer(serializers.ModelSerializer):
@@ -93,6 +105,7 @@ class VendorPackageActualSerializer(serializers.ModelSerializer):
             "capacity", 
             "price",
             "location",
+            "is_approved",
 
             # additional 
             "availability",
@@ -124,6 +137,7 @@ class VendorDetailSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "user": {"read_only": True},
             "created_at": {"read_only": True},
+            "is_approved" : {"read_only": True}
         }
 
 # vendor create list serializer
@@ -139,13 +153,30 @@ class VendorActualSerializer(serializers.ModelSerializer):
             "address", 
             "created_at",
             "years_in_business",
-            # "business_detail",
             "certification_list",
-
+            "is_approved",
             # additional
             "certification_images"
         ]
         extra_kwargs = {
             "created_at": {"read_only": True},
-            "user" : {"read_only": True}
+            "user" : {"read_only": True},
+            "is_approved" : {"read_only": True}
         }
+
+'''
+for admins ->
+'''
+# vendor serializer for admin
+class VendorAdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Vendor
+        fields = '__all__'
+
+# vendor package serializer for admin
+class VendorPackageAdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = VendorPackage
+        fields = '__all__'

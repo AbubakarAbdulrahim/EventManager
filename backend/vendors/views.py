@@ -1,6 +1,7 @@
 from rest_framework import generics
 from .models import Vendor, VendorPackage, VendorCertificationImages, VendorPackageImages
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .permission import IsVendorRole
 from .serializer import(
     VendorActualSerializer, 
     VendorDetailSerializer, 
@@ -13,11 +14,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
+
+'''
+views for vendors
+'''
 # vendor list and create view
 class VendorListCreateView(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorActualSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
     
     def post(self, request, *args, **kwargs):
@@ -48,11 +53,21 @@ class VendorRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VendorDetailSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-# vendor package list and create view
-class VendorPackageListCreateView(generics.ListCreateAPIView):
+
+'''
+for vendor package
+'''
+# vendor package list view
+class VendorPackageListView(generics.ListAPIView):
     queryset = VendorPackage.objects.all()
     serializer_class = VendorPackageActualSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+# vendor package create view
+class VendorPackageCreateView(generics.CreateAPIView):
+    queryset = VendorPackage.objects.all()
+    serializer_class = VendorPackageActualSerializer
+    permission_classes = [IsVendorRole]
 
     def post(self, request, *args, **kwargs):
         data = {
@@ -75,31 +90,48 @@ class VendorPackageListCreateView(generics.ListCreateAPIView):
                 VendorPackageImages.objects.create(vendor=vendor, image=image)
         return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
 
-
     # on creating
     def perform_create(self, serializer):
         serializer.save()
 
-# vendor package detail view
-class VendorPackageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+# vendor package retrieve view
+class VendorPackageRetrieveView(generics.RetrieveAPIView):
     queryset = VendorPackage.objects.all()
     serializer_class = VendorPackageDetailSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]  
+
+# vendor package update view
+class VendorPackageUpdateView(generics.UpdateAPIView):
+    queryset = VendorPackage.objects.all()
+    serializer_class = VendorPackageDetailSerializer
+    permission_classes = [IsVendorRole]  
+
+# vendor package destroy view
+class VendorPackageDestroyView(generics.DestroyAPIView):
+    queryset = VendorPackage.objects.all()
+    serializer_class = VendorPackageDetailSerializer
+    permission_classes = [IsVendorRole]  
+
+
+
+
+
 
 # checking vendor availabity view
 class CheckingVendorAvailability(APIView):
-    def post(self, request):
-        package = request.context['vendor_package']
-        event_date = request.context['event_date']
-        start_time = request.context['start_time']
-        end_time = request.context['end_time']
+    # def post(self, request):
+    #     package = request.context['vendor_package']
+    #     event_date = request.context['event_date']
+    #     start_time = request.context['start_time']
+    #     end_time = request.context['end_time']
 
-        if is_vendor_package_available(
-            vendor_package=package,
-            event_date = event_date,
-            start_time=start_time,
-            end_time=end_time
-        ):
-            return Response({"is_available":True})
-        else:
-            return Response({"is_available":False})
+    #     if is_vendor_package_available(
+    #         vendor_package=package,
+    #         event_date = event_date,
+    #         start_time=start_time,
+    #         end_time=end_time
+    #     ):
+    #         return Response({"is_available":True})
+    #     else:
+    #         return Response({"is_available":False})
+    pass

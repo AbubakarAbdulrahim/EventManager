@@ -54,7 +54,6 @@ class BookingRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             user_email=booking.user.email
         )
 
-
 # list create view
 class BookingListCreateView(generics.ListCreateAPIView):
     queryset = Booking.objects.all()
@@ -79,8 +78,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
         user = self.request.user
         if user.role == 'admin':
             return Booking.objects.all()
-        return Booking.objects.filter(user=user)
-    
+        return Booking.objects.filter(user=user) 
 
 # venue approved booking view
 class ApprovedBookingView(APIView):
@@ -112,7 +110,6 @@ class ApprovedBookingView(APIView):
         )
         return Response({"message": f"Booking accepted by {booking.venue.name} "})
     
-
 # venue rejects booking view 
 class RejectBookingView(APIView):
     permission_classes = [IsAuthenticated]

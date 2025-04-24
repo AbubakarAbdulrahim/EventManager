@@ -25,6 +25,7 @@ class Vendor(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     years_in_business = models.PositiveIntegerField(default=0)
     certification_list = models.CharField(max_length=255, default="")
+    is_approved = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.business_name}"
@@ -51,6 +52,9 @@ class VendorPackage(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     location = models.CharField(max_length=255)
     additional_info = models.CharField(max_length=255, default="")
+    is_approved = models.BooleanField(default=False)
+
+    
     def __str__(self):
         name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"
         mode = f" ({self.service_mode})" if self.service_mode else ""

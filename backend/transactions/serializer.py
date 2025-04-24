@@ -37,3 +37,9 @@ class TransactionSerializer(serializers.ModelSerializer):
         )
         transaction.save()
         return transaction
+    
+
+class TransactionAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = '__all__'
