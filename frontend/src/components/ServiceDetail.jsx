@@ -23,13 +23,14 @@ import {
   CalendarToday,
   AccessTime
 } from '@mui/icons-material';
+import BookingDialog from './BookingDialog';
 
-const ServiceDetailsDialog = ({ open, onClose, service, onBookNow, favorite, addFavorite }) => {
+const ServiceDetailsDialog = ({ open, onClose, service, onBookNow, favorite, addFavorite, onConfirm, addBooking, bookings, handleCancelBooking }) => {
   if (!service) return null;
 
   const {
     name,
-    mainImage,
+    image,
     additionalImages = [],
     location,
     capacity,
@@ -41,6 +42,7 @@ const ServiceDetailsDialog = ({ open, onClose, service, onBookNow, favorite, add
     cuisineImages = [],
     isFavorite = false
   } = service;
+  // console.log(service)
 
   return (
     <Dialog
@@ -55,7 +57,7 @@ const ServiceDetailsDialog = ({ open, onClose, service, onBookNow, favorite, add
         {/* Main Image */}
         <Box
           component="img"
-          src={mainImage || "/api/placeholder/800/400"}
+          src={image || "/api/placeholder/800/400"}
           alt={name}
           sx={{
             width: '100%',
@@ -132,7 +134,7 @@ const ServiceDetailsDialog = ({ open, onClose, service, onBookNow, favorite, add
               <Box display="flex" alignItems="center" mb={1}>
                 <AttachMoney color="primary" sx={{ mr: 1 }} fontSize="small" />
                 <Typography variant="body2">
-                  Price: {price ? `₹${price}` : "Contact for pricing"}
+                  Price: {price ? `₦${price}` : "Contact for pricing"}
                 </Typography>
               </Box>
             </Box>
@@ -206,18 +208,23 @@ const ServiceDetailsDialog = ({ open, onClose, service, onBookNow, favorite, add
             </Grid>
           </Box>
         )}
+        <BookingDialog   
+        service={service}
+        onConfirm={onConfirm}
+        addBooking = {addBooking}
+        />
       </DialogContent>
 
-      <Divider />
       
+      <Divider />
       <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
-        <Button onClick={onClose} color="inherit">
+        <Button onClick={onClose} variant='outlined'>
           Close
         </Button>
         <Button 
           variant="contained" 
           color="primary"
-          onClick={() => onBookNow && onBookNow()}
+          onClick={() => {onBookNow(service)}}
         >
           Book Now
         </Button>

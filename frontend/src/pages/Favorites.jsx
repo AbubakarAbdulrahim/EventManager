@@ -45,7 +45,7 @@ export default function Favorites() {
             <DrawerAppBar/>
             <Typography variant="h4" sx={{ m:5, color:'#033043', textAlign:'center'}}><strong>Favorites</strong></Typography>
             <div style={{display: 'flex', flexWrap:'wrap', gap: 10, justifyContent:"center", margin: 10, width: '100%'}}>
-                {favorites.map(service => <ServicesCard key={service.id} service={service}/>)}
+                {favorites.map(service => <ServicesCard key={service.id} service={service} handleBookNow={handleBookNow}/>)}
             </div>
             {/* <Typography variant="body2" sx={{textAlign:'center', m:5}}>
                 <Button size="small" variant="contained" sx={{backgroundColor:'#674101'}} href="/">Go to Home</Button>

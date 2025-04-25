@@ -6,7 +6,7 @@ export const useBookingContext = () => useContext(BookingsContext);
 
 export const BookingsProvider = ({children}) => {
     const [bookings, setBookings] = useState([]);
-
+    console.log(bookings)
     useEffect(() => {
         const storedBookings = localStorage.getItem("bookings")
         if(storedBookings) {

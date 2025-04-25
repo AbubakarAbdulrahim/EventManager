@@ -9,6 +9,7 @@ import {closePaymentModal } from 'flutterwave-react-v3';
 import { getAvailableDatesWithBookings, getAvailableTimeSlots, setIsBooked, availability } from '../services/availability';
 import { useAuth } from '../context/AuthContext';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { useBookingContext } from '../context/BookingsContext';
 
 const StepIcon = ({ active, completed, icon }) => {
   const icons = {
@@ -35,6 +36,7 @@ const StepIcon = ({ active, completed, icon }) => {
 
 function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const {user} = useAuth();
+  // const {addBooking } = useBookingContext
   const serviceData = service || {};
   const serviceTitle = serviceData.name || 'Service';
   const steps = [
@@ -57,6 +59,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const [loadingDates, setLoadingDates] = useState(true);
   const [loadingTimes, setLoadingTimes] = useState(false);
   const [timeError, setTimeError] = useState(false);
+  const [error, setError] = useState("");
   
   useHotkeys('left', () => activeStep > 0 && setActiveStep(s => s - 1), [activeStep]);
   useHotkeys('enter, right', () => {
@@ -140,8 +143,35 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const handleTimeSelect = (time) => {
     setBookingData(prev => ({ ...prev, time }));
   };
+  let flutterwaveScriptLoading = null;
+  const loadFlutterwaveScript = () => {
+  if (window.FlutterwaveCheckout) return Promise.resolve();
 
-  const handlePayment = () => {
+  // If it's already loading, return the same promise
+  if (flutterwaveScriptLoading) return flutterwaveScriptLoading;
+
+  // Otherwise, start loading and store the promise
+  flutterwaveScriptLoading = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.flutterwave.com/v3.js";
+    script.async = true;
+    script.onload = () => {
+      resolve();
+      flutterwaveScriptLoading = null; // optional: clear after load
+    };
+    script.onerror = (err) => {
+      reject(err);
+      flutterwaveScriptLoading = null; // reset if it fails
+    };
+    document.body.appendChild(script);
+  });
+
+  return flutterwaveScriptLoading;
+};
+  const handlePayment = async () => {
+    try {
+      await loadFlutterwaveScript();
+      setError('')
     window.FlutterwaveCheckout({
       public_key: "FLWPUBK_TEST-f26186bcd6a1340b7d354280b2605ad2-X",
       tx_ref: Date.now(),
@@ -165,6 +195,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
          setIsBooked((service.id).toString(),
         bookingData.date?.format('YYYY-MM-DD'), bookingData.time),
         setTimeout(() => {
+          console.log('hey im closing')
           closePaymentModal();
         }
         , 500)
@@ -183,7 +214,15 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
         logo: "http://localhost:5173/logo.png",
       },
     });
-  };
+  // } else {
+  //   setError("Payment gateway failed to load. Please check your internet connection and try again.");
+  //   console.error("FlutterwaveCheckout not loaded");
+  // }
+  // };
+} catch (e) {
+  setError("Unable to load payment system. Please check your internet and try again.");
+}
+};
   
 
   const handleNext = (e) => {
@@ -335,6 +374,9 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
               <Grid item xs={12} sx={{ mt: 2 }}>
               {showCancelMsg && (
                 <Typography style={{ color: "red" }}>You cancelled the payment.</Typography>
+              )}
+              {error && (
+                <Typography style={{ color: "red" }}>⚠️ {error}</Typography>
               )}
               </Grid>
             </Grid>
