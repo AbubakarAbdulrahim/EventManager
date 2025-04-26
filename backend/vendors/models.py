@@ -13,6 +13,11 @@ SERVICE_CHOICES = (
     ('musician', 'Musician'),
     ('mc', 'MC'),
 )
+LEVEL_CHOICES = (
+    ('silver', 'Silver'),
+    ('bronze', 'Bronze'),
+    ('gold', 'Gold'),
+)
 
 class Vendor(models.Model):
     """
@@ -26,6 +31,10 @@ class Vendor(models.Model):
     years_in_business = models.PositiveIntegerField(default=0)
     certification_list = models.CharField(max_length=255, default="")
     is_approved = models.BooleanField(default=False)
+
+    # suggestions for levelling vendors
+    # is_premium = models.BooleanField(default=False)
+    # premium_level = models.CharField(max_length=100, choices=LEVEL_CHOICES)
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.business_name}"
@@ -53,7 +62,7 @@ class VendorPackage(models.Model):
     location = models.CharField(max_length=255)
     additional_info = models.CharField(max_length=255, default="")
     is_approved = models.BooleanField(default=False)
-
+    
     
     def __str__(self):
         name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"

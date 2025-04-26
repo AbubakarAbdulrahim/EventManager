@@ -1,6 +1,6 @@
-# from django.contrib import admin
 from django.urls import path, include
 from users.admin import user_admin
+
 
 urlpatterns = [
     path('admin/', user_admin.urls),  # admin route

@@ -2,9 +2,10 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from vendors.permission import IsVendorRole
 from .models import Booking
 from .serializer import BookingSerializer
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from .tasks import notify_venue, notify_admins, notify_user
 from django.contrib.auth import get_user_model
 
@@ -82,7 +83,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
 
 # venue approved booking view
 class ApprovedBookingView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsVendorRole]
 
     # on post
     def post(self, request, booking_id):

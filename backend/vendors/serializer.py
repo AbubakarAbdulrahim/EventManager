@@ -21,13 +21,18 @@ DAYS_OF_WEEK = [
 ]
 
 # vendor certification images serializer (to be referenced)
-class VendorCertificationImagesSeralizer(serializers.ModelSerializer):
+class VendorCertificationImagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorCertificationImages
-        fields =["id", "vendor", "image", "uploaded_at"]
+        fields =[
+            "id", 
+            "vendor", 
+            "image", 
+            "uploaded_at",
+        ]
         extra_kwargs = {
             "vendor" : {"read_only" : True},
-            "uploaded_at" : {"read_only" : True}
+            "uploaded_at" : {"read_only" : True},
         }
 
 # Vendor package image serializer (to be referenced)
@@ -36,11 +41,13 @@ class VendorPackageImagesSerializer(serializers.ModelSerializer):
         model = VendorPackageImages
         fields = [
             "id", 
+            "vendor",
             "image", 
             "uploaded_at"
         ]
         extra_kwargs = {
-            "uploaded_at": {"read_only": True}
+            "uploaded_at": {"read_only": True},
+            "vendor" : {"read_only": True},
         }
 
 # vendor availability serializer (to be referenced)
@@ -66,14 +73,15 @@ class VendorAvailabilitySerializer(serializers.ModelSerializer):
 #
 
 
-# vendor package detail serializer
-class VendorPackageDetailSerializer(serializers.ModelSerializer):
-    availability = VendorAvailabilitySerializer(many=True)
-    package_images = VendorPackageImagesSerializer(many=True)
+# vendor package retrieve serializer
+class VendorPackageRetrieveSerializer(serializers.ModelSerializer):
+    availability = VendorAvailabilitySerializer(many=True, read_only=True)
+    package_images = VendorPackageImagesSerializer(many=True, read_only=True)
     
     class Meta:
         model = VendorPackage
         fields = [
+            "id",
             "vendor",
             "service_name",
             "service_type",
@@ -82,29 +90,31 @@ class VendorPackageDetailSerializer(serializers.ModelSerializer):
             "price",
             "location",
             "additional_info",
-            # additionl 
-            "availability"
-            ]
-        extra_fields = {
-            "availability" :{"read_only": True},
-            "package_images" : {"read_only": True}
-        }
+            "is_approved",
 
-# vendor package create list serializer
-class VendorPackageActualSerializer(serializers.ModelSerializer):
-    availability = VendorAvailabilitySerializer(many=True, read_only=True)
+            # additionl 
+            "availability",
+            "package_images",
+            ]
+        extra_kwargs = {"vendor" : {"read_only": True}}
+
+# vendor package create put serializer
+class VendorPackageCreateSerializer(serializers.ModelSerializer):
+    availability = VendorAvailabilitySerializer(many=True)
     package_images = VendorPackageImagesSerializer(many=True)
     
     class Meta:
         model = VendorPackage
         fields = [
-            "id", 
+            "id",
+            "vendor",
             "service_name",
             "service_type", 
             "service_mode", 
             "capacity", 
             "price",
             "location",
+            "additional_info",
             "is_approved",
 
             # additional 
@@ -112,11 +122,28 @@ class VendorPackageActualSerializer(serializers.ModelSerializer):
             "package_images"
         ]
 
-# vendor detail serializer
-class VendorDetailSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        availability_data = validated_data.pop('availability', [])
+        package_images_data = validated_data.pop('package_images', [])
+        
+        # create the package
+        package = VendorPackage.objects.create(**validated_data)
+
+        # create the package availability
+        for availability in availability_data:
+            VendorAvailability.objects.create(vendor_package=package, **availability)
+        
+        # create the package images
+        for image in package_images_data:
+            VendorPackageImages.objects.create(vendor=package.vendor, **image)
+    
+        return package
+
+# vendor retrieve serializer
+class VendorRetrieveSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
-    certification_images = VendorCertificationImagesSeralizer(many=True, read_only=True)
-    packages = VendorPackageDetailSerializer(many=True, read_only=True)
+    certification_images = VendorCertificationImagesSerializer(many=True, read_only=True)
+    packages = VendorPackageRetrieveSerializer(many=True, read_only=True)
     package_images = VendorPackageImagesSerializer(many=True, read_only=True)
 
     class Meta:
@@ -124,45 +151,78 @@ class VendorDetailSerializer(serializers.ModelSerializer):
         fields = [
             "id", 
             "user",
-            "address", 
-            "created_at",
-            # "business_detail",
-            "years_in_business",
-            "certification_list",
-            # additional
-            "certification_images",
-            "packages",
-            "package_images"
-        ]
-        extra_kwargs = {
-            "user": {"read_only": True},
-            "created_at": {"read_only": True},
-            "is_approved" : {"read_only": True}
-        }
-
-# vendor create list serializer
-class VendorActualSerializer(serializers.ModelSerializer):
-    certification_images = VendorCertificationImagesSeralizer(many=True, read_only=True)
-
-    class Meta:
-        model = Vendor
-        fields = [
-            "id", 
-            "user", 
-            "business_name", 
+            "business_name",
             "address", 
             "created_at",
             "years_in_business",
             "certification_list",
             "is_approved",
+
             # additional
-            "certification_images"
+            "certification_images",
+            "packages",
+            "package_images",
         ]
         extra_kwargs = {
+            "user": {"read_only": True},
             "created_at": {"read_only": True},
-            "user" : {"read_only": True},
-            "is_approved" : {"read_only": True}
+            "is_approved" : {"read_only": True},
         }
+
+# vendor create put serializer
+class VendorCreateSerializer(serializers.ModelSerializer):
+    certification_images = VendorCertificationImagesSerializer(many=True)
+    packages = VendorPackageCreateSerializer(many=True)
+    package_images = VendorPackageImagesSerializer(many=True)
+
+    class Meta:
+        model = Vendor
+        fields = [
+            "id", 
+            "user",
+            "business_name",
+            "address", 
+            "created_at",
+            "years_in_business",
+            "certification_list",
+            "is_approved",
+
+            # additional
+            "certification_images",
+            "packages",
+            "package_images",
+        ]
+
+    def create(self, validated_data):
+
+        certification_images_data = validated_data.pop('certification_images', [])
+        packages_data = validated_data.pop('packages', [])
+         
+        # create the vendor
+        vendor = Vendor.objects.create(**validated_data)
+
+        # create his certification images
+        for image in certification_images_data:
+            VendorCertificationImages.objects.create(vendor=vendor, **image)
+        
+        # create his packages
+        for package_data in packages_data:
+            
+            availability_data = package_data.pop('availability', [])
+            package_images_data = package_data.pop('package_images', [])
+            
+            # creating the package
+            package = VendorPackage.objects.create(vendor=vendor, **package_data)
+
+            # creating the package availabilities
+            for availability in availability_data:
+                VendorAvailability.objects.create(vendor_package=package, **availability)
+
+            # creating the package images
+            for image in package_images_data:
+                VendorPackageImages.objects.create(vendor=vendor, **image)
+        
+        return vendor
 
 '''
 for admins ->
