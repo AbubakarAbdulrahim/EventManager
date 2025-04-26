@@ -5,12 +5,12 @@ from datetime import time
 User = get_user_model()
 
 SERVICE_CHOICES = (
-    ('photographer', 'Photographer'),
-    ('event_space', 'Event Space'),
-    ('catering', 'Catering'),
+    ('photography', 'Photography'),
+    ('venue', 'Event Space'),
+    ('caterer', 'Caterer'),
     ('decoration', 'Decoration'),
-    ('make_up_artist', 'Make Up Artist'),
-    ('musician', 'Musician'),
+    ('makeup', 'Make Up Artist'),
+    ('music', 'Music'),
     ('mc', 'MC'),
 )
 
@@ -55,17 +55,17 @@ class VendorPackage(models.Model):
         name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"
         mode = f" ({self.service_mode})" if self.service_mode else ""
 
-        if self.service_type == 'event_space':
+        if self.service_type == 'venue':
             return f"Event space for {self.capacity} guests @ ₦{self.price} - {name}"
-        elif self.service_type == 'catering':
-            return f"Catering-{mode} for {self.capacity} guests @ ₦{self.price} - {name}"
+        elif self.service_type == 'caterer':
+            return f"caterer-{mode} for {self.capacity} guests @ ₦{self.price} - {name}"
         elif self.service_type == 'decoration':
             return f"Decoration-{mode} @ ₦{self.price} - {name}"
-        elif self.service_type == 'photographer':
+        elif self.service_type == 'photography':
             return f"Photography-{mode} @ ₦{self.price} - {name}"
-        elif self.service_type == 'make_up_artist':
+        elif self.service_type == 'makeup':
             return f"Make-up service @ ₦{self.price} - {name}"
-        elif self.service_type == 'musician':
+        elif self.service_type == 'music':
             return f"Music performance for {self.duration} time @ ₦{self.price} - {name}"
         elif self.service_type == 'mc':
             return f"MC service for {self.duration} time @ ₦{self.price} - {name}"

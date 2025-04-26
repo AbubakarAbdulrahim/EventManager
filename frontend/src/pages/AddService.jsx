@@ -33,6 +33,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { useAuth } from '../context/AuthContext';
 
 // Styled component for file input
 const VisuallyHiddenInput = styled('input')({
@@ -50,7 +51,7 @@ const VisuallyHiddenInput = styled('input')({
 const serviceTypes = [
   { value: 'venue', label: 'Venue' },
   { value: 'caterer', label: 'Caterer' },
-  { value: 'decor', label: 'Decoration' },
+  { value: 'decoration', label: 'Decoration' },
   { value: 'photography', label: 'Photography' },
   { value: 'music', label: 'Music' },
 ];
@@ -64,6 +65,27 @@ const weekdays = [
     { value: 'saturday', label: 'Saturday' },
     { value: 'sunday', label: 'Sunday' },
   ];
+
+  const fieldMap = {
+    name: 'service_name',
+    type: 'service_type',
+    serviceInfo: 'additional_info',
+    location: 'location',
+    price: 'price',
+    capacity: 'capacity',
+    // The following fields don't have direct mappings but might be used for service_mode
+    venueType: 'service_mode',
+    cuisineType: 'service_mode',
+    decoration: 'service_mode',
+    photographyClip: 'service_mode',
+    musicGenre: 'service_mode'
+  };
+
+  const renameImage = (file, newName) => {
+    const extension = file.name.split('.').pop(); // Get the original file extension (e.g., 'png')
+    const newFileName = `${newName}.${extension}`;
+    return new File([file], newFileName, { type: file.type });
+  };
   
 
 const AddService = () => {
@@ -73,6 +95,7 @@ const AddService = () => {
   const [additionalImages, setAdditionalImages] = useState([]);
   const [cuisineImages, setCuisineImages] = useState([]);
   const [serviceType, setServiceType] = useState('');
+  const {addNewService} = useAuth();
   const [availabilityRanges, setAvailabilityRanges] = useState([
     { 
       id: Date.now(),
@@ -149,10 +172,10 @@ const AddService = () => {
             .max(5, 'Maximum 5 cuisine images allowed')
         };
         break;
-      case 'decor':
+      case 'decoration':
         schemaFields = {
           ...schemaFields,
-          decorStyle: Yup.string().required('Decoration style is required'),
+          decoration: Yup.string().required('Decoration style is required'),
           setupTime: Yup.number()
             .required('Setup time is required')
             .positive('Setup time must be positive'),
@@ -177,6 +200,41 @@ const AddService = () => {
     setValidationSchema(Yup.object().shape(schemaFields));
   }, [serviceType]);
 
+  
+  const createService = (values) => {
+    const payload = {
+      service_name: values.name || "",
+      service_type: values.type || null,
+      service_mode: "",
+      capacity: values.capacity || null,
+      price: values.price || null,
+      additional_info: values.serviceInfo || "",
+      location: values.location || "",
+      package_images: []  // We'll handle this separately
+    };
+    
+    // Handle service_mode based on service type
+    switch(values.type) {
+      case 'venue':
+        payload.service_mode = values.venueType || "";
+        break;
+      case 'caterer':
+        payload.service_mode = values.cuisineType || "";
+        break;
+      case 'decoration':
+        payload.service_mode = values.decoration || "";
+        break;
+      case 'photography':
+        payload.service_mode = values.photographyClip || "";
+        break;
+      case 'music':
+        payload.service_mode = values.musicGenre || "";
+        break;
+    }
+    
+    return payload;
+  };  
+
   const formik = useFormik({
     initialValues: {
       type: '',
@@ -195,7 +253,7 @@ const AddService = () => {
       numberOfPlates: '',
       cuisineType: '',
       // Decor specific
-      decorStyle: '',
+      decoration: '',
       setupTime: '',
       // Photography specific
       photographyClip: '',
@@ -203,45 +261,66 @@ const AddService = () => {
       musicGenre: '',
     },
     validationSchema,
-    validateOnChange: true,
-    onSubmit: (values) => {
-      // Filter out fields that are not relevant to the selected service type
-      const relevantFields = {};
-      Object.keys(values).forEach(key => {
-        if (values[key] !== '' && values[key] !== null) {
-          relevantFields[key] = values[key];
-        }
-      });
-      
-      // Create a new service object
-      const newService = {
-        id: Date.now(), // Simple ID generation
-        ...relevantFields,
-        mainImage: mainImagePreview || '/image1.jpg', // Use the preview URL or fallback
-      };
-      
-      // Add additional images based on service type
-      if (serviceType === 'venue' && additionalImages.length > 0) {
-        newService.additionalImages = additionalImages.map(img => img.preview);
+    validateOnChange: false,
+    validateOnBlur: true,
+    onSubmit: async (values) => {
+      const newService = createService(values);
+      const formDataToSend = new FormData();
+  
+  // Add all text fields to formData
+  Object.entries(newService).forEach(([key, value]) => {
+    if (key !== 'package_images' && value !== null && value !== undefined) {
+      formDataToSend.append(key, value);
+    }
+  });
+
+  // Add the main image first (this is important!)
+  if (mainImage) {
+    const renamedMainImage = renameImage(mainImage, `main_image_${Date.now()}`);
+    formDataToSend.append('package_images', renamedMainImage);
+  }
+  
+  // Add additional images based on service type
+  if (serviceType === 'venue') {
+    additionalImages.forEach((img, index) => {
+      if (img.file) {
+        const renamedImage = renameImage(img.file, `venue_image_${index}_${Date.now()}`);
+        formDataToSend.append('package_images', renamedImage);
       }
-      
-      if (serviceType === 'caterer' && cuisineImages.length > 0) {
-        newService.cuisineImages = cuisineImages.map(img => img.preview);
+    });
+  }
+  
+  if (serviceType === 'caterer') {
+    cuisineImages.forEach((img, index) => {
+      if (img.file) {
+        const renamedImage = renameImage(img.file, `cuisine_image_${index}_${Date.now()}`);
+        formDataToSend.append('package_images', renamedImage);
       }
-      
-      console.log('New Service:', newService);
-      
-      // Here you would typically send the data to your backend
-      // For demo purposes, just show a success message
-      setOpen(true);
-      
-      // Reset form
-      formik.resetForm();
-      setMainImage(null);
-      setMainImagePreview('');
-      setAdditionalImages([]);
-      setCuisineImages([]);
-      setServiceType('');
+    });
+  }
+  
+  // Log the form data entries to check what's being sent
+  console.log("Form data entries:");
+  console.log(values.availability)
+  for (const pair of formDataToSend.entries()) {
+    console.log(`${pair[0]}:`, pair[1]);
+  }
+
+  // try {
+  //   await addNewService(formDataToSend);
+  //   setOpen(true);
+    
+  //   // Reset form after successful submission
+  //   formik.resetForm();
+  //   setMainImage(null);
+  //   setMainImagePreview('');
+  //   setAdditionalImages([]);
+  //   setCuisineImages([]);
+  //   setServiceType('');
+  // } catch (error) {
+  //   console.error('Error submitting form:', error);
+  //   // Handle error (show error message to user)
+  // }
     },
   });
 
@@ -451,7 +530,7 @@ const AddService = () => {
                   Add Venue Images
                   <VisuallyHiddenInput 
                     type="file" 
-                    accept="image/*"
+                    accept="image/jpeg,image/png"
                     multiple
                     onChange={handleAdditionalImageChange}
                   />
@@ -558,7 +637,7 @@ const AddService = () => {
                   Add Cuisine Images
                   <VisuallyHiddenInput 
                     type="file" 
-                    accept="image/*"
+                    accept="image/jpeg,image/png"
                     multiple
                     onChange={handleCuisineImageChange}
                   />
@@ -612,19 +691,19 @@ const AddService = () => {
           </>
         );
         
-      case 'decor':
+      case 'decoration':
         return (
           <>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                name="decorStyle"
+                name="decoration"
                 label="Decoration Style"
-                value={formik.values.decorStyle}
+                value={formik.values.decoration}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                error={formik.touched.decorStyle && Boolean(formik.errors.decorStyle)}
-                helperText={formik.touched.decorStyle && formik.errors.decorStyle}
+                error={formik.touched.decoration && Boolean(formik.errors.decoration)}
+                helperText={formik.touched.decoration && formik.errors.decoration}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -797,7 +876,7 @@ const AddService = () => {
                     Upload Main Image
                     <VisuallyHiddenInput 
                       type="file" 
-                      accept="image/*"
+                      accept="image/jpeg,image/png"
                       onChange={handleMainImageChange}
                     />
                   </Button>

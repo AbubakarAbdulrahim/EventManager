@@ -1,6 +1,6 @@
 from rest_framework import generics
 from .models import Vendor, VendorPackage, VendorCertificationImages, VendorPackageImages
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from .serializer import(
     VendorActualSerializer, 
     VendorDetailSerializer, 
@@ -17,7 +17,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 class VendorListCreateView(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorActualSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     
     def post(self, request, *args, **kwargs):
@@ -35,7 +35,7 @@ class VendorListCreateView(generics.ListCreateAPIView):
         images = request.FILES.getlist("certification_images")
         if images:
             for image in images:
-                VendorCertificationImages.objects.create(vendor=vendor, vendor__user=request.user)
+                VendorCertificationImages.objects.create(vendor=vendor, image=image)
         return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
 
     # on creating
@@ -46,13 +46,13 @@ class VendorListCreateView(generics.ListCreateAPIView):
 class VendorRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorDetailSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]
 
 # vendor package list and create view
 class VendorPackageListCreateView(generics.ListCreateAPIView):
     queryset = VendorPackage.objects.all()
     serializer_class = VendorPackageActualSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         data = {
@@ -61,19 +61,21 @@ class VendorPackageListCreateView(generics.ListCreateAPIView):
             "service_mode" : request.data.get("service_mode"), 
             "capacity" : request.data.get("capacity"), 
             "price" : request.data.get("price"),
+            "additional_info": request.data.get("additional_info"),
             "location" : request.data.get("location"),
             "availability" : request.data.get("availability")
         }
 
         vendor_package_serializer = self.get_serializer(data=data)
         vendor_package_serializer.is_valid(raise_exception=True)
-        vendor = vendor_package_serializer.save(user=request.user)
+        vendor_obj = Vendor.objects.get(user=request.user)
+        vendor_package = vendor_package_serializer.save(vendor=vendor_obj)
 
         images = request.FILES.getlist("package_images")
         if images:
             for image in images:
-                VendorPackageImages.objects.create(vendor=vendor, vendor__user=request.user)
-        return Response(self.get_serializer(vendor).data, status=status.HTTP_201_CREATED)
+                VendorPackageImages.objects.create(vendor=vendor_package, image=image)
+        return Response(self.get_serializer(vendor_package).data, status=status.HTTP_201_CREATED)
 
 
     # on creating
@@ -84,7 +86,7 @@ class VendorPackageListCreateView(generics.ListCreateAPIView):
 class VendorPackageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = VendorPackage.objects.all()
     serializer_class = VendorPackageDetailSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]
 
 # checking vendor availabity view
 class CheckingVendorAvailability(APIView):

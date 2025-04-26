@@ -132,8 +132,25 @@ export const AuthProvider = ({ children }) => {
 
   const apply = async (data) => {
     try {
-      setLoading(true);
+      // setLoading(true);
       const response = await authAxios.post('/vendors/', data);
+      
+      setError(null);
+      console.log(response)
+      return response.data;
+    } catch (err) {
+      console.log(err)
+      const errorMessage = err;
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }
+  const addNewService = async (data) => {
+    try {
+      setLoading(true);
+      const response = await authAxios.post('/vendors/vendor-packages/', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       
       setError(null);
       console.log(response)
@@ -184,6 +201,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     apply,
+    addNewService,
     authAxios,
   };
 

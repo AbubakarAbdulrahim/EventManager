@@ -117,7 +117,6 @@ export default function VendorApplication() {
   const [openSuccess, setOpenSuccess] = useState(false);
   const [fileError, setFileError] = useState('');
   const [submissionComplete, setSubmissionComplete] = useState(false);
-console.log(user)
   const steps = [
     { label: 'Personal Information', icon: 1 },
     { label: 'Business Details', icon: 2 },
@@ -182,11 +181,7 @@ console.log(user)
         // Add certificate files
         
         
-        // Log FormData for debugging
-        for (const pair of formDataToSend.entries()) {
-            console.log(`${pair[0]}:`, pair[1]);
-          }
-        
+      
         
         try {
 
@@ -199,7 +194,7 @@ console.log(user)
         
         // Show final success step instead of dialog
         setSubmissionComplete(true);
-        setOpenSuccess(true)
+        // setOpenSuccess(true)
         setActiveStep(steps.length - 1);
       } else {
         // Move to next step after validation

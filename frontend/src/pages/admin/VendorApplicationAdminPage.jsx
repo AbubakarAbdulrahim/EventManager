@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -37,62 +37,10 @@ import {
   Close as CloseIcon,
   ZoomIn as ZoomInIcon
 } from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
 import DrawerAppBar from '../../components/DrawerAppBar';
 import LabelBottomNavigation from '../../components/LabelBottomNavigation';
 
-// Mock data for vendor applications with the new data structure
-const mockApplications = [
-  {
-    id: 1,
-    fullName: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '123-456-7890',
-    business_name: 'Tech Solutions Inc.',
-    address: '123 Main St, San Francisco, CA',
-    years_in_business: '5',
-    certification_list: 'Business License, ISO 9001, Tech Certification',
-    certification_images: [
-      './image1.jpg',
-      './image1.jpg',
-      './image1.jpg'
-    ],
-    status: 'approved',
-    submittedDate: '2025-04-10',
-  },
-  {
-    id: 2,
-    fullName: 'Sarah Johnson',
-    email: 'sarah.j@example.com',
-    phone: '987-654-3210',
-    business_name: 'Organic Foods Co.',
-    address: '456 Elm St, Portland, OR',
-    years_in_business: '3',
-    certification_list: 'FDA Certification, Organic Products Certificate',
-    certification_images: [
-      './image1.jpg',
-      './image1.jpg'
-    ],
-    status: 'rejected',
-    submittedDate: '2025-04-15',
-  },
-  {
-    id: 3,
-    fullName: 'Michael Wong',
-    email: 'mwong@example.com',
-    phone: '555-123-4567',
-    business_name: 'Fashion Forward',
-    address: '789 Oak Rd, New York, NY',
-    years_in_business: '7',
-    certification_list: 'Business Registration, Design Portfolio, Eco-Friendly Certification',
-    certification_images: [
-      './image1.jpg',
-      './image1.jpg',
-      './image1.jpg'
-    ],
-    status: 'pending',
-    submittedDate: '2025-04-18',
-  },
-];
 
 // Vendor roles options
 const vendorRoles = [
@@ -104,7 +52,7 @@ const vendorRoles = [
 ];
 
 const VendorApplicationAdminPage = () => {
-  const [applications, setApplications] = useState(mockApplications);
+  const [applications, setApplications] = useState([]);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,6 +63,38 @@ const VendorApplicationAdminPage = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState('');
+  const {authAxios} = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+
+  useEffect(() => {
+    // Fetch data from backend
+    authAxios.get('/vendors/')
+      .then(response => {
+        const transformed = response.data.map(app => ({
+          id: app.id,
+          fullName: app.user.full_name,
+          email: app.user.email,
+          phone: app.user.phone_number,
+          business_name: app.business_name,
+          address: app.address,
+          years_in_business: String(app.years_in_business),
+          certification_list: app.certification_list,
+          certification_images: app.certification_images,
+          status: 'pending', // hardcoding for now
+          submittedDate: app.created_at.split('T')[0],
+        }));
+  
+        // console.log(transformed);
+        setApplications(transformed);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err);
+        setLoading(false);
+      });
+  }, []);
 
   // Filter applications based on search term and status
   const filteredApplications = applications.filter((app) => {
@@ -266,7 +246,7 @@ const VendorApplicationAdminPage = () => {
               <TableCell>Business Name</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Submitted Date</TableCell>
-              <TableCell>Status</TableCell>
+              <TableCell align='center'>Status</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -279,7 +259,7 @@ const VendorApplicationAdminPage = () => {
                   <TableCell>{application.business_name}</TableCell>
                   <TableCell>{application.email}</TableCell>
                   <TableCell>{application.submittedDate}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{display:'flex', gap:1}}>
                     <Chip 
                       label={application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                       color={
@@ -290,10 +270,10 @@ const VendorApplicationAdminPage = () => {
                     />
                     {application.role && (
                       <Chip 
-                        label={application.role}
+                        label={(application.role).split(' ')[0]}
                         color="primary"
                         size="small"
-                        sx={{ ml: 1 }}
+                        // sx={{ ml: 1 }}
                       />
                     )}
                   </TableCell>

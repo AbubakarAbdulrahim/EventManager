@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Vendor, VendorPackageImages, VendorPackage, VendorAvailability, VendorCertificationImages
 from django.contrib.auth import get_user_model
+from users.serializer import UserSerializer
 
 User = get_user_model()
 
@@ -81,7 +82,7 @@ class VendorPackageDetailSerializer(serializers.ModelSerializer):
 # vendor package create list serializer
 class VendorPackageActualSerializer(serializers.ModelSerializer):
     availability = VendorAvailabilitySerializer(many=True, read_only=True)
-    package_images = VendorPackageImagesSerializer(many=True)
+    package_images = VendorPackageImagesSerializer(many=True, read_only=True)
     
     class Meta:
         model = VendorPackage
@@ -92,6 +93,7 @@ class VendorPackageActualSerializer(serializers.ModelSerializer):
             "service_mode", 
             "capacity", 
             "price",
+            "additional_info",
             "location",
 
             # additional 
@@ -129,7 +131,7 @@ class VendorDetailSerializer(serializers.ModelSerializer):
 # vendor create list serializer
 class VendorActualSerializer(serializers.ModelSerializer):
     certification_images = VendorCertificationImagesSeralizer(many=True, read_only=True)
-
+    user = UserSerializer(read_only=True)
     class Meta:
         model = Vendor
         fields = [
@@ -146,6 +148,5 @@ class VendorActualSerializer(serializers.ModelSerializer):
             "certification_images"
         ]
         extra_kwargs = {
-            "created_at": {"read_only": True},
-            "user" : {"read_only": True}
+            "created_at": {"read_only": True}
         }
