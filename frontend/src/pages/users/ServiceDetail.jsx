@@ -44,11 +44,11 @@ import {
   FavoriteBorder,
   Send
 } from '@mui/icons-material';
-import { mockServices } from '../services/mockServices';
-import { useServiceContext } from '../context/ServiceContext';
-import { useBookingContext } from '../context/BookingsContext';
-import BookingDialog from '../components/BookingDialog';
-import SuccessDialog from '../components/SuccessDialog';
+import { mockServices } from '../../services/mockServices';
+import { useServiceContext } from '../../context/ServiceContext';
+import { useBookingContext } from '../../context/BookingsContext';
+import BookingDialog from '../../components/BookingDialog';
+import SuccessDialog from '../../components/SuccessDialog';
 // Fake data for demonstration
 const serviceData = {
   id: "101",

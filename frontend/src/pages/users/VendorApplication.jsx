@@ -38,10 +38,10 @@ import {
 import Avatar from '@mui/material/Avatar';
 import AddIcon from '@mui/icons-material/Add';
 import Checklist from '@mui/icons-material/Checklist';
-import SuccessDialog from '../components/SuccessDialog';
-import DrawerAppBar from '../components/DrawerAppBar';
-import LabelBottomNavigation from '../components/LabelBottomNavigation';
-import { useAuth } from '../context/AuthContext';
+import SuccessDialog from '../../components/SuccessDialog';
+import DrawerAppBar from '../../components/DrawerAppBar';
+import LabelBottomNavigation from '../../components/LabelBottomNavigation';
+import { useAuth } from '../../context/AuthContext';
 import { styled } from '@mui/material/styles';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -187,15 +187,14 @@ export default function VendorApplication() {
 
             await apply(formDataToSend);
             
-
+            // Show final success step instead of dialog
+            setSubmissionComplete(true);
+            // setOpenSuccess(true)
+            setActiveStep(steps.length - 1);
           } catch (error) {
             console.error(error);
           }
         
-        // Show final success step instead of dialog
-        setSubmissionComplete(true);
-        // setOpenSuccess(true)
-        setActiveStep(steps.length - 1);
       } else {
         // Move to next step after validation
         handleNext();

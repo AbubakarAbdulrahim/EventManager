@@ -32,7 +32,7 @@ export default function Admin(params) {
     {/* <Box sx={{position:'relative'}}> */}
 
     <NavAppBar setCurrentPage={setCurrentPage} currentPage={currentPage} />
-    <Box sx={{pl:9, pt:9}}>
+    <Box sx={{pl:9, pt:9, bgcolor:'#f5f5f5', height:'100%'}}>
       {/* <VendorApplicationAdminPage/> */}
       {renderContent()}
       

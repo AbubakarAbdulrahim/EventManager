@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useServiceContext } from "../context/ServiceContext";
-import DrawerAppBar from "../components/DrawerAppBar";
+import { useServiceContext } from "../../context/ServiceContext";
+import DrawerAppBar from "../../components/DrawerAppBar";
 // import { Typography } from "@mui/material/Typography";
 import {
   AppBar,
@@ -31,7 +31,7 @@ import {
   Box,
   styled
 } from '@mui/material';
-import ServicesCard from "../components/ServicesCard";
+import ServicesCard from "../../components/ServicesCard";
 
 export default function Favorites() {
     const {favorites} = useServiceContext();

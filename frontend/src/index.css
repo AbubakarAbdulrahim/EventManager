@@ -3,6 +3,7 @@ body{
     margin: 0;
     height: 100vh;
     color: #033043;
+    background-color: #f5f5f5;
 }
 
 input[type="checkbox"]{

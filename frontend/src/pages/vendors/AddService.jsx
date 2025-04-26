@@ -28,12 +28,12 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { styled } from '@mui/material/styles';
-import DrawerAppBar from '../components/DrawerAppBar';
+import DrawerAppBar from '../../components/DrawerAppBar';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 // Styled component for file input
 const VisuallyHiddenInput = styled('input')({
@@ -306,21 +306,21 @@ const AddService = () => {
     console.log(`${pair[0]}:`, pair[1]);
   }
 
-  // try {
-  //   await addNewService(formDataToSend);
-  //   setOpen(true);
+  try {
+    await addNewService(formDataToSend);
+    setOpen(true);
     
-  //   // Reset form after successful submission
-  //   formik.resetForm();
-  //   setMainImage(null);
-  //   setMainImagePreview('');
-  //   setAdditionalImages([]);
-  //   setCuisineImages([]);
-  //   setServiceType('');
-  // } catch (error) {
-  //   console.error('Error submitting form:', error);
-  //   // Handle error (show error message to user)
-  // }
+    // Reset form after successful submission
+    formik.resetForm();
+    setMainImage(null);
+    setMainImagePreview('');
+    setAdditionalImages([]);
+    setCuisineImages([]);
+    setServiceType('');
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    // Handle error (show error message to user)
+  }
     },
   });
 
@@ -1027,7 +1027,12 @@ const AddService = () => {
           </form>
         </Paper>
         
-        <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
+        <Snackbar 
+        open={open} 
+        autoHideDuration={6000} 
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'top', horizontal:'center' }}
+        >
           <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
             Service added successfully!
           </Alert>
