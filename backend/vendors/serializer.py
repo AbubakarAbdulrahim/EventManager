@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from users.serializer import UserSerializer
 from .models import (
     Vendor, 
     VendorPackageImages, 
@@ -141,7 +142,7 @@ class VendorPackageCreateSerializer(serializers.ModelSerializer):
 
 # vendor retrieve serializer
 class VendorRetrieveSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+    user = UserSerializer(read_only=True)
     certification_images = VendorCertificationImagesSerializer(many=True, read_only=True)
     packages = VendorPackageRetrieveSerializer(many=True, read_only=True)
     package_images = VendorPackageImagesSerializer(many=True, read_only=True)
@@ -164,13 +165,13 @@ class VendorRetrieveSerializer(serializers.ModelSerializer):
             "package_images",
         ]
         extra_kwargs = {
-            "user": {"read_only": True},
             "created_at": {"read_only": True},
             "is_approved" : {"read_only": True},
         }
 
 # vendor create put serializer
 class VendorCreateSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
     certification_images = VendorCertificationImagesSerializer(many=True)
     packages = VendorPackageCreateSerializer(many=True)
     package_images = VendorPackageImagesSerializer(many=True)
@@ -229,7 +230,10 @@ for admins ->
 '''
 # vendor serializer for admin
 class VendorAdminSerializer(serializers.ModelSerializer):
-
+    user = UserSerializer()
+    certification_images = VendorCertificationImagesSerializer(many=True)
+    packages = VendorPackageCreateSerializer(many=True)
+    package_images = VendorPackageImagesSerializer(many=True)
     class Meta:
         model = Vendor
         fields = '__all__'
