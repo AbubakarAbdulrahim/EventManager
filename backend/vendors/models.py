@@ -100,11 +100,14 @@ class VendorPackageAvailability(models.Model):
     stores weekly availability for vendors.
     """
     vendor_package = models.ForeignKey(VendorPackage, on_delete=models.CASCADE, related_name="availability")
-    day = models.CharField(max_length=3)  # e.g., 'Mon', 'Tue', etc.
+    date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField(default=time(23, 59))
+    is_available = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('vendor_package', 'date', 'start_time', 'end_time')
 
     def __str__(self):
         vendor_name = self.vendor_package.vendor.user.get_full_name() if self.vendor_package and self.vendor_package.vendor and self.vendor_package.vendor.user else "Unknown"
         return f"{vendor_name} available on {self.day} from {self.start_time} to {self.end_time}"
-

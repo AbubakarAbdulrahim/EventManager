@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    
     # vendor endpoints
     path('', views.VendorListView.as_view(), name='vendors'),
     path('create/', views.VendorCreateView.as_view(), name='vendor-create'),
@@ -16,9 +17,18 @@ urlpatterns = [
 
 
     # vendor package endpoints
-    path('vendor-packages/', views.VendorPackageListView.as_view(), name='vendor-package-list'),
-    path('vendor-packages/create/', views.VendorPackageCreateView.as_view(), name='vendor-package-create'),
-    path('vendor-packages/<int:pk>/', views.VendorPackageRetrieveView.as_view(), name='vendor-package-detail'),
-    path('vendor-packages/<int:pk>/update/', views.VendorPackageUpdateView.as_view(), name='vendor-package-update'),
-    path('vendor-packages/<int:pk>/delete/', views.VendorPackageDestroyView.as_view(), name='vendor-package-delete'),
+    path('services/', views.VendorPackageListView.as_view(), name='vendor-package-list'),
+    path('services/create/', views.VendorPackageCreateView.as_view(), name='vendor-package-create'),
+    path('services/<int:pk>/', views.VendorPackageRetrieveView.as_view(), name='vendor-package-detail'),
+    path('services/<int:pk>/update/', views.VendorPackageUpdateView.as_view(), name='vendor-package-update'),
+    path('services/<int:pk>/delete/', views.VendorPackageDestroyView.as_view(), name='vendor-package-delete'),
+    
+
+    #
+    #
+    #
+
+
+    # vendor package availability endpoints
+    path('service/<int:pk>/availability/', views.ServiceAvailabilityRetrievView.as_view(), name='service-availability-list'),
 ]

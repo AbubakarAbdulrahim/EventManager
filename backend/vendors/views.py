@@ -6,7 +6,7 @@ from .models import (
     VendorPackageImages,
     VendorPackageAvailability
 )
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permission import IsVendorRole
 from .serializer import(
     VendorCreateSerializer,
@@ -19,13 +19,15 @@ from .serializer import(
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+from .availability import is_vendor_package_available
 
 
 '''
 views for vendors
 '''
 
-# vendor retrieve view
+# vendor retrieve viewOrReadOnly
 class VendorRetrieveView(generics.RetrieveAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorRetrieveSerializer
@@ -36,7 +38,7 @@ class VendorRetrieveView(generics.RetrieveAPIView):
 class VendorCreateView(generics.CreateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorCreateSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     
     # on creating
@@ -131,28 +133,21 @@ class VendorPackageDestroyView(generics.DestroyAPIView):
         VendorPackageAvailability.objects.filter(vendor_package=instance).delete()
         instance.delete()
         return instance
-
+    
 
 #
 #
 #
 
 
-# checking vendor availabity view
-class CheckingVendorAvailability(APIView):
-    # def post(self, request):
-    #     package = request.context['vendor_package']
-    #     event_date = request.context['event_date']
-    #     start_time = request.context['start_time']
-    #     end_time = request.context['end_time']
+'''
+for vendor package availability
+'''
 
-    #     if is_vendor_package_available(
-    #         vendor_package=package,
-    #         event_date = event_date,
-    #         start_time=start_time,
-    #         end_time=end_time
-    #     ):
-    #         return Response({"is_available":True})
-    #     else:
-    #         return Response({"is_available":False})
-    pass
+# service availability list view
+class ServiceAvailabilityRetrievView(generics.RetrieveAPIView):
+    serializer_class = VendorPackageAvailability
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return VendorPackageAvailability.filter(is_available=True)

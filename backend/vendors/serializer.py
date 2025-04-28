@@ -11,15 +11,15 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-DAYS_OF_WEEK = [
-    ('Mon', 'Monday'),
-    ('Tue', 'Tuesday'),
-    ('Wed', 'Wednesday'),
-    ('Thu', 'Thursday'),
-    ('Fri', 'Friday'),
-    ('Sat', 'Saturday'),
-    ('Sun', 'Sunday'),
-]
+# DAYS_OF_WEEK = [
+#     ('Mon', 'Monday'),
+#     ('Tue', 'Tuesday'),
+#     ('Wed', 'Wednesday'),
+#     ('Thu', 'Thursday'),
+#     ('Fri', 'Friday'),
+#     ('Sat', 'Saturday'),
+#     ('Sun', 'Sunday'),
+# ]
 
 # vendor certification images serializer (to be referenced)
 class VendorCertificationImagesSerializer(serializers.ModelSerializer):
@@ -53,21 +53,42 @@ class VendorPackageImagesSerializer(serializers.ModelSerializer):
 
 # vendor availability serializer (to be referenced)
 class VendorPackageAvailabilitySerializer(serializers.ModelSerializer):
-    day = serializers.ChoiceField(choices=DAYS_OF_WEEK)
+    
+    # day = serializers.ChoiceField(choices=DAYS_OF_WEEK)
 
     class Meta:
         model = VendorPackageAvailability
         fields = [
             "id",
             "vendor_package",
-            "day",
+            "date",
             "start_time",
             "end_time",
+            "is_available",
         ]
         extra_kwargs = {
             "vendor_package": {"read_only": False},
         }
 
+# service availability serializer (list of only available slots)
+class PackageAvailableSlotsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorPackageAvailability
+        fields = (
+            'id',
+            'vendor_package',
+            'date',
+            'start_time',
+            'end_time','start_time',
+            'end_time',
+            )
+        read_only_fields = [
+            'id', 
+            'vendor_package', 
+            'date', 
+            'start_time',
+            'end_time', 
+            ]
 
 
 # 

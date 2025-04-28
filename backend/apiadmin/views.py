@@ -48,9 +48,12 @@ class VendorsAdminSuspendActivateView(APIView):
         vendor = get_object_or_404(Vendor, pk=pk)
         if vendor.is_approved == False:
             vendor.is_approved = True
+            vendor.user.role = 'vendor'
             message = 'approved'
         elif vendor.is_approved == True:
             vendor.is_approved == False
+            if vendor.user.role == 'vendor':
+                vendor.user.role = 'customer'
             message = 'suspended'
         vendor.save()
         return Response({"detail": f"vendor {message}"})
