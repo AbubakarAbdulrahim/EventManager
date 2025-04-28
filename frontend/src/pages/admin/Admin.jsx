@@ -2,6 +2,7 @@ import { Box } from '@mui/material'
 import NavAppBar from '../../components/admin/NavAppBar'
 import VendorApplicationAdminPage from './VendorApplicationAdminPage'
 import { useState } from 'react';
+import Customers from './Customers';
 
 export default function Admin(params) {
   const [currentPage, setCurrentPage] = useState('Dashboard');
@@ -9,8 +10,8 @@ export default function Admin(params) {
     switch (currentPage.toLocaleLowerCase()) {
       // case 'dashboard':
       //   return <DashboardContent />;
-      // case 'users':
-      //   return <CustomersContent />;
+      case 'customers':
+        return <Customers />;
       case 'vendors':
         return <VendorApplicationAdminPage />;
       // case 'bookings':

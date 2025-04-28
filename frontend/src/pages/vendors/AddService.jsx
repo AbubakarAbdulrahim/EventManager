@@ -22,7 +22,9 @@ import {
   Alert,
   IconButton,
   Divider,
-  Stack
+  Stack,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -34,6 +36,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { useAuth } from '../../context/AuthContext';
+import {Dialog, DialogTitle} from '@mui/material';
 
 // Styled component for file input
 const VisuallyHiddenInput = styled('input')({
@@ -88,7 +91,7 @@ const weekdays = [
   };
   
 
-const AddService = () => {
+const AddService = ({openDialog, closeDialog}) => {
   const [open, setOpen] = useState(false);
   const [mainImage, setMainImage] = useState(null);
   const [mainImagePreview, setMainImagePreview] = useState('');
@@ -765,12 +768,17 @@ const AddService = () => {
 
   return (
     <>
-      <DrawerAppBar/>
-      <Container maxWidth="md" sx={{ mt: 5, mb: 4 }}>
+    <Dialog 
+    open={openDialog}
+    onClose={handleClose} 
+    maxWidth="md"
+    fullWidth
+    >
+      <DialogTitle>Add New Service</DialogTitle>
+      <DialogContent>
+
+      {/* <Container maxWidth="md" sx={{ mt: 5, mb: 4 }}> */}
         <Paper sx={{ p: 4 }}>
-          <Typography variant="h4" gutterBottom align="center">
-            Add New Service
-          </Typography>
           
           <form onSubmit={formik.handleSubmit}>
             <Grid container spacing={3}>
@@ -1027,6 +1035,14 @@ const AddService = () => {
           </form>
         </Paper>
         
+      {/* </Container> */}
+      </DialogContent>
+      <DialogActions>
+        <Button variant='outlined' onClick={closeDialog} color="primary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
         <Snackbar 
         open={open} 
         autoHideDuration={6000} 
@@ -1037,7 +1053,6 @@ const AddService = () => {
             Service added successfully!
           </Alert>
         </Snackbar>
-      </Container>
     </>
   );
 };
