@@ -3,8 +3,11 @@ import NavAppBar from '../../components/vendor/NavAppBar';
 import { Box } from '@mui/material';
 import Services from './Services';
 import Customers from './Customers';
+import {useAuth} from '../../context/AuthContext'
 export default function VendorDashboard() {
     const [currentPage, setCurrentPage] = useState('Dashboard');
+    const { user } = useAuth();
+    console.log(user)
     const renderContent = () => {
         switch (currentPage.toLocaleLowerCase()) {
             // case 'dashboard':

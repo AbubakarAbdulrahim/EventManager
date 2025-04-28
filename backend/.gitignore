@@ -2,4 +2,4 @@
 db.sqlite3
 */migrations/
 __pycache__/
-*.pyc
+vendor_certifications/

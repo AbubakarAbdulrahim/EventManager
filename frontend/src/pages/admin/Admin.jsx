@@ -2,10 +2,14 @@ import { Box } from '@mui/material'
 import NavAppBar from '../../components/admin/NavAppBar'
 import VendorApplicationAdminPage from './VendorApplicationAdminPage'
 import { useState } from 'react';
+import {useAuth} from '../../context/AuthContext'
 import Customers from './Customers';
 
 export default function Admin(params) {
   const [currentPage, setCurrentPage] = useState('Dashboard');
+  const { user } = useAuth();
+  console.log(user.role)
+  
   const renderContent = () => {
     switch (currentPage.toLocaleLowerCase()) {
       // case 'dashboard':

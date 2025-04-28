@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import {
   Box,
   Paper,
@@ -96,6 +96,10 @@ const VendorApplicationAdminPage = () => {
       });
   }, []);
 
+
+
+
+
   // Filter applications based on search term and status
   const filteredApplications = applications.filter((app) => {
     const matchesSearch = 
@@ -121,12 +125,24 @@ const VendorApplicationAdminPage = () => {
     setSelectedApplication(null);
   };
 
-  const handleApprove = (app, role) => {
+  const handleApprove = async (app, role) => {
     const updatedApplications = applications.map(a =>
       a.id === app.id
         ? { ...a, status: 'approved', role }
         : a
     );
+    try {
+      const response = await authAxios.post(`api-admin/vendors/${app.id}/suspend-activate/`);
+      console.log(response);
+    }
+    catch (error) {
+      console.error('Error updating application:', error);
+      setSnackbarMessage('Error updating application status');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
   
     setApplications(updatedApplications);
     setSnackbarMessage(`${app.fullName}'s application approved as ${role}`);

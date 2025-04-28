@@ -20,10 +20,10 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import Admin from "./pages/admin/Admin";
 import ServiceDetail from "./pages/users/ServiceDetail";
 import VendorDashboard from "./pages/vendors/vendor";
+
 import VendorAdmin from "./pages/vendors/vendorAdmin";
 
 function App() {
-  
   return (
     <AuthProvider>
     <ThemeProvider theme={theme}>
@@ -50,7 +50,11 @@ function App() {
         <Route path="/service/:id" element={<ServiceDetail />} />
         <Route path="/favorites" element={<Favorites/>}></Route>
         <Route path="/admin-dashboard" element={<AdminDashboard/>}></Route>
-        <Route path="/admin" element={<Admin/>}></Route>
+        <Route path="/admin" element={
+          <ProtectedRoute roles={['admin']}>
+            <Admin/>
+          </ProtectedRoute>
+        }></Route>
         <Route path="/vendor" element={<VendorDashboard/>}></Route>
         <Route path="/vendor-admin" element={<VendorAdmin/>}></Route>
         <Route path="/unauthorized" element={<Unauthorized/>} />

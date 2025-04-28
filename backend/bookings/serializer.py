@@ -10,3 +10,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "status" : {"read_only" : True},
             "created_at": {"read_only": True}
         }
+
+# bookings serializer for admin
+class BookingAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = '__all__'

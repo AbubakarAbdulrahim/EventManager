@@ -2,9 +2,10 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from vendors.permission import IsVendorRole
 from .models import Booking
 from .serializer import BookingSerializer
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from .tasks import notify_venue, notify_admins, notify_user
 from django.contrib.auth import get_user_model
 
@@ -54,7 +55,6 @@ class BookingRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             user_email=booking.user.email
         )
 
-
 # list create view
 class BookingListCreateView(generics.ListCreateAPIView):
     queryset = Booking.objects.all()
@@ -79,12 +79,11 @@ class BookingListCreateView(generics.ListCreateAPIView):
         user = self.request.user
         if user.role == 'admin':
             return Booking.objects.all()
-        return Booking.objects.filter(user=user)
-    
+        return Booking.objects.filter(user=user) 
 
 # venue approved booking view
 class ApprovedBookingView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsVendorRole]
 
     # on post
     def post(self, request, booking_id):
@@ -112,7 +111,6 @@ class ApprovedBookingView(APIView):
         )
         return Response({"message": f"Booking accepted by {booking.venue.name} "})
     
-
 # venue rejects booking view 
 class RejectBookingView(APIView):
     permission_classes = [IsAuthenticated]

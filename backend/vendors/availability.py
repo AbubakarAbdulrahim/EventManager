@@ -1,14 +1,13 @@
-from .models import VendorAvailability
+from .models import VendorPackageAvailability
 from bookings.models import Booking
 
 
 def is_vendor_package_available(vendor_package, event_date, start_time, end_time):
-    week_day = event_date.strftime('%a').lower()[:3]  # 'Mon' -> 'mon'
     
     # checks if vendor package availability match with this criteria
-    available = VendorAvailability.objects.filter(
+    available = VendorPackageAvailability.objects.filter(
         vendor_package=vendor_package,
-        day=week_day,
+        date=event_date,
         start_time__lte=start_time,
         end_time__gte=end_time,
     ).exists()

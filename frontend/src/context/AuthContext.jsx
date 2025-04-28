@@ -20,7 +20,10 @@ export const AuthProvider = ({ children }) => {
 
   // Sync accessToken with ref
   useEffect(() => {
-    accessTokenRef.current = accessToken;
+    // Only update if the token is actually different
+    if (accessTokenRef.current !== accessToken) {
+      accessTokenRef.current = accessToken;
+    }
   }, [accessToken]);
 
   // Initial auth check on mount
@@ -39,17 +42,6 @@ export const AuthProvider = ({ children }) => {
 
   // Setup axios interceptors
   useEffect(() => {
-    // Add request interceptor
-    axiosInterceptorRef.current = authAxios.interceptors.request.use(
-      (config) => {
-        if (accessTokenRef.current) {
-          config.headers.Authorization = `Bearer ${accessTokenRef.current}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
     // Add response interceptor
     const responseInterceptor = authAxios.interceptors.response.use(
       (response) => response,
@@ -60,12 +52,18 @@ export const AuthProvider = ({ children }) => {
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
           
-          try {
-            const refreshedAccessToken = await refreshToken();
-
-          if (!refreshedAccessToken) {
+          // Avoid refreshing the token again if it's already being refreshed
+          if (accessTokenRef.current === null) {
             return Promise.reject(error);
           }
+  
+          try {
+            const refreshedAccessToken = await refreshToken();
+  
+            if (!refreshedAccessToken) {
+              return Promise.reject(error);
+            }
+  
             originalRequest.headers.Authorization = `Bearer ${accessTokenRef.current}`;
             return authAxios(originalRequest);
           } catch (refreshError) {
@@ -77,12 +75,7 @@ export const AuthProvider = ({ children }) => {
         return Promise.reject(error);
       }
     );
-
-    return () => {
-      authAxios.interceptors.request.eject(axiosInterceptorRef.current);
-      authAxios.interceptors.response.eject(responseInterceptor);
-    };
-  }, []);
+  }, [accessToken]); // Ensure this effect only runs once, after the token refresh
 
   const login = async (credentials) => {
     try {
@@ -133,7 +126,7 @@ export const AuthProvider = ({ children }) => {
   const apply = async (data) => {
     try {
       // setLoading(true);
-      const response = await authAxios.post('/vendors/', data);
+      const response = await authAxios.post('/vendors/create/', data);
       
       setError(null);
       console.log(response)
@@ -168,13 +161,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAxios.post('/user/token/refresh/');
       const { access } = response.data;
-      setAccessToken(access);
-
-
+      
+      // Only update the token if it's different
+      if (access !== accessTokenRef.current) {
+        setAccessToken(access);
+      }
+  
       // Decode the new token to get user ID
       const decodedToken = jwtDecode(access);
       const userId = decodedToken.user_id;
-
+  
       const userResponse = await authAxios.get(`/user/${userId}/`, {
         headers: { Authorization: `Bearer ${access}` },
       });
@@ -182,7 +178,6 @@ export const AuthProvider = ({ children }) => {
       setUser(userResponse.data);
       setError(null);
       return access;
-      
     } catch (err) {
       setAccessToken(null);
       setUser(null);
