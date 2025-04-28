@@ -3,8 +3,17 @@ from . import views
 
 urlpatterns = [
     # vendor endpoints
-    path('', views.VendorListCreateView.as_view(), name='vendor-list-create'),
-    path('<int:pk>/', views.VendorRetrieveUpdateDestroyView.as_view(), name='vendor-detail'),
+    path('', views.VendorListView.as_view(), name='vendors'),
+    path('create/', views.VendorCreateView.as_view(), name='vendor-create'),
+    path('<int:pk>/', views.VendorRetrieveView.as_view(), name='vendor-detail'),
+    path('<int:pk>/update/', views.VendorUpdateView.as_view(), name='vendor-update'),
+    path('<int:pk>/delete/', views.VendorDestroyView.as_view(), name='vendor-delete'),
+
+
+    #
+    #
+    #
+
 
     # vendor package endpoints
     path('vendor-packages/', views.VendorPackageListView.as_view(), name='vendor-package-list'),

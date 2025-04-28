@@ -4,7 +4,7 @@ from .models import (
     Vendor, 
     VendorPackageImages, 
     VendorPackage, 
-    VendorAvailability, 
+    VendorPackageAvailability, 
     VendorCertificationImages
 )
 from django.contrib.auth import get_user_model
@@ -52,11 +52,11 @@ class VendorPackageImagesSerializer(serializers.ModelSerializer):
         }
 
 # vendor availability serializer (to be referenced)
-class VendorAvailabilitySerializer(serializers.ModelSerializer):
+class VendorPackageAvailabilitySerializer(serializers.ModelSerializer):
     day = serializers.ChoiceField(choices=DAYS_OF_WEEK)
 
     class Meta:
-        model = VendorAvailability
+        model = VendorPackageAvailability
         fields = [
             "id",
             "vendor_package",
@@ -69,6 +69,7 @@ class VendorAvailabilitySerializer(serializers.ModelSerializer):
         }
 
 
+
 # 
 # 
 #
@@ -76,7 +77,7 @@ class VendorAvailabilitySerializer(serializers.ModelSerializer):
 
 # vendor package retrieve serializer
 class VendorPackageRetrieveSerializer(serializers.ModelSerializer):
-    availability = VendorAvailabilitySerializer(many=True, read_only=True)
+    availability = VendorPackageAvailabilitySerializer(many=True, read_only=True)
     package_images = VendorPackageImagesSerializer(many=True, read_only=True)
     
     class Meta:
@@ -99,16 +100,14 @@ class VendorPackageRetrieveSerializer(serializers.ModelSerializer):
             ]
         extra_kwargs = {"vendor" : {"read_only": True}}
 
-# vendor package create put serializer
+# vendor package create serializer
 class VendorPackageCreateSerializer(serializers.ModelSerializer):
-    availability = VendorAvailabilitySerializer(many=True)
+    availability = VendorPackageAvailabilitySerializer(many=True)
     package_images = VendorPackageImagesSerializer(many=True)
     
     class Meta:
         model = VendorPackage
         fields = [
-            "id",
-            "vendor",
             "service_name",
             "service_type", 
             "service_mode", 
@@ -116,29 +115,99 @@ class VendorPackageCreateSerializer(serializers.ModelSerializer):
             "price",
             "location",
             "additional_info",
-            "is_approved",
-
+            
             # additional 
             "availability",
             "package_images"
         ]
 
     def create(self, validated_data):
+        request = self.context.get('request')
+
         availability_data = validated_data.pop('availability', [])
-        package_images_data = validated_data.pop('package_images', [])
+        package_images = request.FILES.getlist('package_images')
         
+        # validate
+        if not availability_data:
+            raise serializers.ValidationError({"availability": "This field is required"})
+        if not package_images:
+            raise serializers.ValidationError({"package_images": "This field is required"})
+        
+
         # create the package
         package = VendorPackage.objects.create(**validated_data)
 
         # create the package availability
         for availability in availability_data:
-            VendorAvailability.objects.create(vendor_package=package, **availability)
+            VendorPackageAvailability.objects.create(vendor_package=package, **availability)
         
         # create the package images
-        for image in package_images_data:
-            VendorPackageImages.objects.create(vendor=package.vendor, **image)
+        for image in package_images:
+            VendorPackageImages.objects.create(vendor=package.vendor, image=image)
     
         return package
+
+# vendor package update serializer
+class VendorPackageUpdateSerializer(serializers.ModelSerializer):
+    availability = VendorPackageAvailabilitySerializer(many=True, required=False)
+    package_images = VendorPackageImagesSerializer(many=True, required=False)
+    
+    class Meta:
+        model = VendorPackage
+        fields = [
+            "service_name",
+            "service_type", 
+            "service_mode", 
+            "capacity", 
+            "price",
+            "location",
+            "additional_info",
+            
+            # additional 
+            "availability",
+            "package_images"
+        ]
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+
+        availability = validated_data.pop('availability', None)
+        package_images = request.FILES.getlist('package_images')
+
+        # update simple vendor package fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # if availability is provided delete the old ones
+        if availability is not None:
+            VendorPackageAvailability.objects.filter(vendor_package=instance).delete()
+
+            # create new ones
+            for avail in availability:
+                VendorPackageAvailability.objects.create(vendor_package=instance, **avail)
+
+        # if images are provided delete the old ones
+        if package_images is not None:
+            VendorPackageImages.objects.filter(vendor_package=instance).delete()
+
+            # create the new ones
+            for image in package_images:
+                VendorPackageImages.objects.create(vendor_package=instance, image=image)
+        return instance
+    
+# vendor destroy serializer
+class VendorPackageDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorPackage
+        fields = ['id']
+        read_only_fields = ['id']
+        lookup_fields = 'pk'
+
+
+#
+#
+#
+
 
 # vendor retrieve serializer
 class VendorRetrieveSerializer(serializers.ModelSerializer):
@@ -169,61 +238,89 @@ class VendorRetrieveSerializer(serializers.ModelSerializer):
             "is_approved" : {"read_only": True},
         }
 
-# vendor create put serializer
+# vendor create serializer
 class VendorCreateSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    certification_images = VendorCertificationImagesSerializer(many=True)
-    packages = VendorPackageCreateSerializer(many=True)
-    package_images = VendorPackageImagesSerializer(many=True)
+    certification_images = VendorCertificationImagesSerializer(many=True, required=False)
 
     class Meta:
         model = Vendor
         fields = [
-            "id", 
-            "user",
             "business_name",
-            "address", 
-            "created_at",
+            "address",
             "years_in_business",
             "certification_list",
-            "is_approved",
-
-            # additional
             "certification_images",
-            "packages",
-            "package_images",
         ]
 
     def create(self, validated_data):
+        request = self.context.get('request')
+        user = request.user
+        certification_images = request.FILES.getlist("certification_images")
 
-        certification_images_data = validated_data.pop('certification_images', [])
-        packages_data = validated_data.pop('packages', [])
-         
+        # validate if certification images are provided
+        if not certification_images:
+            raise serializers.ValidationError({"certification_images": "This field is required."})
+
+        # check if the user is already a vendor
+        if Vendor.objects.filter(user=user).exists():
+            raise serializers.ValidationError("Vendor already exists for this user.")
+
         # create the vendor
-        vendor = Vendor.objects.create(**validated_data)
+        vendor = Vendor.objects.create(user=user, **validated_data)
 
-        # create his certification images
-        for image in certification_images_data:
-            VendorCertificationImages.objects.create(vendor=vendor, **image)
-        
-        # create his packages
-        for package_data in packages_data:
-            
-            availability_data = package_data.pop('availability', [])
-            package_images_data = package_data.pop('package_images', [])
-            
-            # creating the package
-            package = VendorPackage.objects.create(vendor=vendor, **package_data)
+        # create associated certification images
+        for image in certification_images:
+            VendorCertificationImages.objects.create(vendor=vendor, image=image)
 
-            # creating the package availabilities
-            for availability in availability_data:
-                VendorAvailability.objects.create(vendor_package=package, **availability)
-
-            # creating the package images
-            for image in package_images_data:
-                VendorPackageImages.objects.create(vendor=vendor, **image)
-        
         return vendor
+
+# vendor update serializer
+class VendorUpdateSerializer(serializers.ModelSerializer):
+    certification_images = VendorCertificationImagesSerializer(many=True, required=False)
+
+    class Meta:
+        model = Vendor
+        fields = [
+            "business_name",
+            "address",
+            "years_in_business",
+            "certification_list",
+            "certification_images",
+        ]
+
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+        certification_images_data = request.FILES.getlist("certification_images")
+
+        # update basic vendor fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # if new certification images are provided, update them
+        if certification_images_data is not None:
+            # delete old images
+            VendorCertificationImages.objects.filter(vendor=instance).delete()
+
+            # create new images
+            for image in certification_images_data:
+                VendorCertificationImages.objects.create(vendor=instance, image=image)
+
+        return instance
+
+# vendor destroy serializer
+class VendorDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vendor
+        fields = ['id']
+        read_only_fields = ['id']
+        lookup_field = 'pk'
+
+
+#
+#
+#
+
 
 '''
 for admins ->
@@ -232,7 +329,7 @@ for admins ->
 class VendorAdminSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     certification_images = VendorCertificationImagesSerializer(many=True)
-    packages = VendorPackageCreateSerializer(many=True)
+    packages = VendorPackageRetrieveSerializer(many=True)
     package_images = VendorPackageImagesSerializer(many=True)
     class Meta:
         model = Vendor

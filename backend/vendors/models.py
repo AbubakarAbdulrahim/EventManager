@@ -37,7 +37,7 @@ class Vendor(models.Model):
     # premium_level = models.CharField(max_length=100, choices=LEVEL_CHOICES)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.business_name}"
+        return f"{self.user.id} - {self.business_name}"
 
 
 class VendorCertificationImages(models.Model):
@@ -79,9 +79,9 @@ class VendorPackage(models.Model):
         elif self.service_type == 'make_up_artist':
             return f"Make-up service @ ₦{self.price} - {name}"
         elif self.service_type == 'musician':
-            return f"Music performance for {self.duration} time @ ₦{self.price} - {name}"
+            return f"Music performance @ ₦{self.price} - {name}"
         elif self.service_type == 'mc':
-            return f"MC service for {self.duration} time @ ₦{self.price} - {name}"
+            return f"MC service @ ₦{self.price} - {name}"
         else:
             return f"{self.service_type.capitalize()} for {self.capacity} guests @ ₦{self.price} - {name}"
 
@@ -90,12 +90,12 @@ class VendorPackageImages(models.Model):
     """
     stores general images associated with a vendor (e.g. portfolio).
     """
-    vendor = models.ForeignKey(VendorPackage, on_delete=models.CASCADE, related_name="package_images")
+    vendor_package = models.ForeignKey(VendorPackage, on_delete=models.CASCADE, related_name="package_images")
     image = models.ImageField(upload_to='vendor_package_images/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
-class VendorAvailability(models.Model):
+class VendorPackageAvailability(models.Model):
     """
     stores weekly availability for vendors.
     """
