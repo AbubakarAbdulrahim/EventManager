@@ -41,7 +41,6 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.pop('date_joined', None) # remove date_joined
         return user
 
-
 # user serializer for admin
 class UserAdminSerializer(serializers.ModelSerializer):
     class Meta:
