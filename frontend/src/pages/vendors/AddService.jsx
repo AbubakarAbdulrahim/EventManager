@@ -8,6 +8,8 @@ import {
   Container,
   Paper,
   Grid,
+  List,
+  ListItem,
   MenuItem,
   FormControl,
   FormGroup,
@@ -122,9 +124,9 @@ const AddService = ({openDialog, closeDialog}) => {
     name: Yup.string().required('Service name is required'),
     location: Yup.string().required('Location is required'),
     serviceInfo: Yup.string().required('Service information is required'),
-    price: Yup.number()
-      .required('Price is required')
-      .positive('Price must be positive'),
+    // price: Yup.number()
+    //   .required('Price is required')
+    //   .positive('Price must be positive'),
     mainImage: Yup.mixed().required('Main image is required'),
     availability: Yup.array().of(
       Yup.object().shape({
@@ -156,6 +158,12 @@ const AddService = ({openDialog, closeDialog}) => {
             .required('Capacity is required')
             .positive('Capacity must be positive')
             .integer('Capacity must be an integer'),
+          price_per_hour: Yup.number()
+            .required('Price is required')
+            .positive('Price must be positive'),
+          price_per_day: Yup.number()
+            .required('Price is required')
+            .positive('Price must be positive'),
           venueType: Yup.string().required('Venue type is required'),
           additionalImages: Yup.array()
             .min(1, 'At least one additional venue image is required')
@@ -169,6 +177,15 @@ const AddService = ({openDialog, closeDialog}) => {
             .required('Number of plates is required')
             .positive('Number of plates must be positive')
             .integer('Number of plates must be an integer'),
+          package_plates: Yup.number()
+          .required('Package plates is required')
+          .positive('Package plates must be positive'),
+          price_per_plate: Yup.number()
+          .required('Price is required')
+          .positive('Price must be positive'),
+          price_per_package: Yup.number()
+          .required('Price is required')
+          .positive('Price must be positive'),
           cuisineType: Yup.string().required('Cuisine type is required'),
           cuisineImages: Yup.array()
             .min(2, 'At least 2 cuisine images are required')
@@ -244,7 +261,7 @@ const AddService = ({openDialog, closeDialog}) => {
       name: '',
       location: '',
       serviceInfo: '',
-      price: '',
+      // price: '',
       mainImage: null,
       additionalImages: [],
       cuisineImages: [],
@@ -252,16 +269,27 @@ const AddService = ({openDialog, closeDialog}) => {
       // Venue specific
       capacity: '',
       venueType: '',
+      price_per_hour: '',
+      price_per_day: '',
       // Caterer specific
       numberOfPlates: '',
       cuisineType: '',
+      price_per_plate: '',
+      package: [
+        {package_plates: '',
+        price_per_package:'',}
+      ],
       // Decor specific
       decoration: '',
       setupTime: '',
+      price_per_style:'',
       // Photography specific
       photographyClip: '',
+      price_per_clip:'',
+      // price_per_hour:'',
       // Music specific
       musicGenre: '',
+      // price_per_hour:'',
     },
     validationSchema,
     validateOnChange: false,
@@ -479,6 +507,13 @@ const AddService = ({openDialog, closeDialog}) => {
     setOpen(false);
   };
 
+  const handleAddPackage= (event)=>{
+    // console.log(event.target)
+    // alert('c;l')
+    formik.setFieldValue('package', [])
+    console.log(formik.values.package);
+  }
+
   // Function to render service-specific fields
   const renderServiceSpecificFields = () => {
     switch (serviceType) {
@@ -517,7 +552,34 @@ const AddService = ({openDialog, closeDialog}) => {
                     {formik.errors.venueType}
                   </Typography>
                 )}
+
               </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                name="price_per_hour"
+                label="Price per hour"
+                type="number"
+                value={formik.values.price_per_hour}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.price_per_hour && Boolean(formik.errors.price_per_hour)}
+                helperText={formik.touched.price_per_hour && formik.errors.price_per_hour}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                name="price_per_day"
+                label="Price per day"
+                type="number"
+                value={formik.values.price_per_day}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.price_per_day && Boolean(formik.errors.price_per_day)}
+                helperText={formik.touched.price_per_day && formik.errors.price_per_day}
+              />
             </Grid>
             <Grid item xs={12}>
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
@@ -591,19 +653,6 @@ const AddService = ({openDialog, closeDialog}) => {
         return (
           <>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                name="numberOfPlates"
-                label="Number of Plates"
-                type="number"
-                value={formik.values.numberOfPlates}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.numberOfPlates && Boolean(formik.errors.numberOfPlates)}
-                helperText={formik.touched.numberOfPlates && formik.errors.numberOfPlates}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
               <FormControl fullWidth error={formik.touched.cuisineType && Boolean(formik.errors.cuisineType)}>
                 <InputLabel>Cuisine Type</InputLabel>
                 <Select
@@ -626,6 +675,65 @@ const AddService = ({openDialog, closeDialog}) => {
                 )}
               </FormControl>
             </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                name="numberOfPlates"
+                label="Max Number of Plates"
+                type="number"
+                value={formik.values.numberOfPlates}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.numberOfPlates && Boolean(formik.errors.numberOfPlates)}
+                helperText={formik.touched.numberOfPlates && formik.errors.numberOfPlates}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                name="price_per_plate"
+                label="Price per plate"
+                type="number"
+                value={formik.values.price_per_plate}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.price_per_plate && Boolean(formik.errors.price_per_plate)}
+                helperText={formik.touched.price_per_plate && formik.errors.price_per_plate}
+              />
+            </Grid>
+            <Grid item xs={12} md={12}>
+              <List>
+                <ListItem>
+
+                </ListItem>
+              </List>
+            </Grid>
+            <Grid item xs={12} md={6} display={'flex'} gap={1}>
+              <TextField
+                fullWidth
+                name="package_plates"
+                label="Package of Plates"
+                type="number"
+                value={formik.values.package_plates}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.package_plates && Boolean(formik.errors.package_plates)}
+                helperText={formik.touched.package_plates && formik.errors.package_plates}
+              />
+              <TextField
+                fullWidth
+                name="price_per_package"
+                label="Price per package"
+                type="number"
+                value={formik.values.price_per_package}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.price_per_package && Boolean(formik.errors.price_per_package)}
+                helperText={formik.touched.price_per_package && formik.errors.price_per_package}
+              />
+              <Button variant='outlined' onClick={handleAddPackage} sx={{height:'100%'}}>Add</Button>
+            </Grid>
+            
             <Grid item xs={12}>
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
                 Cuisine Sample Images (Add 2-5 images)
@@ -848,7 +956,7 @@ const AddService = ({openDialog, closeDialog}) => {
                 />
               </Grid>
               
-              <Grid item xs={12} md={6}>
+              {/* <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   name="price"
@@ -863,7 +971,7 @@ const AddService = ({openDialog, closeDialog}) => {
                     startAdornment: <InputAdornment position="start">₦</InputAdornment>,
                   }}
                 />
-              </Grid>
+              </Grid> */}
 
               {/* Render service-specific fields */}
               {renderServiceSpecificFields()}

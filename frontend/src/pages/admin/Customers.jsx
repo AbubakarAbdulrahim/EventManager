@@ -50,6 +50,7 @@ import {
   InputLabel,
   Chip
 } from '@mui/material';
+import { useAuth } from '../../context/AuthContext';
 
 import {
   Menu as MenuIcon,
@@ -96,13 +97,13 @@ import {
 } from 'recharts';
 
 
-const customers = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-123-4567', bookings: 5, joinDate: '2024-01-15', status: 'Active' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-987-6543', bookings: 3, joinDate: '2024-02-10', status: 'Active' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', phone: '555-555-5555', bookings: 2, joinDate: '2024-03-05', status: 'Active' },
-    { id: 4, name: 'Sarah Williams', email: 'sarah@example.com', phone: '555-444-3333', bookings: 7, joinDate: '2023-11-20', status: 'Active' },
-    { id: 5, name: 'Robert Brown', email: 'robert@example.com', phone: '555-222-1111', bookings: 0, joinDate: '2024-04-02', status: 'Suspended' },
-  ];
+// const customers = [
+//     { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-123-4567', bookings: 5, joinDate: '2024-01-15', status: 'Active' },
+//     { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-987-6543', bookings: 3, joinDate: '2024-02-10', status: 'Active' },
+//     { id: 3, name: 'Mike Johnson', email: 'mike@example.com', phone: '555-555-5555', bookings: 2, joinDate: '2024-03-05', status: 'Active' },
+//     { id: 4, name: 'Sarah Williams', email: 'sarah@example.com', phone: '555-444-3333', bookings: 7, joinDate: '2023-11-20', status: 'Active' },
+//     { id: 5, name: 'Robert Brown', email: 'robert@example.com', phone: '555-222-1111', bookings: 0, joinDate: '2024-04-02', status: 'Suspended' },
+//   ];
 
 
 
@@ -116,7 +117,62 @@ const customers = [
         const [snackbarOpen, setSnackbarOpen] = useState(false);
         const [snackbarMessage, setSnackbarMessage] = useState('');
         const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+        const [customers, setCustomers] = useState([]);
+        const {authAxios} = useAuth();
       
+
+        useEffect(()=>{
+          authAxios.get('api-admin/users/')
+          .then(response => {
+            console.log(response.data);
+            const transformed = response.data.map(user => {
+              return ({
+                id: user.id,
+                name: user.full_name,
+                email: user.email,
+                phone: user.phone_number,
+                status: user.is_active,
+                joinDate: user.date_joined.split('T')[0],
+                // lastLogin: user.last_login.split('T')[0],
+              })
+            }
+          )
+          setCustomers(transformed)
+        })
+          .catch(err => {
+            console.log(err);
+          });
+        },[])
+
+
+        const handleAction = async (customer)=>{
+          try {
+            const response = await authAxios.post(`api-admin/users/${customer.id}/suspend-activate/`);
+            console.log(response);
+            if (response.status === 200) {
+              const updatedCustomers = customers.map(a =>
+                a.id === customer.id ? { ...a, status : a.status? false : true } : a
+              );
+              setCustomers(updatedCustomers);
+        
+              if (selectedCustomer?.id === customer.id) {
+                setSelectedApplication({ ...customer, status : customer.status? false : true });
+              }
+            
+              
+              setSnackbarMessage(`Customer ${customer.status ? 'suspended' : 'activated'} successfully!`);
+              setSnackbarSeverity(customer.status ? 'error' : 'success');
+              setSnackbarOpen(true);
+            }
+          } catch (error) {
+            console.error('Error performing action:', error);
+            setSnackbarMessage('Error updating application status');
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
+          }
+        }
+
+
         const filteredCustomers = customers.filter(customer => 
           customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           customer.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -133,13 +189,13 @@ const customers = [
             <Paper elevation={3} sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="contained" fullWidth startIcon={<AddIcon />}
+                    {/* <Button variant="contained" fullWidth startIcon={<AddIcon />}
                       onClick={() => {
                         setOpenAdd(true);
                         }}
                     >
                       Add Customer
-                    </Button>
+                    </Button> */}
                     <TextField
                       size="small"
                       fullWidth
@@ -164,8 +220,9 @@ const customers = [
                         <TableCell>Name</TableCell>
                         <TableCell>Email</TableCell>
                         <TableCell>Phone</TableCell>
-                        <TableCell align="center">Bookings</TableCell>
+                        {/* <TableCell align="center">Bookings</TableCell> */}
                         <TableCell>Join Date</TableCell>
+                        {/* <TableCell>Last Login</TableCell> */}
                         <TableCell align='center'>Status</TableCell>
                         <TableCell align="center">Actions</TableCell>
                       </TableRow>
@@ -177,12 +234,13 @@ const customers = [
                           <TableCell>{customer.name}</TableCell>
                           <TableCell>{customer.email}</TableCell>
                           <TableCell>{customer.phone}</TableCell>
-                          <TableCell align="center">{customer.bookings}</TableCell>
+                          {/* <TableCell align="center">{customer.bookings}</TableCell> */}
                           <TableCell>{customer.joinDate}</TableCell>
+                          {/* <TableCell>{customer.lastLogin}</TableCell> */}
                           <TableCell align='center'>
                             <Chip 
-                              label={customer.status} 
-                              color={customer.status === 'Active' ? 'success' : 'error'} 
+                              label={customer.status ? 'Active' : 'Suspended' } 
+                              color={customer.status ? 'success' : 'error'} 
                               size="small" 
                             />
                           </TableCell>
@@ -201,14 +259,12 @@ const customers = [
                               <Button 
                               size="small" 
                               variant="outlined" 
-                              color={customer.status === 'Active' ? 'error' : 'success'}
-                              onClick={() => {
-                                setSnackbarMessage(`Customer ${customer.status === 'Active' ? 'suspended' : 'activated'} successfully!`);
-                                setSnackbarSeverity(customer.status === 'Active' ? 'error' : 'success');
-                                setSnackbarOpen(true);
+                              color={customer.status ? 'error' : 'success'}
+                              onClick={()=>{
+                                handleAction(customer)
                               }}
                               >
-                                {customer.status === 'Active' ? 'Suspend' : 'Activate'}
+                                {customer.status ? 'Suspend' : 'Activate'}
                               </Button>
                             </Box>
                           </TableCell>
@@ -292,9 +348,9 @@ const customers = [
                             <Typography variant="h6">Name: {selectedCustomer.name}</Typography>
                             <Typography variant="body1">Email: {selectedCustomer.email}</Typography>
                             <Typography variant="body1">Phone: {selectedCustomer.phone}</Typography>
-                            <Typography variant="body1">Bookings: {selectedCustomer.bookings}</Typography>
+                            {/* <Typography variant="body1">Bookings: {selectedCustomer.bookings}</Typography> */}
                             <Typography variant="body1">Join Date: {selectedCustomer.joinDate}</Typography>
-                            <Typography variant="body1">Status: {selectedCustomer.status}</Typography>
+                            <Typography variant="body1">Status: {selectedCustomer.status ? 'Active' : 'Suspended' }</Typography>
                         </Box>
                         ) : (
                         <LinearProgress />

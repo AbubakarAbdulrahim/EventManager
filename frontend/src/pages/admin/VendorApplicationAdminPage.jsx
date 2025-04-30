@@ -67,24 +67,34 @@ const VendorApplicationAdminPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const ACTIONS = {
+    approve: { message: "approved as vendor", status: "approved", severity: "success" },
+    reject: { message: "application rejected", status: "rejected", severity: "error" },
+    suspend: { message: "suspended", status: "suspended", severity: "warning" },
+    activate: { message: "activated", status: "approved", severity: "success" },
+  };
 
   useEffect(() => {
     // Fetch data from backend
     authAxios.get('/vendors/')
       .then(response => {
-        const transformed = response.data.map(app => ({
-          id: app.id,
-          fullName: app.user.full_name,
-          email: app.user.email,
-          phone: app.user.phone_number,
-          business_name: app.business_name,
-          address: app.address,
-          years_in_business: String(app.years_in_business),
-          certification_list: app.certification_list,
-          certification_images: app.certification_images,
-          status: 'pending', // hardcoding for now
-          submittedDate: app.created_at.split('T')[0],
-        }));
+        const transformed = response.data.map(app => {
+          console.log(app);
+          return ({
+            id: app.id,
+            fullName: app.user.full_name,
+            email: app.user.email,
+            phone: app.user.phone_number,
+            business_name: app.business_name,
+            address: app.address,
+            years_in_business: String(app.years_in_business),
+            certification_list: app.certification_list,
+            certification_images: app.certification_images,
+            status: app.status,
+            submittedDate: app.created_at.split('T')[0],
+          })
+        }
+      );
   
         // console.log(transformed);
         setApplications(transformed);
@@ -125,63 +135,39 @@ const VendorApplicationAdminPage = () => {
     setSelectedApplication(null);
   };
 
-  const handleApprove = async (app, role) => {
-    const updatedApplications = applications.map(a =>
-      a.id === app.id
-        ? { ...a, status: 'approved', role }
-        : a
-    );
-    try {
-      const response = await authAxios.post(`api-admin/vendors/${app.id}/suspend-activate/`);
-      console.log(response);
-    }
-    catch (error) {
-      console.error('Error updating application:', error);
-      setSnackbarMessage('Error updating application status');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+  const handleAction = async (app, action) => {
+    const { message, status, severity } = ACTIONS[action] || {};
+    if (!message) {
+      console.error('Unknown action:', action);
       return;
     }
 
+    try {
+      const response = await authAxios.post(`api-admin/vendors/${app.id}/suspend-activate/`, { action });
+      console.log(response);
+      if (response.status === 200) {
+        const updatedApplications = applications.map(a =>
+          a.id === app.id ? { ...a, status } : a
+        );
+        setApplications(updatedApplications);
   
-    setApplications(updatedApplications);
-    setSnackbarMessage(`${app.fullName}'s application approved as ${role}`);
-    setSnackbarSeverity('success');
-    setSnackbarOpen(true);
-    handleCloseDialog?.(); // Optional: only call if dialog is open
-  };
-
-  const handleReject = (app) => {
-    const updatedApplications = applications.map(a =>
-      a.id === app.id
-        ? { ...a, status: 'rejected' }
-        : a
-    );
+        if (selectedApplication?.id === app.id) {
+          setSelectedApplication({ ...app, status });
+        }
   
-    setApplications(updatedApplications);
-    setSnackbarMessage(`${app.fullName}'s application rejected`);
-    setSnackbarSeverity('error');
-    setSnackbarOpen(true);
-    handleCloseDialog?.(); // optional, if dialog is open
-  };
-
-  const handleToggleSuspend = (app) => {
-    const newStatus = app.status === 'suspended' ? 'approved' : 'suspended';
-    const updatedApp = { ...app, status: newStatus };
-    const updatedApplications = applications.map(a =>
-      a.id === app.id
-        ? { ...a, status: newStatus }
-        : a
-    );
-  
-    setApplications(updatedApplications);
-    if (selectedApplication?.id === app.id) {
-      setSelectedApplication(updatedApp); 
+        setSnackbarMessage(`${app.fullName} has been ${message}`);
+        setSnackbarSeverity(severity);
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error performing action:', error);
+      setSnackbarMessage('Error updating application status');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
     }
-    setSnackbarMessage(`${app.fullName}'s application ${newStatus === 'suspended' ? 'suspended' : 'activated'}`);
-    setSnackbarSeverity(newStatus === 'suspended' ? 'warning' : 'success');
-    setSnackbarOpen(true);
-  };
+    handleCloseDialog?.();
+
+  }
 
   const handleOpenImage = (imageUrl) => {
     setSelectedImage(imageUrl);
@@ -298,15 +284,15 @@ const VendorApplicationAdminPage = () => {
                     <Button size="small" variant="outlined" onClick={() => handleViewDetails(application)}>View</Button>
                     {application.status === 'pending' ? (
                       <>
-                        <Button size="small" variant="outlined" color="success" onClick={()=>{handleApprove(application, selectedRole)}} >Approve</Button>
-                        <Button size="small" variant="outlined" color="error" onClick={() => handleReject(application)} >Reject</Button>
+                        <Button size="small" variant="outlined" color="success" onClick={()=>{handleAction(application, 'approve')}} >Approve</Button>
+                        <Button size="small" variant="outlined" color="error" onClick={() => handleAction(application, 'reject')} >Reject</Button>
                       </>
                     ) : (['approved', 'suspended'].includes(application.status) && (
                       <Button
                         size="small"
                         variant="outlined"
                         color={application.status === 'suspended' ? 'success' : 'error'}
-                        onClick={() => handleToggleSuspend(application)}
+                        onClick={() => handleAction(application, application.status === 'suspended' ? 'activate' : 'suspend')}
                       >
                         {application.status === 'suspended' ? 'Activate' : 'Suspend'}
                       </Button>

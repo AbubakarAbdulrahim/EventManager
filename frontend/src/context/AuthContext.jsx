@@ -42,32 +42,27 @@ export const AuthProvider = ({ children }) => {
 
   // Setup axios interceptors
   useEffect(() => {
-    // Add response interceptor
     const responseInterceptor = authAxios.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-        
-        // If unauthorized and not already retried
+  
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
-          
-          // Avoid refreshing the token again if it's already being refreshed
-          if (accessTokenRef.current === null) {
-            return Promise.reject(error);
-          }
   
           try {
             const refreshedAccessToken = await refreshToken();
-  
+            
             if (!refreshedAccessToken) {
+              // No token, logout user
+              await logout();
               return Promise.reject(error);
             }
   
-            originalRequest.headers.Authorization = `Bearer ${accessTokenRef.current}`;
+            originalRequest.headers.Authorization = `Bearer ${refreshedAccessToken}`;
             return authAxios(originalRequest);
           } catch (refreshError) {
-            await logout();
+            await logout(); // Force logout on refresh failure
             return Promise.reject(refreshError);
           }
         }
@@ -75,7 +70,11 @@ export const AuthProvider = ({ children }) => {
         return Promise.reject(error);
       }
     );
-  }, [accessToken]); // Ensure this effect only runs once, after the token refresh
+  
+    return () => {
+      authAxios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
 
   const login = async (credentials) => {
     try {
@@ -108,20 +107,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    if (!accessTokenRef.current) return; // Prevent loop if already logged out
-    
+    if (!accessTokenRef.current) return; // Already logged out
+  
     try {
       await authAxios.post('/user/logout/');
+    } catch (err) {
+      console.error("Logout error:", err.message);
+      // We don't care about API logout errors here, just log them
+    } finally {
+      // Always clear local state no matter what
       setAccessToken(null);
       setUser(null);
       setError(null);
-    } catch (err) {
-      console.error("Logout error:", err.message);
-      const errorMessage = err.response?.data?.message || 'Logout failed';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      // (Optional) Navigate to login page
+      navigate('/login'); // if you use react-router
     }
   };
+  
 
   const apply = async (data) => {
     try {
@@ -141,7 +143,7 @@ export const AuthProvider = ({ children }) => {
   const addNewService = async (data) => {
     try {
       setLoading(true);
-      const response = await authAxios.post('/vendors/vendor-packages/', data, {
+      const response = await authAxios.post('/vendors/services/create/', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
@@ -161,29 +163,30 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAxios.post('/user/token/refresh/');
       const { access } = response.data;
-      
-      // Only update the token if it's different
-      if (access !== accessTokenRef.current) {
-        setAccessToken(access);
+  
+      if (!access) {
+        return null;
       }
   
-      // Decode the new token to get user ID
+      setAccessToken(access);
+  
+      // Optional: update user info if needed
       const decodedToken = jwtDecode(access);
       const userId = decodedToken.user_id;
   
       const userResponse = await authAxios.get(`/user/${userId}/`, {
         headers: { Authorization: `Bearer ${access}` },
       });
-      
+  
       setUser(userResponse.data);
       setError(null);
+      
       return access;
     } catch (err) {
       setAccessToken(null);
       setUser(null);
-      const errorMessage = err.response?.data?.message || 'Session expired';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      setError('Session expired');
+      return null; // Important: return null to tell interceptor to logout
     }
   };
 
