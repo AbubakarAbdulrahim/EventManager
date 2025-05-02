@@ -128,8 +128,6 @@ const serviceData = {
 const ServiceDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [tabValue, setTabValue] = useState(0);
-  const [userRating, setUserRating] = useState(0);
-  const [reviewText, setReviewText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [openBookingDialog, setOpenBookingDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -174,15 +172,6 @@ const ServiceDetail = () => {
     if(favorite) removeFromFavorites(service.id)
     else addToFavorites(service)
 }
-
-  const handleSubmitReview = () => {
-    // In a real application, you would send this to your backend
-    console.log("Submitted review:", { rating: userRating, comment: reviewText });
-    // Reset form
-    setUserRating(0);
-    setReviewText('');
-    // Show success message or update UI accordingly
-  };
 
   const handleBookingDialogOpen = () => {
     setOpenBookingDialog(true);
@@ -449,39 +438,6 @@ const ServiceDetail = () => {
                   </Typography>
                 </Box>
               </Box>
-
-              {/* Write a Review */}
-              <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h6" gutterBottom>Write a Review</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Typography component="legend" sx={{ mr: 2 }}>Your Rating:</Typography>
-                  <Rating
-                    name="user-rating"
-                    value={userRating}
-                    onChange={(event, newValue) => {
-                      setUserRating(newValue);
-                    }}
-                  />
-                </Box>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Your Review"
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  variant="outlined"
-                  sx={{ mb: 2 }}
-                />
-                <Button 
-                  variant="contained" 
-                  endIcon={<Send />}
-                  onClick={handleSubmitReview}
-                  disabled={!userRating || !reviewText.trim()}
-                >
-                  Submit Review
-                </Button>
-              </Paper>
 
               {/* Reviews List */}
               <Typography variant="h6" gutterBottom>Customer Reviews</Typography>

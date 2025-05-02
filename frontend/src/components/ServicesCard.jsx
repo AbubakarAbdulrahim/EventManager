@@ -28,7 +28,8 @@ import {
   IconButton,
   Badge,
   Box,
-  styled
+  styled,
+  CardActionArea
 } from '@mui/material';
 import {
   Search,
@@ -48,9 +49,10 @@ import { Favorite } from '@mui/icons-material';
 import { FavoriteBorderRounded } from '@mui/icons-material';
 import { useState } from "react";
 import ServiceDetail from "./ServiceDetail";
+import { Link } from "react-router-dom";
 
 
-export default function ServicesCard({service, handleBookNow, handleCancelBooking}) {
+export default function ServicesCard({service}) {
   
   const [openDetail, setOpenDetail] = useState(false)
   const ServiceCard = styled(Card)(({ theme }) => ({
@@ -75,16 +77,9 @@ export default function ServicesCard({service, handleBookNow, handleCancelBookin
       }));
       
     const {isFavorite, addToFavorites, removeFromFavorites} = useServiceContext();
-    const {isBooked, addBooking, cancelBooking} = useBookingContext();
+    const {isBooked} = useBookingContext();
     const booked = isBooked(service.id);
     const favorite = isFavorite(service.id);
-
-
-    function addBookings(e){
-      e.preventDefault();
-      if(booked) cancelBooking(service.id)
-      else handleBookNow(service)
-    }
 
     function addFavorite(e){
       e.preventDefault();
@@ -96,20 +91,29 @@ export default function ServicesCard({service, handleBookNow, handleCancelBookin
     if (reason === 'clickaway') return;
     setOpenDetail(false);
   }
+ let bookedService;
+  if(booked === true){
+    console.log(booked);
+    bookedService = booked;
+
+  }
 
   
     return (
       <Grid item xs={12} sm={6} md={4}>
           <ServiceCard>
-               {booked && (<BookingTag label="Booked" />)}
+               <CardActionArea component={Link} to={`/service/${service.id}`}>
+               {bookedService && (<BookingTag label="Booked" />)}
+
               <CardMedia
                 component="img"
-                onClick={()=>{setOpenDetail(true)}}
+                
                 height="200"
                 image={service.image}
                 alt={service.name}
                 sx={{ objectFit: 'cover' }}
               />
+               </CardActionArea>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="h6">
@@ -141,18 +145,23 @@ export default function ServicesCard({service, handleBookNow, handleCancelBookin
                   </Grid>
                 </Grid>
                 <Box sx={{width: '100%', mt: 2, display: 'flex', alignItems: 'center'}}>
+                <CardActionArea component={Link} to={`/service/${service.id}`}>
+
                 <Button
                   variant="contained"
                   // color={bookings.includes(service.id) ? "error" : "primary"}
                   sx={{width:'100%', backgroundColor:"#033043"}}
                   // onClick={() => bookings.includes(service.id) ? handleCancelBooking(service.id) : handleBookNow(service)} 
                   // onClick={() => handleBookNow(service)} 
-                  onClick={addBookings}
+                  // onClick={addBookings}
+                  
                 >
                 
-                  {booked ? 'Cancel Booking' : 'Book Now'}
+                  {/* {booked ? 'Cancel Booking' : 'Book Now'} */}
+                  Book Now
                   
                 </Button>
+                </CardActionArea>
                 <IconButton 
                 aria-label="add to favorites"
                 onClick={addFavorite}
@@ -163,7 +172,7 @@ export default function ServicesCard({service, handleBookNow, handleCancelBookin
                 </Box>
               </CardContent>
               </ServiceCard>
-              <ServiceDetail open={openDetail} onClose={handleClose} service={service} onBookNow={handleBookNow} favorite={favorite} addFavorite={addFavorite} />
+              <ServiceDetail open={openDetail} onClose={handleClose} service={service} favorite={favorite} addFavorite={addFavorite} />
               </Grid>
           
     )

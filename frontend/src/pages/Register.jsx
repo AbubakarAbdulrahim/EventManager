@@ -416,7 +416,7 @@ export default function Register(props) {
         </Card>
       </SignInContainer>
       <SuccessDialog open={open} handleClose={()=> {setOpen(false)}} url={'/login'} title={'Registration successful! Please log in.'} />
-      <ErrorDialog open={openError} handleClose={()=>{setOpenError(false)}} title={'Registration failed'}/>
+      <ErrorDialog open={openError} handleClose={()=>{setOpenError(false)}} title={'Registration failed'} body={usernameError}/>
     </AppTheme>
   );
 }

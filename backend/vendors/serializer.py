@@ -14,9 +14,19 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+# vendor certification image create serializer
+class CertificationImageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorCertificationImage
+        fields =[
+            # "id", 
+            # "vendor", 
+            "image",
+            # "uploaded_at",
+        ]
 
 # vendor certification images serializer (to be referenced)
-class CertificationImageSerializer(serializers.ModelSerializer):
+class CertificationImageRetrieveSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -25,6 +35,7 @@ class CertificationImageSerializer(serializers.ModelSerializer):
             "id", 
             "vendor", 
             "image",
+            "image_url",
             "uploaded_at",
         ]
         read_only_fields = [
@@ -357,7 +368,7 @@ class ServiceDestroySerializer(serializers.ModelSerializer):
 # vendor retrieve serializer
 class VendorRetrieveSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    certification_images = CertificationImageSerializer(many=True, read_only=True)
+    certification_images = CertificationImageRetrieveSerializer(many=True, read_only=True)
     services = ServiceRetrieveSerializer(many=True, read_only=True)
     service_images = ServiceImageSerializer(many=True, read_only=True)
 
@@ -385,7 +396,7 @@ class VendorRetrieveSerializer(serializers.ModelSerializer):
 
 # vendor create serializer
 class VendorCreateSerializer(serializers.ModelSerializer):
-    certification_images = CertificationImageSerializer(many=True, required=False)
+    certification_images = CertificationImageCreateSerializer(many=True, required=False)
 
     class Meta:
         model = Vendor
@@ -421,7 +432,7 @@ class VendorCreateSerializer(serializers.ModelSerializer):
 
 # vendor update serializer
 class VendorUpdateSerializer(serializers.ModelSerializer):
-    certification_images = CertificationImageSerializer(many=True, required=False)
+    certification_images = CertificationImageCreateSerializer(many=True, required=False)
 
     class Meta:
         model = Vendor
@@ -472,7 +483,7 @@ class VendorDestroySerializer(serializers.ModelSerializer):
 # vendor serializer for admin
 class VendorAdminSerializer(serializers.ModelSerializer):
     user = UserSerializer()
-    certification_images = CertificationImageSerializer(many=True)
+    certification_images = CertificationImageRetrieveSerializer(many=True)
     services = ServiceRetrieveSerializer(many=True)
     service_images = ServiceImageSerializer(many=True)
     class Meta:
