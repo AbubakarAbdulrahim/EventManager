@@ -150,8 +150,10 @@ class UsersAdminSuspendActivateView(APIView):
         user = get_object_or_404(User, pk=pk)
         if user.is_active == False:
             user.is_active = True
+            user.save()
             message = 'approved'
         elif user.is_active == True:
             user.is_active == False
+            user.save()
             message = 'suspended'
         return Response({"detail": f"user {message} successfully"})
