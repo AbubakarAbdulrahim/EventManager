@@ -44,7 +44,7 @@ class Vendor(models.Model):
 class VendorCertificationImage(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="certification_images")
     image = models.ImageField(upload_to='vendor_certifications/')
-    # image_url = models.URLField()
+    image_url = models.URLField()
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 # vendor service table
@@ -59,7 +59,6 @@ class Service(models.Model):
     availability_type = models.CharField(max_length=20, choices=AVAILABILITY_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # image_urls = models.URLField()
     is_approved = models.BooleanField(default=False)
     
     def __str__(self):

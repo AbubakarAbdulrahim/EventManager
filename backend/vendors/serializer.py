@@ -164,7 +164,6 @@ class ServicePricingRetrieveSerializer(serializers.ModelSerializer):
         ]
 
 
-
 # 
 # 
 #
@@ -347,7 +346,6 @@ class ServiceDestroySerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         fields = ['id']
-        read_only_fields = ['id']
         lookup_field = 'pk'
 
 
@@ -444,12 +442,12 @@ class VendorUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
 
-        # if new certification images are provided, update them
-        if certification_images_data is not None:
+        # if new certification images are provided, replace the old ones
+        if certification_images_data:
             # delete old images
             VendorCertificationImage.objects.filter(vendor=instance).delete()
 
-            # create new images
+            # add new images
             for image in certification_images_data:
                 VendorCertificationImage.objects.create(vendor=instance, image=image)
 

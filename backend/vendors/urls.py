@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.VendorDestroyView.as_view(), name='vendor-delete'),
 
 
+
     #
     #
     #

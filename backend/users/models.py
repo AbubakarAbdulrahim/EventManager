@@ -2,14 +2,15 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 
 
+ROLE_CHOICES = [
+    ('admin', 'Admin'),
+    ('customer', 'Customer'),
+    ('vendor', 'Vendor'),
+        
+]
+
 # user table
 class User(AbstractUser):
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('customer', 'Customer'),
-        ('vendor', 'Vendor'),
-        
-    ]
     full_name = models.CharField(max_length=30)
     role = models.CharField(max_length=15, choices=ROLE_CHOICES, default="customer")
     groups = models.ManyToManyField(Group, related_name='user_groups', blank=True)

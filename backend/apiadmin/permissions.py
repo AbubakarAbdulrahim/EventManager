@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 
+# custom admin permission
 class IsAdminRole(BasePermission):
 
     def has_permission(self, request, view):

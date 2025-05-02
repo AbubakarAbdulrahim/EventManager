@@ -14,28 +14,33 @@ from users.serializer import UserAdminSerializer
 
 
 '''  for managing bookings  '''
-# handling listing and creating bookings
-class BookingsAdminListCreateView(generics.ListCreateAPIView):
+# handling listing bookings
+class BookingsAdminListView(generics.ListAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling retrieving, updating and destroying bookings
+# handling retrieving and destroying bookings
 class BookingsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingAdminSerializer
     permission_classes = [IsAdminRole]
 
 
+#
+#
+#
+
+
 '''  for managing vendors  '''
-# handling listing and creating vendors
-class VendorAdminListCreateView(generics.ListCreateAPIView):
+# handling listing vendors
+class VendorAdminListView(generics.ListAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling retrieving, updating, and destroying vendors
-class VendorAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
+# handling retrieving and destroying vendors
+class VendorAdminDetailView(generics.RetrieveDestroyAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorAdminSerializer
     permission_classes = [IsAdminRole]
@@ -64,20 +69,26 @@ class VendorAdminSuspendActivateView(APIView):
         return Response({"detail": f"vendor {message}"})
 
 
-'''  for managing vendor packages  '''
-# handling listing and creating vendor packages
-class ServiceAdminListCreateView(generics.ListCreateAPIView):
+#
+#
+#
+
+
+
+'''  for managing vendor services  '''
+# handling listing vendor services
+class ServiceAdminListView(generics.ListAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling retreiving, updating and destroying vendor packages
-class ServiceAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
+# handling retreiving and destroying vendor services
+class ServiceAdminDetailView(generics.RetrieveDestroyAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling suspending and activating vendor packages
+# handling suspending and activating vendor services
 class ServiceAdminSuspendActivateView(APIView):
     permission_classes = [IsAdminRole]
 
@@ -93,30 +104,40 @@ class ServiceAdminSuspendActivateView(APIView):
         return Response({"detail": f"vendor service {message} successfully"})
 
 
+#
+#
+#
+
 
 '''  for managing transactions  '''
-# handling linsting and creationg transactions
-class TransactionsAdminListCreateView(generics.ListCreateAPIView):
+# handling listing transactions
+class TransactionsAdminListView(generics.ListAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling retrieving, updating and destroying transactions
+# handling retrieving and destroying transactions
 class TransactionsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionAdminSerializer
     permission_classes = [IsAdminRole]
 
 
+#
+#
+#
+
+
+
 '''  for managing users  '''
-# handling linsting and creationg users
-class UsersAdminListCreateView(generics.ListCreateAPIView):
+# handling linsting  users
+class UsersAdminListView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling retrieving, updating and destroying users
-class UsersAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
+# handling retrieving and destroying users
+class UsersAdminDetailView(generics.RetrieveDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserAdminSerializer
     permission_classes = [IsAdminRole]

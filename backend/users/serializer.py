@@ -1,12 +1,12 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-User = get_user_model()  # gettting current user model
+User = get_user_model()
 
 # user serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User # serializer model
+        model = User
         fields = [
             "id", 
             "full_name", 
@@ -15,11 +15,13 @@ class UserSerializer(serializers.ModelSerializer):
             "password", 
             "role", 
             "phone_number", 
-            "is_active"
+            "is_active",
+            "date_joined",
         ] 
         read_only_fields = [
             "role",
             "is_active",
+            "date_joined",
         ]
         extra_kwargs = {
             "password": {"write_only" : True},
@@ -48,13 +50,23 @@ class UserSerializer(serializers.ModelSerializer):
 class UserAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = [
+            "id", 
+            "full_name", 
+            "username", 
+            "email",
+            "role", 
+            "phone_number", 
+            "is_active",
+            "date_joined",
+        ]
         read_only_fields = [
             "id", 
             "full_name", 
             "username", 
-            "email", 
-            "password", 
+            "email",  
             "role", 
-            "phone_number",
+            "phone_number", 
+            "is_active",
+            "date_joined",
         ]

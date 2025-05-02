@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework import status
 
-User = get_user_model() # getting current user model
+User = get_user_model() 
 
 # overrided token obtain view
 class CookieTokenObtainPairView(TokenObtainPairView):
@@ -64,7 +64,6 @@ class LogoutView(APIView):
 
 # user update view
 class UserUpdateView(generics.UpdateAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
@@ -72,17 +71,25 @@ class UserUpdateView(generics.UpdateAPIView):
     def perform_update(self, serializer):
         return super().perform_update(serializer)
 
+    def get_queryset(self):
+        user= self.request.user
+        
 # user retrieve view
 class UserRetrieveView(generics.RetrieveAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        user= self.request.user
+        return User.objects.filter(id=user.id)
+    
 # user delete view
 class UserDestroyView(generics.DestroyAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user= self.request.user
 
 # user create view
 class UserCreateView(generics.CreateAPIView):

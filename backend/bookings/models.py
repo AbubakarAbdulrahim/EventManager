@@ -4,17 +4,16 @@ from vendors.models import Service
 
 User = get_user_model()
 
-class Booking(models.Model):
-    """
-    represents a client's booking of a vendor's service package.
-    """
-    STATUS_CHOICES = (
+STATUS_CHOICES = (
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
         ('declined', 'Declined'),
         ('completed', 'Completed'),
     )
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')  # customer
+
+# booking table
+class Booking(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
     services = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='bookings')
     event_date = models.DateField()
     start_time = models.TimeField()

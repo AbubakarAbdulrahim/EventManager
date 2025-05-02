@@ -137,9 +137,9 @@ class ServiceDestroyView(generics.DestroyAPIView):
         return Service.objects.filter(vendor=vendor)
     
     def perform_destroy(self, instance):
-        ServiceImage.objects.filter(service=instance).delete()
-        ServiceSpecificDateAvailability.objects.filter(service=instance)
-        ServiceRecurringAvailability.objects.filter(service=instance).delete()
+        # ServiceImage.objects.filter(service=instance).delete()
+        # ServiceSpecificDateAvailability.objects.filter(service=instance)
+        # ServiceRecurringAvailability.objects.filter(service=instance).delete()
         instance.delete()
         return instance
     

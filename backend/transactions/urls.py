@@ -4,5 +4,5 @@ from .views import TransactionListCreateView, TransactionRetrieveView
 
 urlpatterns = [
     path('', TransactionListCreateView.as_view(), name='trxn_list_create'),
-    path('<int:pk>/', TransactionRetrieveView.as_view(), name='trxn_detail'), # trxn_detail
+    path('<int:pk>/', TransactionRetrieveView.as_view(), name='trxn_detail'),
 ]

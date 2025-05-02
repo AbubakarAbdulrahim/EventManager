@@ -1,4 +1,7 @@
-from .models import ServiceRecurringAvailability, ServiceSpecificDateAvailability
+from .models import (
+    ServiceRecurringAvailability, 
+    ServiceSpecificDateAvailability,
+)
 from bookings.models import Booking
 
 

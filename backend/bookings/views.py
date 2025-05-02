@@ -4,82 +4,73 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from vendors.permission import IsVendorRole
 from .models import Booking
-from .serializer import BookingSerializer
+from .serializer import (
+    BookingCreateSerializer,
+    BookingRetrieveSerializer,
+    BookingUpdateSerializer,
+    BookingDestroySerializer
+)
 from rest_framework.permissions import IsAuthenticated
-from .tasks import notify_venue, notify_admins, notify_user
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 # helper func -> get admin emails
-def get_admin_emails():
-    return [admin.email for admin in User.objects.filter(role='admin')]
+# def get_admin_emails():
+#     return [admin.email for admin in User.objects.filter(role='admin')]
 
 # helper func -> validate booking status
-def validate_status_change(booking, invalid_statuses: list):
-    return booking.status not in invalid_statuses
+# def validate_status_change(booking, invalid_statuses: list):
+#     return booking.status not in invalid_statuses
 
-# detail view
-class BookingRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+# booking retrieve view
+class BookingRetrieveView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Booking.objects.all()
-    serializer_class = BookingSerializer
+    serializer_class = BookingRetrieveSerializer
     permission_classes = [IsAuthenticated]
 
-    # on deleting 
-    def perform_destroy(self, instance):
-        user = self.request.user 
-        
-        notify_admins(
-            subject='Cancelled Booking',
-            admin_emails=get_admin_emails(),
-            message=f'{user.name} cancelled booking',
-            sender_email='ourapp@email.com',
-        )
-        notify_venue(
-            subject='Cancelled Booking',
-            message=f'{user.name} cancelled booking',
-            venue_email=instance.venue.email,
-            sender_email='ourapp@email.com'
-        )
-
-        super().perform_destroy(instance)  
-
-    
-    # on updating
-    def perform_update(self, serializer):
-        booking = serializer.save()
-        notify_user(
-            sender_email='ourapp@gmail.com',
-            message=f'Your booking at {booking.venue.name} has been updated.',
-            subject='Booking Updated',
-            user_email=booking.user.email
-        )
-
-# list create view
-class BookingListCreateView(generics.ListCreateAPIView):
+# booking create view
+class BookingCreateView(generics.ListCreateAPIView):
     queryset = Booking.objects.all()
-    serializer_class = BookingSerializer
+    serializer_class = BookingCreateSerializer
     permission_classes = [IsAuthenticated]
 
-    # on create
     def perform_create(self, serializer):
-        user=self.request.user 
-        booking = serializer.save(user= user, status="Pending")
-        
-        # notifying the venue by email
-        notify_venue(
-            venue_email= booking.venue.owner.email,
-            subject= 'Booking Request',
-            message= f'{user.name} request a booking',
-            sender_email= 'ourapp@email.com',
-        )
-         
-    # on querying
+        serializer.save(user=self.request.user)
+
+# booking list view
+class BookingListView(generics.ListCreateAPIView):
+    serializer_class = BookingRetrieveSerializer
+    permission_classes = [IsAuthenticated]
+
     def get_queryset(self):
-        user = self.request.user
-        if user.role == 'admin':
-            return Booking.objects.all()
-        return Booking.objects.filter(user=user) 
+        return Booking.objects.filter(user=self.request.user)
+
+# booking update view
+class BookingUpdateView(generics.ListCreateAPIView):
+    serializer_class = BookingUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
+
+# booking delete view
+class BookingDestroyView(generics.DestroyAPIView):
+    serializer_class = BookingDestroySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        return instance
+
+
+#
+#
+#
+
 
 # venue approved booking view
 class ApprovedBookingView(APIView):
