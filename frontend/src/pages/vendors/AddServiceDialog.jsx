@@ -202,18 +202,31 @@ const AddServiceDialog = ({ open, onClose }) => {
               formDataToSend.append(key, value);
             }
           });
+
+          if (pricingModels){
+            formDataToSend.append('pricingModels', pricingModels)
+          }
+          if (availabilityType){
+            formDataToSend.append('availabilityType', availabilityType)
+          }
+          if (recurringAvailability){
+            formDataToSend.append('recurringAvailability', recurringAvailability)
+          }
+          if (specificDateSlots){
+            formDataToSend.append('specificDateSlots', specificDateSlots)
+          }
           for (const pair of formDataToSend.entries()) {
             console.log(`${pair[0]}:`, pair[1]);
           }
-      try {
-        setIsSubmitting(true);
-        console.log('Submitting service data:', {
-          ...values,
-          pricingModels,
-          availabilityType,
-          recurringAvailability,
-          specificDateSlots,
-        });
+        try {
+            setIsSubmitting(true);
+            console.log('Submitting service data:', {
+            ...values,
+            pricingModels,
+            availabilityType,
+            recurringAvailability,
+            specificDateSlots,
+            });
         
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -1112,9 +1125,9 @@ const AddServiceDialog = ({ open, onClose }) => {
       </DialogContent>
       
       <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          Cancel
-        </Button>
+        {/* <Button variant='outlined' onClick={onClose} color="inherit">
+          Close
+        </Button> */}
         {activeStep > 0 && (
           <Button onClick={handleBack} disabled={isSubmitting}>
             Back

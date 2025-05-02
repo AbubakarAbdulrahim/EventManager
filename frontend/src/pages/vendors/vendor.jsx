@@ -4,26 +4,26 @@ import { Box } from '@mui/material';
 import Services from './Services';
 import Customers from './Customers';
 import {useAuth} from '../../context/AuthContext'
-import AddServiceDialog from './AddServiceDialog';
+import Income from './Income';
+import Settings from './Settings';
+import Dashboard from './Dashboard';
 export default function VendorDashboard() {
     const [currentPage, setCurrentPage] = useState('Dashboard');
-    const [open, setOpen] = useState(true)
     const { user } = useAuth();
 
-    const handleClose =()=>{
-        setOpen(false)
-    }
     console.log(user)
     const renderContent = () => {
         switch (currentPage.toLocaleLowerCase()) {
-            // case 'dashboard':
-            //     return <DashboardContent />;
+            case 'dashboard':
+                return <Dashboard />;
             case 'services':
                 return <Services />;
             case 'customers':
                 return <Customers />;
-            // case 'vendors':
-            //     return <VendorApplicationAdminPage />;
+            case 'income':
+                return <Income />;
+            case 'settings':
+                return <Settings />;
             default:
                 return 'dashboard';
         }
@@ -31,7 +31,6 @@ export default function VendorDashboard() {
     return (
         <> 
         <NavAppBar setCurrentPage={setCurrentPage} currentPage={currentPage} />
-        <AddServiceDialog open={open} onClose={handleClose}/>
         <Box sx={{ pl: 9, pt: 9, bgcolor: '#f5f5f5', height: '100%' }}>
             {renderContent()}
         </Box>

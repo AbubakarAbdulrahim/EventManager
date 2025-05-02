@@ -14,7 +14,7 @@ import {
 } from '@mui/icons-material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import AddService from './AddService';
+import AddServiceDialog from './AddServiceDialog';
 
 
 const initialServices = [
@@ -125,7 +125,7 @@ export default function Services  () {
       </TableContainer>
 
       {/* Service Form Dialog */}
-      <AddService openDialog={serviceFormOpen} closeDialog={handleClose} />
+      <AddServiceDialog open={serviceFormOpen} onClose={handleClose} />
       <Dialog 
         // open={serviceFormOpen} 
         // onClose={() => {

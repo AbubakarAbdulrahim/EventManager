@@ -122,26 +122,30 @@ import {
       
 
         useEffect(()=>{
-          authAxios.get('api-admin/users/')
-          .then(response => {
-            console.log(response.data);
-            const transformed = response.data.map(user => {
-              return ({
-                id: user.id,
-                name: user.full_name,
-                email: user.email,
-                phone: user.phone_number,
-                status: user.is_active,
-                joinDate: user.date_joined.split('T')[0],
-                // lastLogin: user.last_login.split('T')[0],
-              })
-            }
-          )
-          setCustomers(transformed)
-        })
-          .catch(err => {
-            console.log(err);
-          });
+          const fetchData= async()=>{
+
+            try{
+              const response = await authAxios.get('api-admin/users/')
+              console.log(response.data);
+              const transformed = response.data.map(user => {
+                return ({
+                  id: user.id,
+                  name: user.full_name,
+                  email: user.email,
+                  phone: user.phone_number,
+                  status: user.is_active,
+                  joinDate: user.date_joined.split('T')[0],
+                  // lastLogin: user.last_login.split('T')[0],
+                })
+              }
+            )
+            setCustomers(transformed)
+              
+            } catch(err){
+              console.log(err);
+            } 
+          }
+          fetchData()
         },[])
 
 

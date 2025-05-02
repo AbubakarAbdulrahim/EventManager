@@ -46,22 +46,28 @@ class VendorsAdminSuspendActivateView(APIView):
 
     def post(self, request, pk):
         vendor = get_object_or_404(Vendor, pk=pk)
-        if vendor.is_approved == False:
-            vendor.is_approved = True
+        action = request.data.get('action')
+        if action == 'approve':
+            vendor.status = 'approved'
             vendor.user.role = 'vendor'
-            vendor.user.save()
-            message = 'approved'
-
-        elif vendor.is_approved == True:
-            vendor.is_approved = False
-
-            if vendor.user.role == 'vendor':
+        elif action == 'reject':
+            vendor.status = 'rejected'
+            vendor.user.role = 'customer'
+        elif action == 'suspend':
+            if vendor.status == 'approved':
+                vendor.status = 'suspended'
                 vendor.user.role = 'customer'
-                vendor.user.save()
-                message = 'suspended'
-                
+        elif action == 'activate':
+            if vendor.status == 'suspended':
+                vendor.status = 'approved'
+                vendor.user.role = 'vendor'
+        else:
+            return Response({"detail": "Invalid action"}, status=400)
+
+        vendor.user.save()
         vendor.save()
-        return Response({"detail": f"vendor {message}"})
+
+        return Response({"detail": f"vendor {action}"})
 
 
 '''  for managing vendor packages  '''
@@ -129,8 +135,10 @@ class UsersAdminSuspendActivateView(APIView):
         user = get_object_or_404(User, pk=pk)
         if user.is_active == False:
             user.is_active = True
+            user.save()
             message = 'approved'
         elif user.is_active == True:
-            user.is_active == False
+            user.is_active = False
+            user.save()
             message = 'suspended'
         return Response({"detail": f"user {message} successfully"})

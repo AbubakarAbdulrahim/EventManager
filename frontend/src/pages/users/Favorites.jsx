@@ -33,7 +33,7 @@ import {
 } from '@mui/material';
 import ServicesCard from "../../components/ServicesCard";
 
-export default function Favorites() {
+export default function Favorites({handleBookNow}) {
     const {favorites} = useServiceContext();
 
     if(favorites){

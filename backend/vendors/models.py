@@ -13,6 +13,14 @@ SERVICE_CHOICES = (
     ('musician', 'Musician'),
     ('mc', 'MC'),
 )
+
+STATUS_CHOICES = (
+    ('approved', 'Approved'),
+    ('pending', 'Pending'),
+    ('rejected', 'Rejected'),
+    ('suspended', 'Suspended'),
+)
+
 LEVEL_CHOICES = (
     ('silver', 'Silver'),
     ('bronze', 'Bronze'),
@@ -30,7 +38,7 @@ class Vendor(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     years_in_business = models.PositiveIntegerField(default=0)
     certification_list = models.CharField(max_length=255, default="")
-    is_approved = models.BooleanField(default=False)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending') # status of the vendor (approved, pending, rejected, suspended)
 
     # suggestions for levelling vendors
     # is_premium = models.BooleanField(default=False)

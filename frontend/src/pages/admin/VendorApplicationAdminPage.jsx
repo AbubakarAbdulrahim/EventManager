@@ -76,34 +76,37 @@ const VendorApplicationAdminPage = () => {
 
   useEffect(() => {
     // Fetch data from backend
-    authAxios.get('/vendors/')
-      .then(response => {
-        const transformed = response.data.map(app => {
-          console.log(app);
-          return ({
-            id: app.id,
-            fullName: app.user.full_name,
-            email: app.user.email,
-            phone: app.user.phone_number,
-            business_name: app.business_name,
-            address: app.address,
-            years_in_business: String(app.years_in_business),
-            certification_list: app.certification_list,
-            certification_images: app.certification_images,
-            status: app.status,
-            submittedDate: app.created_at.split('T')[0],
+    const fetchData = async ()=>{
+        try{
+          const response = await authAxios.get('/vendors/')
+          console.log(response);
+          const transformed = response.data.map(app => {
+            console.log(app);
+            return ({
+              id: app.id,
+              fullName: app.user.full_name,
+              email: app.user.email,
+              phone: app.user.phone_number,
+              business_name: app.business_name,
+              address: app.address,
+              years_in_business: String(app.years_in_business),
+              certification_list: app.certification_list,
+              certification_images: app.certification_images,
+              status: app.status,
+              submittedDate: app.created_at.split('T')[0],
+            })
           })
-        }
-      );
-  
-        // console.log(transformed);
-        setApplications(transformed);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err);
-        setLoading(false);
-      });
+          setApplications(transformed);
+          setLoading(false);
+        } catch(err){
+          setError(err);
+          setLoading(false);
+        } 
+    }
+
+    fetchData()
+      
+        
   }, []);
 
 

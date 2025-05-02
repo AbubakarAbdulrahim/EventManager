@@ -247,7 +247,7 @@ class VendorRetrieveSerializer(serializers.ModelSerializer):
             "created_at",
             "years_in_business",
             "certification_list",
-            "is_approved",
+            "status",
 
             # additional
             "certification_images",

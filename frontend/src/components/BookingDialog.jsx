@@ -1,14 +1,35 @@
-import React, { use } from 'react';
-import { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stepper, Step, StepLabel, Box, TextField, Typography, Grid, CircularProgress, Avatar} from '@mui/material';
-import { CalendarMonth, Checklist, Check, Schedule} from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Stepper,
+  Step,
+  StepLabel,
+  Box,
+  TextField,
+  Typography,
+  Grid,
+  CircularProgress,
+  Paper,
+  Avatar,
+  Rating
+} from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import {closePaymentModal } from 'flutterwave-react-v3';
-import { getAvailableDatesWithBookings, getAvailableTimeSlots, setIsBooked, availability } from '../services/availability';
+import {
+  CalendarMonth,
+  Schedule,
+  Checklist,
+  Check,
+  Send
+} from '@mui/icons-material';
+import dayjs from 'dayjs';
 import { useAuth } from '../context/AuthContext';
-import { useHotkeys } from 'react-hotkeys-hook';
+import {closePaymentModal } from 'flutterwave-react-v3';
 import { useBookingContext } from '../context/BookingsContext';
 
 const StepIcon = ({ active, completed, icon }) => {
@@ -16,7 +37,6 @@ const StepIcon = ({ active, completed, icon }) => {
     1: <CalendarMonth />,
     2: <Schedule />,
     3: <Checklist />,
-    // 4: <Check />,
   };
 
   return (
@@ -35,114 +55,170 @@ const StepIcon = ({ active, completed, icon }) => {
 };
 
 function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
-  const {user} = useAuth();
-  // const {addBooking } = useBookingContext
-  const serviceData = service || {};
-  const serviceTitle = serviceData.name || 'Service';
+  const { user } = useAuth();
+  
+  // Define steps for booking process
   const steps = [
     { label: 'Date', icon: 1 },
-    { label: 'Time', icon: 2 },
+    { label: 'Time & Duration', icon: 2 },
     { label: 'Review Details', icon: 3 },
-    // { label: 'Confirmation', icon: 4 },
   ];
+  
+  // State variables
   const [activeStep, setActiveStep] = useState(0);
   const [showCancelMsg, setShowCancelMsg] = useState(false);
+  const [openReview, setOpenReview] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [error, setError] = useState("");
+  
+  // Booking data state
   const [bookingData, setBookingData] = useState({
     date: null,
     time: '',
-    name: '',
-    email: '',
-    phone: ''
+    duration: '',
+    name: user?.full_name || '',
+    email: user?.email || '',
+    phone: user.phone_number
   });
+  
+  // Available dates and time slots
   const [availableDates, setAvailableDates] = useState([]);
-  const [availableTimes, setAvailableTimes] = useState([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  
+  // Loading states
   const [loadingDates, setLoadingDates] = useState(true);
-  const [loadingTimes, setLoadingTimes] = useState(false);
-  const [timeError, setTimeError] = useState(false);
-  const [error, setError] = useState("");
+  const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [isSlotAvailable, setIsSlotAvailable] = useState(null);
   
-  useHotkeys('left', () => activeStep > 0 && setActiveStep(s => s - 1), [activeStep]);
-  useHotkeys('enter, right', () => {
-    if ((activeStep === 0 && !bookingData.date) || (activeStep === 1 && !bookingData.time)) {
-      e.preventDefault();
-      handleNext();
-    }
-    activeStep < 2 && setActiveStep(s => s + 1)
-
-  }, [activeStep, bookingData.date, bookingData.time]);
-  
-  const b = availability.find(service => {
-    // Check if the service ID matches
-    if (service.serviceId === serviceData.id) {
-      console.log(service.serviceId, serviceData.id)
-
-      // Check if the date exists in the available dates
-      // const availableDate = service.availableDates.find(d => d.date === bookingData.date?.format('YYYY-MM-DD'));
-      // // Update the isBooked status of the existing time slot
-      // if (availableDate) {
-      //   service.availableDates.find(d => d.date === bookingData.date?.format('YYYY-MM-DD')).isBooked = true;
-      // }
-      console.log(service.availableDates.timeSlots.isBooked)
-      return service.availableDates;
-    }
-  })
-
-  console.log(b)
+  // Fetch available dates when component mounts
   useEffect(() => {
-    if (open && service.id) {
-      setLoadingDates(true);
-      
-      const sid = service.id.toString();
-      // console.log(getAvailableTimeSlots(sid, ));
-      // (getAvailableDatesWithBookings(sid).map(date => console.log(getAvailableTimeSlots(sid, date))));
-      // console.log(getAvailableTimeSlots(service.id, bookingData.date?.format('YYYY-MM-DD')));
-      // Get availability
-      // const availability = mockDB.getServiceAvailability(service.id);
-      setTimeout(() => {
-          setAvailableDates(getAvailableDatesWithBookings(sid));
-          // setAvailableTimes(getAvailableTimeSlots(sid, bookingData.date?.format('YYYY-MM-DD')));
-        setLoadingDates(false);
-      }, 1000);
-    }
-    setBookingData((prev)=>({
-      ...prev,
-      name: user.full_name,
-      email: user.email,
-      phone: user.role
-    }))
-  }, [open, service.id ]);
+    fetchAvailableDates();
+  }, []);
   
+  // Mock function to fetch available dates
+  const fetchAvailableDates = () => {
+    setLoadingDates(true);
+    
+    // Simulate API call to fetch available dates
+    setTimeout(() => {
+      const today = dayjs();
+      const dates = [];
+      
+      // Generate next 30 days as available (skipping some days to simulate unavailability)
+      for (let i = 1; i <= 30; i++) {
+        if (![5, 10, 15, 20, 25].includes(i)) { // Skip these days to simulate unavailability
+          dates.push(today.add(i, 'day'));
+        }
+      }
+      
+      setAvailableDates(dates);
+      setLoadingDates(false);
+    }, 800);
+  };
+  
+  // Handle date selection
   const handleDateChange = (date) => {
     if (!date) return;
-    if (!service.id) return;
     
-    setLoadingTimes(true);
-    setBookingData(prev => ({ ...prev, date: date }));
-    const sid = service.id.toString();
-    // Get available times for the selected date
-    const selectedDate = date.format('YYYY-MM-DD');
-    console.log('Selected date:', selectedDate);
-    var availableTimes;
-    if(getAvailableTimeSlots(sid, selectedDate).length === 0) {
-      setTimeError(true);
-      availableTimes = ['Not Available'];
-    } else {
-      setTimeError(false);
-      availableTimes = getAvailableTimeSlots(sid, selectedDate);
-    }
-    // const availableTimes = getAvailableTimeSlots(sid, selectedDate).length !== 0 ? getAvailableTimeSlots(sid, selectedDate) : ['Not Available'];
-    console.log('Available times:', availableTimes);
+    // Clear previous time selection and availability status
+    setBookingData(prev => ({ 
+      ...prev, 
+      date: date,
+      time: '',
+      duration: '' 
+    }));
+    setIsSlotAvailable(null);
     
+    // Fetch available time slots for selected date
+    fetchAvailableTimeSlots(date);
+  };
+  
+  // Mock function to fetch available time slots for a date
+  const fetchAvailableTimeSlots = (date) => {
+    setLoadingTimeSlots(true);
     
+    // Simulate API call to fetch available time slots
     setTimeout(() => {
-      setAvailableTimes(availableTimes);
-      setLoadingTimes(false);
-    }, 500);
+      const selectedDate = date.format('YYYY-MM-DD');
+      console.log('Fetching time slots for:', selectedDate);
+      
+      // Generate time slots (in a real app, this would come from your backend)
+      const slots = [];
+      const startHour = 6; // 6 AM
+      const endHour = 20; // 8 PM
+      
+      // Generate hourly slots, skipping some to simulate unavailability
+      for (let hour = startHour; hour < endHour; hour++) {
+        if (![9, 13, 17].includes(hour)) { // Skip these hours to simulate unavailability
+          slots.push(`${hour}:00`);
+        }
+      }
+      
+      setAvailableTimeSlots(slots);
+      setLoadingTimeSlots(false);
+    }, 800);
   };
-
+  
+  // Handle time slot selection
   const handleTimeSelect = (time) => {
-    setBookingData(prev => ({ ...prev, time }));
+    setBookingData(prev => ({ 
+      ...prev, 
+      time,
+      duration: '' // Reset duration when time changes
+    }));
+    setIsSlotAvailable(null); // Reset availability check
   };
+  
+  // Handle duration change
+  const handleDurationChange = (e) => {
+    const duration = e.target.value;
+    setBookingData(prev => ({ ...prev, duration }));
+    
+    // Only check availability if we have a selected time and valid duration
+    if (bookingData.time && duration) {
+      checkTimeSlotAvailability(bookingData.time, duration);
+    } else {
+      setIsSlotAvailable(null);
+    }
+  };
+  
+  // Mock function to check if the time slot is available for the specified duration
+  const checkTimeSlotAvailability = (time, duration) => {
+    setCheckingAvailability(true);
+    setError('');
+    
+    // Simulate API call to check availability
+    setTimeout(() => {
+      const timeHour = parseInt(time.split(':')[0]);
+      const durationHours = parseFloat(duration);
+      
+      // Simulate some conflicts in the database
+      // For demo purposes, let's say any booking that ends after 5PM is unavailable
+      // or any booking longer than 5 hours is unavailable
+      const endTimeHour = timeHour + durationHours;
+      const isAvailable = endTimeHour <= 17 && durationHours <= 5;
+      
+      setIsSlotAvailable(isAvailable);
+      
+      if (!isAvailable) {
+        setError('This time slot is not available for the selected duration. Please choose a different time or duration.');
+      }
+      
+      setCheckingAvailability(false);
+    }, 800);
+  };
+  
+  // Handle submit review
+  const handleSubmitReview = () => {
+    console.log("Submitted review:", { rating: userRating, comment: reviewText });
+    setOpenReview(false);
+    setUserRating(0);
+    setReviewText('');
+  };
+  
+  // Mock payment function
   let flutterwaveScriptLoading = null;
   const loadFlutterwaveScript = () => {
   if (window.FlutterwaveCheckout) return Promise.resolve();
@@ -175,7 +251,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     window.FlutterwaveCheckout({
       public_key: "FLWPUBK_TEST-f26186bcd6a1340b7d354280b2605ad2-X",
       tx_ref: Date.now(),
-      amount: service.price,
+      amount: calculatePrice(service?.price, bookingData.duration),
       currency: "NGN",
       payment_options: "card,ussd",
       customer: {
@@ -190,13 +266,13 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
         response.status === 'completed' && (onConfirm({
           ...bookingData,
           date: bookingData.date?.format('YYYY-MM-DD'),
-          service: serviceTitle
-        }), addBooking(serviceData),
-         setIsBooked((service.id).toString(),
-        bookingData.date?.format('YYYY-MM-DD'), bookingData.time),
+          service: service.name
+        }), addBooking(service),
+         
         setTimeout(() => {
           console.log('hey im closing')
           closePaymentModal();
+          setOpenReview(true)
         }
         , 500)
       );
@@ -210,7 +286,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
       },
       customizations: {
         title: "Payment for Booking" ,
-        description: `Booking for ${serviceTitle}`,
+        description: `Booking for ${service.name}`,
         logo: "http://localhost:5173/logo.png",
       },
     });
@@ -220,28 +296,52 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   // }
   // };
 } catch (e) {
+console.log(e);
   setError("Unable to load payment system. Please check your internet and try again.");
 }
 };
-  
-
+ 
+  // Handle next step button
   const handleNext = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
     } else {
-      handlePayment()
+      // Final step - process payment
+      handlePayment();
     }
   };
-
+  
+  // Handle back button
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
   };
-
-
+  
+  // Check if current step is valid to enable Next button
+  const isStepValid = () => {
+    switch (activeStep) {
+      case 0: // Date selection
+        return bookingData.date !== null;
+      case 1: // Time and duration
+        return bookingData.time && 
+               bookingData.duration && 
+               isSlotAvailable === true; // Must be explicitly true, not just truthy
+      case 2: // Review details
+        return bookingData.name && 
+               bookingData.email && 
+               bookingData.phone;
+      default:
+        return false;
+    }
+  };
+  
+  // Render the content for the current step
   const renderStepContent = (step) => {
+    const serviceTitle = service?.name || 'Service';
+    
     switch (step) {
-      case 0:
+      case 0: // Date selection
         return (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle1" gutterBottom>
@@ -257,10 +357,13 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
                 <DateCalendar
                   value={bookingData.date}
                   onChange={handleDateChange}
-                  shouldDisableDate={(date) => 
-                    !availableDates.some(availableDate => 
-                      date.isSame(availableDate, 'day'))
-                  }
+                  shouldDisableDate={(date) => {
+                    // Disable dates that are not in availableDates
+                    return !availableDates.some(availDate => 
+                      availDate.format('YYYY-MM-DD') === date.format('YYYY-MM-DD')
+                    );
+                  }}
+                  disablePast
                   sx={{
                     border: '1px solid #033043',
                     borderRadius: '8px',
@@ -268,118 +371,225 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
                       backgroundColor: '#033043 !important'
                     }
                   }}
-                  disabled={loadingDates}
                 />
               )}
             </LocalizationProvider>
-          </Box>
-        );
-
-      case 1:    
-        return (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Choose Time for <strong>{serviceTitle}</strong> on {bookingData.date?.format('MMM D, YYYY')}
-            </Typography>
-            {loadingTimes ? (
-              <CircularProgress size={24} sx={{ color: '#033043' }} />
-            ) : (
-              <Grid container spacing={2}>
-                {availableTimes.map((time) => (
-                  <Grid item xs={4} key={time}>
-                    <Button
-                      variant={bookingData.time === time ? 'contained' : 'outlined'}
-                      fullWidth
-                      disabled={timeError}
-                      onClick={() => handleTimeSelect(time)}
-                      sx={{
-                        backgroundColor: bookingData.time === time ? '#033043' : 'white',
-                        color: bookingData.time === time ? 'white' : '#033043',
-                        borderColor: '#033043',
-                        '&:hover': {
-                          backgroundColor: bookingData.time === time ? '#022030' : '#f0f0f0'
-                        }
-                      }}
-                    >
-                      {time}
-                    </Button>
-                  </Grid>
-                ))}
-              </Grid>
+            
+            {bookingData.date && (
+              <Paper 
+                elevation={2} 
+                sx={{ 
+                  p: 2, 
+                  mt: 2, 
+                  backgroundColor: '#e6f2f5', 
+                  borderLeft: '4px solid #033043' 
+                }}
+              >
+                <Typography variant="body1">
+                  Selected Date: <strong>{bookingData.date.format('dddd, MMMM D, YYYY')}</strong>
+                </Typography>
+              </Paper>
             )}
           </Box>
         );
 
-      // case 2:
-      //   return (
-      //     <Box>
-      //       <Typography variant="subtitle1" gutterBottom>
-      //         Enter Your Details
-      //       </Typography>
-      //       <TextField
-      //         fullWidth
-      //         margin="normal"
-      //         label="Name"
-      //         name="fullname"
-      //         value={user.full_name}
-      //         disabled
-      //         // onChange={handleDetailChange}
-      //       />
-      //       <TextField
-      //         fullWidth
-      //         margin="normal"
-      //         label="Email"
-      //         name="email"
-      //         disabled
-      //         value={user.email}
-      //         // onChange={handleDetailChange}
-      //       />
-      //       <TextField
-      //         fullWidth
-      //         margin="normal"
-      //         label="Phone"
-      //         name="phone"
-      //         disabled
-      //         value={'0000'}
-      //         // onChange={handleDetailChange}
-      //       />
-      //     </Box>
-      //   );
+      case 1: // Time and duration selection
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Choose Time & Duration for <strong>{serviceTitle}</strong> on {bookingData.date?.format('MMM D, YYYY')}
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Select an available time slot, then specify the duration of your booking.
+            </Typography>
+            
+            {loadingTimeSlots ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress size={24} sx={{ color: '#033043' }} />
+              </Box>
+            ) : (
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {availableTimeSlots.length > 0 ? (
+                  availableTimeSlots.map((time) => (
+                    <Grid item xs={4} key={time}>
+                      <Button
+                        variant={bookingData.time === time ? 'contained' : 'outlined'}
+                        fullWidth
+                        onClick={() => handleTimeSelect(time)}
+                        sx={{
+                          backgroundColor: bookingData.time === time ? '#033043' : 'white',
+                          color: bookingData.time === time ? 'white' : '#033043',
+                          borderColor: '#033043',
+                          '&:hover': {
+                            backgroundColor: bookingData.time === time ? '#022030' : '#f0f0f0'
+                          }
+                        }}
+                      >
+                        {time}
+                      </Button>
+                    </Grid>
+                  ))
+                ) : (
+                  <Grid item xs={12}>
+                    <Typography color="error">
+                      No available time slots for the selected date. Please select another date.
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+            
+            {bookingData.time && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Specify Duration (hours)
+                </Typography>
+                
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Duration (hours)"
+                      value={bookingData.duration}
+                      onChange={handleDurationChange}
+                      type="number"
+                      InputProps={{
+                        inputProps: { min: 1, max: 8, step: 0.5 }
+                      }}
+                      error={!!error}
+                      helperText={error || "Enter duration between 1-8 hours"}
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6}>
+                    {checkingAvailability ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <CircularProgress size={20} sx={{ mr: 1 }} />
+                        <Typography>Checking availability...</Typography>
+                      </Box>
+                    ) : isSlotAvailable === true ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main' }}>
+                        <Check sx={{ mr: 1 }} />
+                        <Typography>Time slot available!</Typography>
+                      </Box>
+                    ) : isSlotAvailable === false ? (
+                      <Typography color="error">
+                        Time slot unavailable for the selected duration.
+                      </Typography>
+                    ) : null}
+                  </Grid>
+                </Grid>
+                
+                {bookingData.time && bookingData.duration && isSlotAvailable && (
+                  <Paper 
+                    elevation={2} 
+                    sx={{ 
+                      p: 2, 
+                      mt: 3, 
+                      backgroundColor: '#e6f7ee', 
+                      borderLeft: '4px solid #2e7d32' 
+                    }}
+                  >
+                    <Typography variant="body1">
+                      Your booking: {bookingData.date?.format('MMM D, YYYY')} from {bookingData.time} for {bookingData.duration} hours
+                      (until {calculateEndTime(bookingData.time, bookingData.duration)})
+                    </Typography>
+                  </Paper>
+                )}
+              </Box>
+            )}
+          </Box>
+        );
 
-      case 2:
+      case 2: // Review details
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
               Confirm Booking for <strong>{serviceTitle}</strong>
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <Typography variant="body2">Date:</Typography>
-                <Typography>{bookingData.date?.format('MMM D, YYYY')}</Typography>
+            
+            <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Date:</Typography>
+                  <Typography variant="body1" gutterBottom fontWeight="medium">
+                    {bookingData.date?.format('dddd, MMMM D, YYYY')}
+                  </Typography>
+                  
+                  <Typography variant="body2" color="text.secondary">Time:</Typography>
+                  <Typography variant="body1" gutterBottom fontWeight="medium">
+                    {bookingData.time} - {calculateEndTime(bookingData.time, bookingData.duration)}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">Duration:</Typography>
+                  <Typography variant="body1" gutterBottom fontWeight="medium">
+                    {bookingData.duration} hours
+                  </Typography>
+                  
+                  <Typography variant="body2" color="text.secondary">Price:</Typography>
+                  <Typography variant="body1" gutterBottom fontWeight="medium">
+                    ₦{calculatePrice(service?.price, bookingData.duration)}
+                  </Typography>
+                </Grid>
               </Grid>
-              <Grid item xs={4}>
-                <Typography variant="body2">Time:</Typography>
-                <Typography>{bookingData.time}</Typography>
-              </Grid>
-              <Grid item xs={4}>
-                <Typography variant="body2">Price:</Typography>
-                <Typography>₦{service.price}</Typography>
-              </Grid>
-              <Grid item xs={12} sx={{ mt: 2 }}>
-                <Typography variant="body2">Contact Details:</Typography>
-                <Typography>{bookingData.name}</Typography>
-                <Typography>{bookingData.email}</Typography>
-                <Typography>{bookingData.phone}</Typography>
-              </Grid>
-              <Grid item xs={12} sx={{ mt: 2 }}>
-              {showCancelMsg && (
-                <Typography style={{ color: "red" }}>You cancelled the payment.</Typography>
-              )}
-              {error && (
-                <Typography style={{ color: "red" }}>⚠️ {error}</Typography>
-              )}
-              </Grid>
-            </Grid>
+              
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Contact Information
+                </Typography>
+                
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Full Name"
+                      value={bookingData.name}
+                      onChange={(e) => setBookingData(prev => ({ ...prev, name: e.target.value }))}
+                      margin="dense"
+                      required
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Phone Number"
+                      value={bookingData.phone}
+                      onChange={(e) => setBookingData(prev => ({ ...prev, phone: e.target.value }))}
+                      margin="dense"
+                      required
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      type="email"
+                      value={bookingData.email}
+                      onChange={(e) => setBookingData(prev => ({ ...prev, email: e.target.value }))}
+                      margin="dense"
+                      required
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            </Paper>
+            
+            {showCancelMsg && (
+              <Typography color="error">
+                You cancelled the payment. Please try again to complete your booking.
+              </Typography>
+            )}
+            
+            {error && (
+              <Typography color="error">
+                ⚠️ {error}
+              </Typography>
+            )}
           </Box>
         );
 
@@ -387,64 +597,140 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
         return 'Unknown step';
     }
   };
+  
+  // Helper function to calculate end time
+  const calculateEndTime = (startTime, duration) => {
+    if (!startTime || !duration) return '';
+    
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const durationHours = parseFloat(duration);
+    
+    let endHours = hours + Math.floor(durationHours);
+    const endMinutes = minutes + Math.round((durationHours % 1) * 60);
+    
+    if (endMinutes >= 60) {
+      endHours += 1;
+    }
+    
+    // Format to 24-hour time
+    return `${(endHours % 24).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
+  };
+  
+  // Helper function to calculate price based on duration
+  const calculatePrice = (basePrice, duration) => {
+    if (!basePrice || !duration) return 0;
+    
+    const price = basePrice * parseFloat(duration);
+    return price;
+  };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ color: '#033043', fontWeight: 600 }}>
-        Book {serviceTitle}
-      </DialogTitle>
-      <DialogContent>
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ my: 3 }}>
-          {steps.map((step, index) => (
-            <Step key={step.label}>
-              <StepLabel
-                StepIconComponent={StepIcon}
-                StepIconProps={{
-                  active: activeStep === index,
-                  completed: activeStep > index,
-                  icon: step.icon
-                }}
-                sx={{
-                  '& .MuiStepLabel-label': {
-                    color: activeStep === index ? '#033043' : 'grey.600',
-                    fontWeight: 500,
-                    fontSize: '0.875rem'
-                  }
-                }}
-              >
-                {step.label}
-              </StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-        {renderStepContent(activeStep)}
-      </DialogContent>
-      <DialogActions sx={{ pb: 3, pr: 3 }}>
-        {activeStep > 0 && (
-          <Button sx={{ color: "#033043" }} onClick={handleBack}>
-            Back
+    <>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ color: '#033043', fontWeight: 600 }}>
+          Book {service?.name || 'Service'}
+        </DialogTitle>
+        
+        <DialogContent>
+          <Stepper activeStep={activeStep} alternativeLabel sx={{ my: 3 }}>
+            {steps.map((step, index) => (
+              <Step key={step.label}>
+                <StepLabel
+                  StepIconComponent={StepIcon}
+                  StepIconProps={{
+                    active: activeStep === index,
+                    completed: activeStep > index,
+                    icon: step.icon
+                  }}
+                  sx={{
+                    '& .MuiStepLabel-label': {
+                      color: activeStep === index ? '#033043' : 'grey.600',
+                      fontWeight: 500,
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                >
+                  {step.label}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+          
+          {renderStepContent(activeStep)}
+        </DialogContent>
+        
+        <DialogActions sx={{ pb: 3, pr: 3 }}>
+          {activeStep > 0 && (
+            <Button 
+              sx={{ color: "#033043" }} 
+              onClick={handleBack}
+            >
+              Back
+            </Button>
+          )}
+          
+          <Button 
+            onClick={handleNext} 
+            variant="contained" 
+            sx={{ 
+              backgroundColor: '#033043',
+              '&:hover': { backgroundColor: '#022030' }
+            }}
+            disabled={!isStepValid()}
+          >
+            {activeStep === steps.length - 1 ? 'Confirm & Pay' : 'Next'}
           </Button>
-        )}
-        <Button 
-          onClick={handleNext} 
-          variant="contained" 
-          sx={{ 
-            backgroundColor: '#033043',
-            '&:hover': { backgroundColor: '#022030' }
-          }}
-          disabled={
-            (activeStep === 0 && !bookingData.date) ||
-            (activeStep === 1 && !bookingData.time) ||
-            (activeStep === 2 && (!bookingData.name || !bookingData.email || !bookingData.phone))
-          }
-        >
-          {activeStep === steps.length - 1 ? 'Confirm & Pay' : 'Next'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog 
+        open={openReview} 
+        onClose={() => setOpenReview(false)} 
+        maxWidth='sm'
+      >
+        <DialogTitle>Write a Review</DialogTitle>
+        
+        <DialogContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Typography component="legend" sx={{ mr: 2 }}>Your Rating:</Typography>
+            <Rating
+              name="user-rating"
+              value={userRating}
+              onChange={(event, newValue) => {
+                setUserRating(newValue);
+              }}
+            />
+          </Box>
+          
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Your Review"
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+            variant="outlined"
+            sx={{ mb: 2 }}
+          />
+        </DialogContent>
+        
+        <DialogActions>
+          <Button 
+            variant="contained"
+            onClick={handleSubmitReview}
+            disabled={!userRating || !reviewText.trim()}
+            endIcon={<Send />}
+            sx={{ 
+              backgroundColor: '#033043',
+              '&:hover': { backgroundColor: '#022030' }
+            }}
+          >
+            Submit Review
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
 export default BookingDialog;
-
-

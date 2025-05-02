@@ -222,9 +222,9 @@ export default function Login(props) {
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 error={formik.touched.password && Boolean(formik.errors.password)}
-                helperText={formik.touched.password && "Password does not meet requirements"}
+                helperText={formik.touched.password && "Password is required"}
               />
-              <Box ml={1} mt={1}>
+              {/* <Box ml={1} mt={1}>
               <Typography variant="body2" color={checks.length ? "success.main" : "error"}>
                 • Minimum 8 characters
               </Typography>
@@ -237,7 +237,7 @@ export default function Login(props) {
               <Typography variant="body2" color={checks.specialChar ? "success.main" : "error"}>
                 • At least one special character
               </Typography>
-            </Box>
+            </Box> */}
             </FormControl>
             <Box sx={{display:'flex', justifyContent:'space-between'}}>
               <FormControlLabel

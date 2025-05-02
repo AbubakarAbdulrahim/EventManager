@@ -4,6 +4,13 @@ import VendorApplicationAdminPage from './VendorApplicationAdminPage'
 import { useState } from 'react';
 import {useAuth} from '../../context/AuthContext'
 import Customers from './Customers';
+import Dashboard from './Dashboard';
+import Bookings from './Bookings';
+import Services from './Services';
+import Payments from './Payments';
+import Reports from './Reports';
+import Support from './Support';
+import Settings from './Settings';
 
 export default function Admin(params) {
   const [currentPage, setCurrentPage] = useState('Dashboard');
@@ -12,22 +19,24 @@ export default function Admin(params) {
   
   const renderContent = () => {
     switch (currentPage.toLocaleLowerCase()) {
-      // case 'dashboard':
-      //   return <DashboardContent />;
+      case 'dashboard':
+        return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'customers':
         return <Customers />;
       case 'vendors':
         return <VendorApplicationAdminPage />;
-      // case 'bookings':
-      //   return <BookingsContent />;
-      // case 'payments':
-      //   return <PaymentsContent />;
-      // case 'reports':
-      //   return <ReportsContent />;
-      // case 'support':
-      //   return <SupportContent />;
-      // case 'settings':
-      //   return <SettingsContent />;
+      case 'bookings':
+        return <Bookings/>;
+      case 'services':
+        return <Services/>;
+      case 'payments':
+        return <Payments />;
+      case 'reports':
+        return <Reports />;
+      case 'support':
+        return <Support />;
+      case 'settings':
+        return <Settings />;
       default:
         return 'dashboard';
     }
@@ -38,7 +47,7 @@ export default function Admin(params) {
 
     <NavAppBar setCurrentPage={setCurrentPage} currentPage={currentPage} />
     <Box sx={{pl:9, pt:9, bgcolor:'#f5f5f5', height:'100%'}}>
-      {/* <VendorApplicationAdminPage/> */}
+
       {renderContent()}
       
     </Box>
