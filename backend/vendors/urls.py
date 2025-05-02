@@ -17,11 +17,11 @@ urlpatterns = [
 
 
     # vendor package endpoints
-    path('services/', views.VendorPackageListView.as_view(), name='vendor-package-list'),
-    path('services/create/', views.VendorPackageCreateView.as_view(), name='vendor-package-create'),
-    path('services/<int:pk>/', views.VendorPackageRetrieveView.as_view(), name='vendor-package-detail'),
-    path('services/<int:pk>/update/', views.VendorPackageUpdateView.as_view(), name='vendor-package-update'),
-    path('services/<int:pk>/delete/', views.VendorPackageDestroyView.as_view(), name='vendor-package-delete'),
+    path('services/', views.ServiceListView.as_view(), name='vendor-package-list'),
+    path('services/create/', views.ServiceCreateView.as_view(), name='vendor-package-create'),
+    path('services/<int:pk>/', views.ServiceRetrieveView.as_view(), name='vendor-package-detail'),
+    path('services/<int:pk>/update/', views.ServiceUpdateView.as_view(), name='vendor-package-update'),
+    path('services/<int:pk>/delete/', views.ServiceDestroyView.as_view(), name='vendor-package-delete'),
     
 
     #

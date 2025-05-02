@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from vendors.models import VendorPackage
+from vendors.models import Service
 
 User = get_user_model()
 
@@ -15,7 +15,7 @@ class Booking(models.Model):
         ('completed', 'Completed'),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')  # customer
-    vendor_package = models.ForeignKey(VendorPackage, on_delete=models.CASCADE, related_name='bookings')
+    services = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='bookings')
     event_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField(null=True)
@@ -25,4 +25,4 @@ class Booking(models.Model):
     duration = models.CharField(max_length=30, null=True, blank=True)
 
     def __str__(self):
-        return f"Booking by {self.user.username} for {self.vendor_package.vendor.service_name} on {self.event_date} - {self.status}"
+        return f"Booking by {self.user.username} for {self.service.vendor.service_name} on {self.event_date} - {self.status}"

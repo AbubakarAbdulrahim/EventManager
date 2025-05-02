@@ -151,7 +151,7 @@ import {
 
         const handleAction = async (customer)=>{
           try {
-            const response = await authAxios.post(`api-admin/users/${customer.id}/suspend-activate/`);
+            const response = await authAxios.post(`api-admin/user/${customer.id}/suspend-activate/`);
             console.log(response);
             if (response.status === 200) {
               const updatedCustomers = customers.map(a =>
