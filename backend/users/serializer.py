@@ -7,19 +7,22 @@ User = get_user_model()  # gettting current user model
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User # serializer model
-        fields = ["id", 
-                  "full_name", 
-                  "username", 
-                  "email", 
-                  "password", 
-                  "role", 
-                  "phone_number", 
-                  "is_active"
-         ] # serializer fields
+        fields = [
+            "id", 
+            "full_name", 
+            "username", 
+            "email", 
+            "password", 
+            "role", 
+            "phone_number", 
+            "is_active"
+        ] 
+        read_only_fields = [
+            "role",
+            "is_active",
+        ]
         extra_kwargs = {
-            "role" : {"read_only": True},
             "password": {"write_only" : True},
-            "is_active": {"read_only": True}
         }
 
     # on creating
@@ -46,3 +49,12 @@ class UserAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
+        read_only_fields = [
+            "id", 
+            "full_name", 
+            "username", 
+            "email", 
+            "password", 
+            "role", 
+            "phone_number",
+        ]

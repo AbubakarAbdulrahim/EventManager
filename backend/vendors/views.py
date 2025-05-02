@@ -1,10 +1,11 @@
 from rest_framework import generics
 from .models import (
-    Vendor, 
-    VendorPackage, 
-    VendorCertificationImages, 
-    VendorPackageImages,
-    VendorPackageAvailability
+    Vendor,
+    VendorCertificationImage,
+    Service,
+    ServiceImage,
+    ServiceSpecificDateAvailability,
+    ServiceRecurringAvailability,
 )
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permission import IsVendorRole
@@ -13,21 +14,22 @@ from .serializer import(
     VendorRetrieveSerializer,
     VendorUpdateSerializer,
     VendorDestroySerializer,
-    VendorPackageCreateSerializer,
-    VendorPackageRetrieveSerializer,
-    )
+    ServiceCreateSerializer,
+    ServiceRetrieveSerializer,
+    ServiceDestroySerializer,
+)
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from .availability import is_vendor_package_available
+from .availability import is_service_available
 
 
 '''
 views for vendors
 '''
 
-# vendor retrieve viewOrReadOnly
+# vendor retrieve view
 class VendorRetrieveView(generics.RetrieveAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorRetrieveSerializer
@@ -64,34 +66,37 @@ class VendorListView(generics.ListAPIView):
 
 # vendor destroy view
 class VendorDestroyView(generics.DestroyAPIView):
-    queryset = Vendor.objects.all()
     serializer_class = VendorDestroySerializer
     lookup_field = 'pk'
     permission_classes = [IsVendorRole]
     parser_classes = [MultiPartParser, FormParser]
 
+    def get_queryset(self):
+        return Vendor.objects.filter(user=self.request.user)
+
     # deleting all the inhabitants
     def perform_destroy(self, instance):
-        VendorCertificationImages.objects.filter(vendor=instance).delete()
+        VendorCertificationImage.objects.filter(vendor=instance).delete()
+        Service.objects.filter(vendor=instance).delete()
         instance.delete()
         return instance
 
 
 '''
-for vendor package
+for vendor service
 '''
 
-# vendor package list view
-class VendorPackageListView(generics.ListAPIView):
-    queryset = VendorPackage.objects.all()
-    serializer_class = VendorPackageRetrieveSerializer
+# vendor service list view
+class ServiceListView(generics.ListAPIView):
+    queryset = Service.objects.all()
+    serializer_class = ServiceRetrieveSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
 
-# vendor package create view
-class VendorPackageCreateView(generics.CreateAPIView):
-    queryset = VendorPackage.objects.all()
-    serializer_class = VendorPackageCreateSerializer
+# vendor service create view
+class ServiceCreateView(generics.CreateAPIView):
+    queryset = Service.objects.all()
+    serializer_class = ServiceCreateSerializer
     permission_classes = [IsVendorRole]
     parser_classes = [MultiPartParser, FormParser]
 
@@ -104,33 +109,37 @@ class VendorPackageCreateView(generics.CreateAPIView):
         else:
             raise ValidationError("Vendor not found for this user.")
 
-# vendor package retrieve view
-class VendorPackageRetrieveView(generics.RetrieveAPIView):
-    queryset = VendorPackage.objects.all()
-    serializer_class = VendorPackageRetrieveSerializer
+# vendor service retrieve view
+class ServiceRetrieveView(generics.RetrieveAPIView):
+    queryset = Service.objects.all()
+    serializer_class = ServiceRetrieveSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]  
     parser_classes = [MultiPartParser, FormParser]
 
-# vendor package update view
-class VendorPackageUpdateView(generics.UpdateAPIView):
-    serializer_class = VendorPackageCreateSerializer
+# vendor service update view
+class ServiceUpdateView(generics.UpdateAPIView):
+    serializer_class = ServiceCreateSerializer
     permission_classes = [IsVendorRole]  
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         vendor = Vendor.objects.get(user=self.request.user)
-        return VendorPackage.objects.filter(vendor=vendor)
+        return Service.objects.filter(vendor=vendor)
     
-# vendor package destroy view
-class VendorPackageDestroyView(generics.DestroyAPIView):
-    queryset = VendorPackage.objects.all()
-    serializer_class = VendorPackageCreateSerializer
+# vendor service destroy view
+class ServiceDestroyView(generics.DestroyAPIView):
+    serializer_class = ServiceDestroySerializer
     permission_classes = [IsVendorRole]
     parser_classes = [MultiPartParser, FormParser]
-
+    
+    def get_queryset(self):
+        vendor = Vendor.objects.get(user=self.request.user)
+        return Service.objects.filter(vendor=vendor)
+    
     def perform_destroy(self, instance):
-        VendorPackageImages.objects.filter(vendor_package=instance).delete()
-        VendorPackageAvailability.objects.filter(vendor_package=instance).delete()
+        ServiceImage.objects.filter(service=instance).delete()
+        ServiceSpecificDateAvailability.objects.filter(service=instance)
+        ServiceRecurringAvailability.objects.filter(service=instance).delete()
         instance.delete()
         return instance
     
@@ -146,8 +155,8 @@ for vendor package availability
 
 # service availability list view
 class ServiceAvailabilityRetrievView(generics.RetrieveAPIView):
-    serializer_class = VendorPackageAvailability
+    # serializer_class = VendorPackageAvailability
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_queryset(self):
-        return VendorPackageAvailability.filter(is_available=True)
+    # def get_queryset(self):
+    #     return VendorPackageAvailability.filter(is_available=True)

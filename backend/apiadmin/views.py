@@ -3,8 +3,8 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from .permissions import IsAdminRole
-from vendors.models import Vendor, VendorPackage
-from vendors.serializer import VendorAdminSerializer, VendorPackageAdminSerializer
+from vendors.models import Vendor, Service
+from vendors.serializer import VendorAdminSerializer, ServiceAdminSerializer
 from bookings.models import Booking
 from bookings.serializer import BookingAdminSerializer
 from transactions.models import Transaction
@@ -29,19 +29,19 @@ class BookingsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 '''  for managing vendors  '''
 # handling listing and creating vendors
-class VendorsAdminListCreateView(generics.ListCreateAPIView):
+class VendorAdminListCreateView(generics.ListCreateAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorAdminSerializer
     permission_classes = [IsAdminRole]
 
 # handling retrieving, updating, and destroying vendors
-class VendorsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
+class VendorAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Vendor.objects.all()
     serializer_class = VendorAdminSerializer
     permission_classes = [IsAdminRole]
 
 # handling suspending and activating vendors
-class VendorsAdminSuspendActivateView(APIView):
+class VendorAdminSuspendActivateView(APIView):
     permission_classes = [IsAdminRole]
 
     def post(self, request, pk):
@@ -66,30 +66,30 @@ class VendorsAdminSuspendActivateView(APIView):
 
 '''  for managing vendor packages  '''
 # handling listing and creating vendor packages
-class VendorPackagesAdminListCreateView(generics.ListCreateAPIView):
-    queryset = VendorPackage.objects.all()
-    serializer_class = VendorPackageAdminSerializer
+class ServiceAdminListCreateView(generics.ListCreateAPIView):
+    queryset = Service.objects.all()
+    serializer_class = ServiceAdminSerializer
     permission_classes = [IsAdminRole]
 
 # handling retreiving, updating and destroying vendor packages
-class VendorPackagesAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = VendorPackage.objects.all()
-    serializer_class = VendorPackageAdminSerializer
+class ServiceAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Service.objects.all()
+    serializer_class = ServiceAdminSerializer
     permission_classes = [IsAdminRole]
 
 # handling suspending and activating vendor packages
-class VendorPackagesAdminSuspendActivateView(APIView):
+class ServiceAdminSuspendActivateView(APIView):
     permission_classes = [IsAdminRole]
 
     def post(self, request, pk):
-        vendor_package = get_object_or_404(VendorPackage, pk=pk)
-        if vendor_package.is_approved == False:
-            vendor_package.is_approved = True
+        service = get_object_or_404(Service, pk=pk)
+        if service.is_approved == False:
+            service.is_approved = True
             message = 'approved'
-        elif vendor_package.is_approved == True:
-            vendor_package.is_approved == False
+        elif service.is_approved == True:
+            service.is_approved == False
             message = 'suspended'
-        vendor_package.save()
+        service.save()
         return Response({"detail": f"vendor service {message} successfully"})
 
 

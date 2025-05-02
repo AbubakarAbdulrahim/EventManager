@@ -30,7 +30,7 @@ REST_FRAMEWORK = {
 
 # tokens expiry periods
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),  # smalller
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),  # smalller
     "REFRESH_TOKEN_LIFETIME": timedelta(days=3),  # larger
     "ROTATE_REFRESH_TOKEN": True,
     "BLACKLIST_AFTER_ROTATION" : True,
