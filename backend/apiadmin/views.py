@@ -13,6 +13,7 @@ from users.models import User
 from users.serializer import UserAdminSerializer
 
 
+
 '''  for managing bookings  '''
 # handling listing bookings
 class BookingsAdminListView(generics.ListAPIView):
@@ -50,14 +51,16 @@ class VendorAdminSuspendActivateView(APIView):
     permission_classes = [IsAdminRole]
 
     def post(self, request, pk):
+        action = request.data.get('action')
         vendor = get_object_or_404(Vendor, pk=pk)
-        if vendor.is_approved == False:
+
+        if action == 'approve':
             vendor.is_approved = True
             vendor.user.role = 'vendor'
             vendor.user.save()
             message = 'approved'
 
-        elif vendor.is_approved == True:
+        elif action == 'suspend':
             vendor.is_approved = False
 
             if vendor.user.role == 'vendor':
@@ -142,7 +145,10 @@ class UsersAdminDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = UserAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling suspending and activating user
+    def get_queryset(self):
+        return User.objects.filter(role='customer')
+
+# handling suspending and approving user
 class UsersAdminSuspendActivateView(APIView):
     permission_classes = [IsAdminRole]
 
@@ -156,4 +162,5 @@ class UsersAdminSuspendActivateView(APIView):
             user.is_active == False
             user.save()
             message = 'suspended'
+        user.save()
         return Response({"detail": f"user {message} successfully"})

@@ -11,6 +11,14 @@ ROLE_CHOICES = [
 
 # user table
 class User(AbstractUser):
+<<<<<<< Updated upstream
+=======
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('customer', 'Customer'),
+        ('vendor', 'Vendor'),
+    ]
+>>>>>>> Stashed changes
     full_name = models.CharField(max_length=30)
     role = models.CharField(max_length=15, choices=ROLE_CHOICES, default="customer")
     groups = models.ManyToManyField(Group, related_name='user_groups', blank=True)

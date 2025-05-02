@@ -13,6 +13,12 @@ SERVICE_CHOICES = (
     ('musician', 'Musician'),
     ('mc', 'MC'),
 )
+STATUS = (
+    ('approved', 'Approved'),
+    ('pending', 'Pending'),
+    ('rejected', 'Rejected'),
+    ('suspended', 'Suspended'),
+)
 LEVEL_CHOICES = (
     ('silver', 'Silver'),
     ('bronze', 'Bronze'),
@@ -31,7 +37,7 @@ class Vendor(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     years_in_business = models.PositiveIntegerField(default=0)
     certification_list = models.CharField(max_length=255, default="")
-    is_approved = models.BooleanField(default=False)
+    status = models.CharField(max_length=50, default='pending', choices=STATUS)
 
     # suggestions for levelling vendors
     # is_premium = models.BooleanField(default=False)
@@ -40,48 +46,127 @@ class Vendor(models.Model):
     def __str__(self):
         return f"{self.user.id} - {self.business_name}"
 
-# vendor certification image table
-class VendorCertificationImage(models.Model):
+# vendor certification images
+class VendorCertificationImages(models.Model):
+    """
+    stores certification images for a vendor.
+    """
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="certification_images")
-    image = models.ImageField(upload_to='vendor_certifications/')
-    image_url = models.URLField()
+    image = models.ImageField(upload_to='media/vendor_certifications/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
-# vendor service table
-class Service(models.Model):
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="services")
+# vendor package
+class VendorPackage(models.Model):
+    """
+    represents a vendor's service package including price, capacity, and type.
+    """
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="packages")
+    
+    # venue
     service_name = models.CharField(max_length=50)
     service_type = models.CharField(max_length=20, choices=SERVICE_CHOICES)
-    description = models.CharField(max_length=200)
     location = models.CharField(max_length=255)
-    availability_start_date = models.DateField()
-    availability_end_date = models.DateField()
-    availability_type = models.CharField(max_length=20, choices=AVAILABILITY_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_approved = models.BooleanField(default=False)
+    additional_info = models.CharField(max_length=255, default="")
+    # max_capacity
+    # amenities
+    # venue type
+    
+    # catering
+    service_mode = models.CharField(max_length=255, null=True, blank=True)
+    
+    capacity = models.PositiveIntegerField(null=True, blank=True, default=0, help_text="Number of guests")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    status = models.CharField(max_length=50, default='pending', choices=STATUS)
+    
     
     def __str__(self):
-        return f"{self.service_name} by {self.vendor}"
+        name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"
+        mode = f" ({self.service_mode})" if self.service_mode else ""
 
-# vendor service image table
-class ServiceImage(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="service_images")
-    image = models.ImageField(upload_to='vendor_service_images/')
-    # image_url = models.URLField()
-    is_main = models.BooleanField(default=False)
-    sort_order = models.IntegerField()
+        if self.service_type == 'event_space':
+            return f"Event space for {self.capacity} guests @ ₦{self.price} - {name}"
+        elif self.service_type == 'catering':
+            return f"Catering-{mode} for {self.capacity} guests @ ₦{self.price} - {name}"
+        elif self.service_type == 'decoration':
+            return f"Decoration-{mode} @ ₦{self.price} - {name}"
+        elif self.service_type == 'photographer':
+            return f"Photography-{mode} @ ₦{self.price} - {name}"
+        elif self.service_type == 'make_up_artist':
+            return f"Make-up service @ ₦{self.price} - {name}"
+        elif self.service_type == 'musician':
+            return f"Music performance @ ₦{self.price} - {name}"
+        elif self.service_type == 'mc':
+            return f"MC service @ ₦{self.price} - {name}"
+        else:
+            return f"{self.service_type.capitalize()} for {self.capacity} guests @ ₦{self.price} - {name}"
+
+# package price
+class PackagePrice(models.Model):
+    vendor_package = models.ForeignKey(VendorPackage, on_delete=models.CASCADE, related_name='prices')
+
+    # for catering service
+    price_per_plate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    min_plates = models.PositiveIntegerField(null=True, blank=True)
+    max_plates = models.PositiveIntegerField(null=True, blank=True)
+    food_description = models.TextField(null=True, blank=True)
+
+    # for event space -> venue
+    # price per hour
+    # per day
+    # per event
+
+    max_duration_hours = models.PositiveIntegerField(null=True, blank=True)
+
+    # for photography service
+    hourly_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    flat_event_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    coverage_duration_hours = models.PositiveIntegerField(null=True, blank=True)
+
+    # for decoration service
+    rate_per_guest = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    decoration_theme_description = models.TextField(null=True, blank=True)
+
+    # for make-up service
+    rate_per_person = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    makeup_package_description = models.TextField(null=True, blank=True)
+
+    # for musicians 
+    performance_hourly_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    full_event_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    includes_equipment = models.BooleanField(default=False)
+
+    # optional fields
+    notes = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Price for {self.vendor_package.service_name} ({self.vendor_package.service_type})"
+
+# vendor package images
+class VendorPackageImages(models.Model):
+    """
+    stores general images associated with a vendor (e.g. portfolio).
+    """
+    vendor_package = models.ForeignKey(VendorPackage, on_delete=models.CASCADE, related_name="package_images")
+    image = models.ImageField(upload_to='media/vendor_package_images/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    class Meta:
-        ordering = ['sort_order']
-        
-# vendor service specific date availability table
-class ServiceSpecificDateAvailability(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="specific_availability")
+
+# vendor package availability
+class VendorPackageAvailability(models.Model):
+    """
+    stores weekly availability for vendors.
+    """
+    vendor_package = models.ForeignKey(VendorPackage, on_delete=models.CASCADE, related_name="availability")
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
+
+
+    class Meta:
+        unique_together = ('vendor_package', 'date', 'start_time', 'end_time')
 
     def __str__(self):
         return f"{self.service.service_name} on {self.date} from {self.start_time} to {self.end_time}"

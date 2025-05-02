@@ -1,12 +1,18 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from bookings.serializer import BookingRetrieveSerializer
+
 
 User = get_user_model()
 
 # user serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
+<<<<<<< Updated upstream
         model = User
+=======
+        model = User # serializer model
+>>>>>>> Stashed changes
         fields = [
             "id", 
             "full_name", 
@@ -15,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
             "password", 
             "role", 
             "phone_number", 
+<<<<<<< Updated upstream
             "is_active",
             "date_joined",
         ] 
@@ -23,6 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
         ]
+=======
+            "is_active"
+         ] # serializer fields
+>>>>>>> Stashed changes
         extra_kwargs = {
             "password": {"write_only" : True},
         }
@@ -42,15 +53,19 @@ class UserSerializer(serializers.ModelSerializer):
             password=password,
             role=role,
             phone_number=phone_number
-        ) # create user
+        )
+        # welcome email
+        
         validated_data.pop('date_joined', None) # remove date_joined
         return user
 
 # user serializer for admin
 class UserAdminSerializer(serializers.ModelSerializer):
+    bookings = BookingRetrieveSerializer(many=True, read_only=True)
     class Meta:
         model = User
         fields = [
+<<<<<<< Updated upstream
             "id", 
             "full_name", 
             "username", 
@@ -69,4 +84,25 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "phone_number", 
             "is_active",
             "date_joined",
+=======
+            'id',
+            'full_name',
+            'role'
+            'email',
+            'phone_number',
+            'date_joined',
+            'status',
+            'bookings',
+            'is_active',
+        ]
+        read_only_fields = [
+            'id',
+            'full_name',
+            'role'
+            'email',
+            'phone_number',
+            'date_joined',
+            'status',
+            'bookings',
+>>>>>>> Stashed changes
         ]
