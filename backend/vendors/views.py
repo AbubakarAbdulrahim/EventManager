@@ -93,19 +93,11 @@ class ServiceListView(generics.ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
 
-<<<<<<< Updated upstream
 # vendor service create view
 class ServiceCreateView(generics.CreateAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceCreateSerializer
     permission_classes = [IsVendorRole]
-=======
-# vendor package create view
-class VendorPackageCreateView(generics.CreateAPIView):
-    queryset = VendorPackage.objects.all()
-    serializer_class = VendorPackageCreateSerializer
-    # permission_classes = [IsVendorRole]
->>>>>>> Stashed changes
     parser_classes = [MultiPartParser, FormParser]
 
     # on creating
