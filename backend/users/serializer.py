@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from bookings.serializer import BookingRetrieveSerializer
+
 
 User = get_user_model()
 
@@ -42,12 +44,15 @@ class UserSerializer(serializers.ModelSerializer):
             password=password,
             role=role,
             phone_number=phone_number
-        ) # create user
+        )
+        # welcome email
+        
         validated_data.pop('date_joined', None) # remove date_joined
         return user
 
 # user serializer for admin
 class UserAdminSerializer(serializers.ModelSerializer):
+    bookings = BookingRetrieveSerializer(many=True, read_only=True)
     class Meta:
         model = User
         fields = [

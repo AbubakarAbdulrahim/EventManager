@@ -45,7 +45,7 @@ class RefreshAccessView(APIView):
 
 # logout view
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh')
 
@@ -70,10 +70,11 @@ class UserUpdateView(generics.UpdateAPIView):
     # on update
     def perform_update(self, serializer):
         return super().perform_update(serializer)
-
+    
     def get_queryset(self):
         user= self.request.user
-        
+        return User.objects.filter(id=user.id)
+   
 # user retrieve view
 class UserRetrieveView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
@@ -90,6 +91,7 @@ class UserDestroyView(generics.DestroyAPIView):
 
     def get_queryset(self):
         user= self.request.user
+        return User.objects.filter(id=user.id)
 
 # user create view
 class UserCreateView(generics.CreateAPIView):

@@ -19,10 +19,7 @@ class CertificationImageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorCertificationImage
         fields =[
-            # "id", 
-            # "vendor", 
             "image",
-            # "uploaded_at",
         ]
 
 # vendor certification images serializer (to be referenced)
@@ -52,8 +49,8 @@ class CertificationImageRetrieveSerializer(serializers.ModelSerializer):
             return obj.image.url
         return None
 
-# vendor service image serializer (to be referenced)
-class ServiceImageSerializer(serializers.ModelSerializer):
+# vendor service image retrieve serializer (to be referenced)
+class ServiceImageRetrieveSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -80,6 +77,30 @@ class ServiceImageSerializer(serializers.ModelSerializer):
             # fallback to relative URL
             return obj.image.url
         return None
+
+# vendor service image create serializer (to be referenced)
+class ServiceImageCreateSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ServiceImage
+        fields = [
+            "service",
+            "image",
+            "image_url",
+            "is_main",
+            "sort_order",
+        ]
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image and hasattr(obj.image, 'url'):
+            # full absolute URL if request is available
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            # fallback to relative URL
+            return obj.image.url
+        return None
+
 
 # service specific date availability serializer (to be referenced)
 class SpecificDateAvailabilitySerializer(serializers.ModelSerializer):
@@ -184,7 +205,7 @@ class ServicePricingRetrieveSerializer(serializers.ModelSerializer):
 class ServiceRetrieveSerializer(serializers.ModelSerializer):
     specific_date_avail = SpecificDateAvailabilitySerializer(many=True, read_only=True)
     recurring_avail = RecurringAvailabilitySerializer(many=True, read_only=True)
-    service_images = ServiceImageSerializer(many=True, read_only=True)
+    service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
     pricing = ServicePricingRetrieveSerializer(many=True, read_only=True)
 
     class Meta:
@@ -201,7 +222,8 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
             "description",
             "created_at",
             "updated_at",
-            "is_approved",
+            "status",
+            "amenities",
 
             # additionl 
             "specific_date_avail",
@@ -217,7 +239,7 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
 class ServiceCreateSerializer(serializers.ModelSerializer):
     specific_date_availability = SpecificDateAvailabilitySerializer(many=True, required=False)
     recurring_availability = RecurringAvailabilitySerializer(many=True, required=False)
-    service_images = ServiceImageSerializer(many=True, required=False)
+    service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
     
     class Meta:
@@ -230,6 +252,7 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
             "availability_end_date",
             "availability_type",
             "description",
+            "amenities",
 
             # additional
             "specific_date_availability",
@@ -286,7 +309,7 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
 class ServiceUpdateSerializer(serializers.ModelSerializer):
     specific_date_availability = SpecificDateAvailabilitySerializer(many=True, required=False)
     recurring_availability = RecurringAvailabilitySerializer(many=True, required=False)
-    service_images = ServiceImageSerializer(many=True, required=False)
+    service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
 
     class Meta:
@@ -299,6 +322,7 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
             "availability_end_date",
             "availability_type",
             "description",
+            "amenities",
 
             # additional
             "specific_date_availability",
@@ -370,7 +394,7 @@ class VendorRetrieveSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     certification_images = CertificationImageRetrieveSerializer(many=True, read_only=True)
     services = ServiceRetrieveSerializer(many=True, read_only=True)
-    service_images = ServiceImageSerializer(many=True, read_only=True)
+    service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
 
     class Meta:
         model = Vendor
@@ -382,7 +406,7 @@ class VendorRetrieveSerializer(serializers.ModelSerializer):
             "created_at",
             "years_in_business",
             "certification_list",
-            "is_approved",
+            "status",
 
             # additional
             "certification_images",
@@ -485,7 +509,7 @@ class VendorAdminSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     certification_images = CertificationImageRetrieveSerializer(many=True)
     services = ServiceRetrieveSerializer(many=True)
-    service_images = ServiceImageSerializer(many=True)
+    service_images = ServiceImageRetrieveSerializer(many=True)
     class Meta:
         model = Vendor
         fields = [
@@ -522,7 +546,7 @@ class VendorAdminSerializer(serializers.ModelSerializer):
 class ServiceAdminSerializer(serializers.ModelSerializer):
     specific_date_avail = SpecificDateAvailabilitySerializer(many=True, read_only=True)
     recurring_avail = RecurringAvailabilitySerializer(many=True, read_only=True)
-    service_images = ServiceImageSerializer(many=True, read_only=True)
+    service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
     pricing = ServicePricingRetrieveSerializer(many=True, read_only=True)
 
     class Meta:

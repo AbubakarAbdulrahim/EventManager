@@ -13,6 +13,7 @@ from users.models import User
 from users.serializer import UserAdminSerializer
 
 
+
 '''  for managing bookings  '''
 # handling listing bookings
 class BookingsAdminListView(generics.ListAPIView):
@@ -47,25 +48,38 @@ class VendorAdminDetailView(generics.RetrieveDestroyAPIView):
 
 # handling suspending and activating vendors
 class VendorAdminSuspendActivateView(APIView):
-    permission_classes = [IsAdminRole]
+    # permission_classes = [IsAdminRole]
 
     def post(self, request, pk):
+        action = request.data.get('action')
         vendor = get_object_or_404(Vendor, pk=pk)
-        if vendor.is_approved == False:
+
+        if action == 'approve':
+
             vendor.is_approved = True
             vendor.user.role = 'vendor'
+            vendor.status = 'approved'
             vendor.user.save()
             message = 'approved'
+            vendor.save()
 
-        elif vendor.is_approved == True:
+        elif action == 'suspend':
+
             vendor.is_approved = False
+            vendor.user.role = 'customer'
+            vendor.status = 'suspended'
+            vendor.user.save()
+            message = 'suspended'
+            vendor.save()
+        
+        elif action == 'reject':
 
-            if vendor.user.role == 'vendor':
-                vendor.user.role = 'customer'
-                vendor.user.save()
-                message = 'suspended'
-                
-        vendor.save()
+            vendor.is_approved = False
+            vendor.user.role = 'customer'
+            vendor.status = 'rejected'
+            message = 'rejected'
+            vendor.save()
+
         return Response({"detail": f"vendor {message}"})
 
 
@@ -94,13 +108,34 @@ class ServiceAdminSuspendActivateView(APIView):
 
     def post(self, request, pk):
         service = get_object_or_404(Service, pk=pk)
-        if service.is_approved == False:
+        action = request.data.get('request')
+
+        if action == 'approve':
+
             service.is_approved = True
+            service.user.role = 'vendor'
+            service.status = 'approved'
+            service.user.save()
             message = 'approved'
-        elif service.is_approved == True:
-            service.is_approved == False
+            service.save()
+
+        elif action == 'suspend':
+
+            service.is_approved = False
+            service.user.role = 'customer'
+            service.status = 'suspended'
+            service.user.save()
             message = 'suspended'
-        service.save()
+            service.save()
+        
+        elif action == 'reject':
+
+            service.is_approved = False
+            service.user.role = 'customer'
+            service.status = 'rejected'
+            message = 'rejected'
+            service.save()
+
         return Response({"detail": f"vendor service {message} successfully"})
 
 
@@ -142,18 +177,24 @@ class UsersAdminDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = UserAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling suspending and activating user
+    def get_queryset(self):
+        return User.objects.filter(role='customer')
+
+# handling suspending and approving user
 class UsersAdminSuspendActivateView(APIView):
     permission_classes = [IsAdminRole]
 
     def post(self, request, pk):
         user = get_object_or_404(User, pk=pk)
+        
         if user.is_active == False:
             user.is_active = True
             user.save()
             message = 'approved'
+
         elif user.is_active == True:
             user.is_active == False
             user.save()
             message = 'suspended'
+
         return Response({"detail": f"user {message} successfully"})

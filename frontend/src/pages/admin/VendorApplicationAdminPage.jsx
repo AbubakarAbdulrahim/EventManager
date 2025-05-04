@@ -146,7 +146,7 @@ const VendorApplicationAdminPage = () => {
     }
 
     try {
-      const response = await authAxios.post(`api-admin/vendors/${app.id}/suspend-activate/`, { action });
+      const response = await authAxios.post(`api-admin/vendor/${app.id}/suspend-activate/`, { action });
       console.log(response);
       if (response.status === 200) {
         const updatedApplications = applications.map(a =>
@@ -173,7 +173,7 @@ const VendorApplicationAdminPage = () => {
   }
 
   const handleOpenImage = (imageUrl) => {
-    setSelectedImage(imageUrl);
+    setSelectedImage(imageUrl.image);
     setImageModalOpen(true);
   };
 
@@ -266,7 +266,7 @@ const VendorApplicationAdminPage = () => {
                   <TableCell>{application.submittedDate}</TableCell>
                   <TableCell sx={{display:'flex', gap:1}}>
                     <Chip 
-                      label={application.status}
+                      label={application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                       color={
                         application.status === 'approved' ? 'success' :
                         application.status === 'rejected' ? 'error' : 'default'
@@ -295,7 +295,7 @@ const VendorApplicationAdminPage = () => {
                         size="small"
                         variant="outlined"
                         color={application.status === 'suspended' ? 'success' : 'error'}
-                        onClick={() => handleAction(application, application.status === 'suspended' ? 'activate' : 'suspend')}
+                        onClick={() => handleAction(application, application.status === 'suspended' ? 'approve' : 'suspend')}
                       >
                         {application.status === 'suspended' ? 'Activate' : 'Suspend'}
                       </Button>
@@ -393,7 +393,7 @@ const VendorApplicationAdminPage = () => {
                           onClick={() => handleOpenImage(img)}
                         >
                           <img
-                            src={img}
+                            src={img.image}
                             alt={`Certification ${index + 1}`}
                             loading="lazy"
                             style={{ height: '150px', objectFit: 'cover' }}

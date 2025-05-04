@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path, include
 from users.admin import user_admin
 
@@ -10,3 +12,7 @@ urlpatterns = [
     path('transactions/', include('transactions.urls')),  # trxns app route
     path('vendors/', include('vendors.urls')), # vendors app route
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
