@@ -193,7 +193,7 @@ class UsersAdminSuspendActivateView(APIView):
             message = 'approved'
 
         elif user.is_active == True:
-            user.is_active == False
+            user.is_active = False
             user.save()
             message = 'suspended'
 

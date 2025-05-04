@@ -38,9 +38,8 @@ class Vendor(models.Model):
     years_in_business = models.PositiveIntegerField(default=0)
     certification_list = models.CharField(max_length=255, default="")
     status = models.CharField(max_length=50, default='pending', choices=STATUS)
-    is_approved = models.BooleanField()
+    is_approved = models.BooleanField(default=False)
 
-    
     def __str__(self):
         return f"{self.user.id} - {self.business_name}"
 
@@ -65,9 +64,11 @@ class Service(models.Model):
     created_at = models.DateTimeField(auto_now=True)
     is_approved = models.BooleanField(default=False)
     status = models.CharField(max_length=20, default='pending', choices=STATUS)
-    main_image_url = models.URLField()
+    # main_image_url = models.URLField()
     amenities = models.CharField(max_length=50, null=True, blank=True)
-
+    service_quantity = models.CharField(max_length=50, null=True, blank=True)
+    service_mode = models.CharField(max_length=50, null=True, blank=True)
+    
     
     def __str__(self):
         name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"

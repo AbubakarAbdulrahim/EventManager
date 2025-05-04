@@ -207,6 +207,7 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
     recurring_avail = RecurringAvailabilitySerializer(many=True, read_only=True)
     service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
     pricing = ServicePricingRetrieveSerializer(many=True, read_only=True)
+    main_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Service
@@ -223,7 +224,10 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "status",
+            # "main_image_url",
             "amenities",
+            "service_quantity",
+            "service_mode", 
 
             # additionl 
             "specific_date_avail",
@@ -234,6 +238,18 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "vendor",
         ]
+    # def get_main_image_url(self, obj):
+    #     request = self.context.get('request')
+
+    #     if obj.service_images:
+    #         for _ in obj.service_images:
+    #             if obj.service_images.image and hasattr(obj.service_images.image, 'url'):
+    #                 # full absolute URL if request is available
+    #                 if request:
+    #                     return request.build_absolute_uri(obj.service_images.image.url)
+    #                 # fallback to relative URL
+    #                 return obj.service_images.image.url
+    #     return None
 
 # service create serializer
 class ServiceCreateSerializer(serializers.ModelSerializer):
@@ -253,6 +269,8 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
             "availability_type",
             "description",
             "amenities",
+            "service_quantity",
+            "service_mode",
 
             # additional
             "specific_date_availability",
@@ -323,6 +341,8 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
             "availability_type",
             "description",
             "amenities",
+            "service_quantity",
+            "service_mode",
 
             # additional
             "specific_date_availability",
@@ -429,6 +449,8 @@ class VendorCreateSerializer(serializers.ModelSerializer):
             "address",
             "years_in_business",
             "certification_list",
+
+            # additional field
             "certification_images",
         ]
 
@@ -465,6 +487,8 @@ class VendorUpdateSerializer(serializers.ModelSerializer):
             "address",
             "years_in_business",
             "certification_list",
+            
+            # additional
             "certification_images",
         ]
 
@@ -520,6 +544,9 @@ class VendorAdminSerializer(serializers.ModelSerializer):
             "created_at",
             "years_in_business",
             "certification_list",
+
+            # changeable fields
+            "status",
             "is_approved",
 
             # additional
@@ -563,6 +590,13 @@ class ServiceAdminSerializer(serializers.ModelSerializer):
             "description",
             "created_at",
             "updated_at",
+            # "main_image_url",
+            "amenities",
+            "service_quantity",
+            "service_mode",
+
+            # changeable fields
+            "status",
             "is_approved",
 
             # additionl 
@@ -572,9 +606,6 @@ class ServiceAdminSerializer(serializers.ModelSerializer):
             "pricing",
         ]
         read_only_fields = [
-
-
-
             "id",
             "vendor",
             "service_name",
@@ -586,6 +617,11 @@ class ServiceAdminSerializer(serializers.ModelSerializer):
             "description",
             "created_at",
             "updated_at",
+            "status",
+            # "main_image_url",
+            "amenities",
+            "service_quantity",
+            "service_mode",
 
             # additionl 
             "specific_date_avail",

@@ -64,6 +64,9 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "phone_number", 
             "is_active",
             "date_joined",
+
+            # additional field
+            "bookings",
         ]
         read_only_fields = [
             "id", 
@@ -74,4 +77,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "phone_number", 
             "is_active",
             "date_joined",
+
+            # additional field
+            "bookings",
         ]
