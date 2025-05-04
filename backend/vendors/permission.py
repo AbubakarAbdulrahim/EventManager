@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 
+# custom vendor permission
 class IsVendorRole(BasePermission):
 
     def has_permission(self, request, view):

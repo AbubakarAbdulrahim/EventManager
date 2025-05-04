@@ -8,5 +8,5 @@ urlpatterns = [
     path('user/', include('users.urls')), # user app routes
     path('bookings/', include('bookings.urls')), #  bookings app routes
     path('transactions/', include('transactions.urls')),  # trxns app route
-    path('vendors/', include('vendors.urls')), # vendos app route
+    path('vendors/', include('vendors.urls')), # vendors app route
 ]

@@ -4,18 +4,20 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# trxn table
-class Transaction(models.Model):
-    TRANSACTION_TYPE_CHOICES = [
+TRANSACTION_TYPE_CHOICES = [
         ("deposit", "Deposit"),
         ("refund", "Refund"),
-    ]
-    TRANSACTION_STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('failed', 'Failed'),
-        ('declined', 'Declined'),
-        ('successful', 'Successful'),
-    ]
+]
+
+TRANSACTION_STATUS_CHOICES = [
+    ('pending', 'Pending'),
+    ('failed', 'Failed'),
+    ('declined', 'Declined'),
+    ('successful', 'Successful'),
+]
+
+# trxn table
+class Transaction(models.Model):
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name="transaction")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=20, decimal_places=2, default=0.00)
@@ -31,7 +33,7 @@ class Transaction(models.Model):
         return f'Transaction {self.id} - {self.transaction_status}'
 
 
-# Invoices Table (optional)
+# Invoices Table
 # id	Primary Key
 # user_id	Foreign Key → Users
 # transaction_id	Foreign Key → Transactions

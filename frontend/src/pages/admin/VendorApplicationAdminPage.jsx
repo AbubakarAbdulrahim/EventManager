@@ -266,7 +266,7 @@ const VendorApplicationAdminPage = () => {
                   <TableCell>{application.submittedDate}</TableCell>
                   <TableCell sx={{display:'flex', gap:1}}>
                     <Chip 
-                      label={application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                      label={application.status}
                       color={
                         application.status === 'approved' ? 'success' :
                         application.status === 'rejected' ? 'error' : 'default'

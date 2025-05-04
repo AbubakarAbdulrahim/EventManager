@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 
 # list create view
 class TransactionListCreateView(generics.ListCreateAPIView):
-    queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated]
 
@@ -17,7 +16,7 @@ class TransactionListCreateView(generics.ListCreateAPIView):
 
     # on creating
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(user=self.request.user)
         
 # detail view
 class TransactionRetrieveView(generics.RetrieveAPIView):

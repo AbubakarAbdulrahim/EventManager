@@ -5,7 +5,8 @@ from .models import Transaction
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = (
+        fields = [
+            "id",
             "booking", 
             "user", 
             "amount", 
@@ -14,13 +15,13 @@ class TransactionSerializer(serializers.ModelSerializer):
             "transaction_date",
             "referrence_id",
             "payment_gateway",
-            )
-        extra_kwargs = {
-            "booking" : {"read_only" : True},
-            "user" : {"read_only" : True},
-            "commission_calculated" : {"read_only": True}
-        }
-        read_only_fields = ["transaction_status"]
+        ]
+        read_only_fields = [
+            "booking",
+            "user",
+            "commission_calculated",
+            "transaction_status",
+        ]
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -42,4 +43,25 @@ class TransactionSerializer(serializers.ModelSerializer):
 class TransactionAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = '__all__'
+        fields = [
+            "id",
+            "booking", 
+            "user", 
+            "amount", 
+            "transaction_type", 
+            "transaction_status", 
+            "transaction_date",
+            "referrence_id",
+            "payment_gateway",
+        ]
+        read_only_fields = [
+            "id",
+            "booking", 
+            "user", 
+            "amount", 
+            "transaction_type", 
+            "transaction_status", 
+            "transaction_date",
+            "referrence_id",
+            "payment_gateway",
+        ]
