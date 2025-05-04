@@ -1,16 +1,16 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from datetime import time
+
 
 User = get_user_model()
 
 SERVICE_CHOICES = (
-    ('photographer', 'Photographer'),
-    ('event_space', 'Event Space'),
-    ('catering', 'Catering'),
+    ('photography', 'Photographer'),
+    ('venue', 'Event Space'),
+    ('caterer', 'Catering'),
     ('decoration', 'Decoration'),
-    ('make_up_artist', 'Make Up Artist'),
-    ('musician', 'Musician'),
+    ('makeup', 'Make Up Artist'),
+    ('music', 'Musician'),
     ('mc', 'MC'),
 )
 STATUS = (
@@ -71,25 +71,7 @@ class Service(models.Model):
     
     
     def __str__(self):
-        name = self.vendor.user.get_full_name() if self.vendor and self.vendor.user else "Unknown Vendor"
-        mode = f" ({self.service_mode})" if self.service_mode else ""
-
-        if self.service_type == 'event_space':
-            return f"Event space for {self.capacity} guests @ ₦{self.price} - {name}"
-        elif self.service_type == 'catering':
-            return f"Catering-{mode} for {self.capacity} guests @ ₦{self.price} - {name}"
-        elif self.service_type == 'decoration':
-            return f"Decoration-{mode} @ ₦{self.price} - {name}"
-        elif self.service_type == 'photographer':
-            return f"Photography-{mode} @ ₦{self.price} - {name}"
-        elif self.service_type == 'make_up_artist':
-            return f"Make-up service @ ₦{self.price} - {name}"
-        elif self.service_type == 'musician':
-            return f"Music performance @ ₦{self.price} - {name}"
-        elif self.service_type == 'mc':
-            return f"MC service @ ₦{self.price} - {name}"
-        else:
-            return f"{self.service_type.capitalize()} for {self.capacity} guests @ ₦{self.price} - {name}"
+        return f"{self.service_type.capitalize()} for {self.vendor.business_name}"
 
 ## vendor package images
 class ServiceImage(models.Model):
@@ -97,8 +79,11 @@ class ServiceImage(models.Model):
     image = models.ImageField(upload_to='media/vendor_package_images/')
     image_url = models.URLField()
     is_main = models.BooleanField(default=False)
-    sort_order = models.IntegerField()
+    sort_order = models.IntegerField(default=1)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order']
 
 # date specific availability
 class ServiceSpecificDateAvailability(models.Model):
@@ -108,7 +93,6 @@ class ServiceSpecificDateAvailability(models.Model):
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
     
-
 # recurring availability table
 class ServiceRecurringAvailability(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='recurring_availability')

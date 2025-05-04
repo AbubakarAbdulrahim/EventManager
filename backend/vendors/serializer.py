@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# vendor certification image create serializer
+# vendor certification image create serializer (to be referenced)
 class CertificationImageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorCertificationImage
@@ -80,30 +80,26 @@ class ServiceImageRetrieveSerializer(serializers.ModelSerializer):
 
 # vendor service image create serializer (to be referenced)
 class ServiceImageCreateSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
-
     class Meta:
         model = ServiceImage
         fields = [
-            "service",
             "image",
-            "image_url",
             "is_main",
-            "sort_order",
         ]
-    def get_image_url(self, obj):
-        request = self.context.get('request')
-        if obj.image and hasattr(obj.image, 'url'):
-            # full absolute URL if request is available
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            # fallback to relative URL
-            return obj.image.url
-        return None
 
+# service specific date availability create serializer (to be referenced)
+class SpecificDateAvailabilityCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceSpecificDateAvailability
+        fields = [
+            "date",
+            "start_time",
+            "end_time",
+            "is_available",
+        ]
 
-# service specific date availability serializer (to be referenced)
-class SpecificDateAvailabilitySerializer(serializers.ModelSerializer):
+# service specific date availability retrieve serializer (to be referenced)
+class SpecificDateAvailabilityRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceSpecificDateAvailability
         fields = [
@@ -115,11 +111,23 @@ class SpecificDateAvailabilitySerializer(serializers.ModelSerializer):
             "is_available",
         ]
         read_only_fields = [
+            "id",
             "service",
         ]
 
-# service recurring availability serializer (to be referenced)
-class RecurringAvailabilitySerializer(serializers.ModelSerializer):
+# service recurring availability create serializer (to be referenced)
+class RecurringAvailabilityCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceRecurringAvailability
+        fields = [
+            "day_of_the_week",
+            "start_time",
+            "end_time",
+            "is_available",
+        ]
+
+# service recurring availability retrieve serializer (to be referenced)
+class RecurringAvailabilityRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceRecurringAvailability
         fields = [
@@ -134,26 +142,24 @@ class RecurringAvailabilitySerializer(serializers.ModelSerializer):
             "service",
         ]
 
-# price package create serializer
+# price package create serializer (to be referenced)
 class PricingPackageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = PricingPackage
         fields = [
-            "id",
             "description",
+            "name",
             "price",
             "quantity_description",
-
-            # additional
-            "pricing_model",
         ]
     
-# price package retrieve serializer
+# price package retrieve serializer (to be referenced)
 class PricingPackageRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = PricingPackage
         fields = [
             "id",
+            "name",
             "description",
             "price",
             "quantity_description",
@@ -169,8 +175,6 @@ class ServicePricingCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServicePricing
         fields = [
-            # "id",
-            "service",
             "model_type",
             "base_price",
             "is_active",
@@ -203,11 +207,11 @@ class ServicePricingRetrieveSerializer(serializers.ModelSerializer):
 
 # service retrieve serializer
 class ServiceRetrieveSerializer(serializers.ModelSerializer):
-    specific_date_avail = SpecificDateAvailabilitySerializer(many=True, read_only=True)
-    recurring_avail = RecurringAvailabilitySerializer(many=True, read_only=True)
+    specific_date_avail = SpecificDateAvailabilityRetrieveSerializer(many=True, read_only=True)
+    recurring_avail = RecurringAvailabilityRetrieveSerializer(many=True, read_only=True)
     service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
     pricing = ServicePricingRetrieveSerializer(many=True, read_only=True)
-    main_image_url = serializers.SerializerMethodField()
+    # main_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Service
@@ -224,7 +228,6 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "status",
-            # "main_image_url",
             "amenities",
             "service_quantity",
             "service_mode", 
@@ -234,6 +237,7 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
             "recurring_avail",
             "service_images",
             "pricing",
+            # "main_image_url",
             ]
         read_only_fields = [
             "vendor",
@@ -253,8 +257,8 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
 
 # service create serializer
 class ServiceCreateSerializer(serializers.ModelSerializer):
-    specific_date_availability = SpecificDateAvailabilitySerializer(many=True, required=False)
-    recurring_availability = RecurringAvailabilitySerializer(many=True, required=False)
+    specific_date_availability = SpecificDateAvailabilityCreateSerializer(many=True, required=False)
+    recurring_availability = RecurringAvailabilityCreateSerializer(many=True, required=False)
     service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
     
@@ -287,13 +291,13 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
         service_images = request.FILES.getlist('service_images')
 
         # validate that at least one availability type is provided
-        if not date_avail and not recurring_avail:
-            raise serializers.ValidationError(
-                {"specific_date_availability or recurring_availability": "One of these fields must be filled."}
-            )
+        # if not date_avail and not recurring_avail:
+        #     raise serializers.ValidationError(
+        #         {"specific_date_availability or recurring_availability": "One of these fields must be filled."}
+        #     )
 
         if not service_images:
-            raise serializers.ValidationError({"package_images": "This field is required."})
+            raise serializers.ValidationError({"service_images": "This field is required."})
 
         # create the main service
         service = Service.objects.create(**validated_data)
@@ -325,8 +329,8 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
     
 # service update serializer
 class ServiceUpdateSerializer(serializers.ModelSerializer):
-    specific_date_availability = SpecificDateAvailabilitySerializer(many=True, required=False)
-    recurring_availability = RecurringAvailabilitySerializer(many=True, required=False)
+    specific_date_availability = SpecificDateAvailabilityCreateSerializer(many=True, required=False)
+    recurring_availability = RecurringAvailabilityCreateSerializer(many=True, required=False)
     service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
 
@@ -434,8 +438,9 @@ class VendorRetrieveSerializer(serializers.ModelSerializer):
             "service_images",
         ]
         read_only_fields = [
+            "id",
+            "status",
             "created_at",
-            "is_approved",
         ]
 
 # vendor create serializer
@@ -571,8 +576,8 @@ class VendorAdminSerializer(serializers.ModelSerializer):
 
 # vendor package serializer for admin
 class ServiceAdminSerializer(serializers.ModelSerializer):
-    specific_date_avail = SpecificDateAvailabilitySerializer(many=True, read_only=True)
-    recurring_avail = RecurringAvailabilitySerializer(many=True, read_only=True)
+    specific_date_avail = SpecificDateAvailabilityRetrieveSerializer(many=True, read_only=True)
+    recurring_avail = RecurringAvailabilityRetrieveSerializer(many=True, read_only=True)
     service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
     pricing = ServicePricingRetrieveSerializer(many=True, read_only=True)
 

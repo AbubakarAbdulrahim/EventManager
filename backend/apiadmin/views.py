@@ -48,7 +48,7 @@ class VendorAdminDetailView(generics.RetrieveDestroyAPIView):
 
 # handling suspending and activating vendors
 class VendorAdminSuspendActivateView(APIView):
-    # permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminRole]
 
     def post(self, request, pk):
         action = request.data.get('action')
@@ -167,13 +167,14 @@ class TransactionsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
 '''  for managing users  '''
 # handling linsting  users
 class UsersAdminListView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = UserAdminSerializer
     permission_classes = [IsAdminRole]
+    
+    def get_queryset(self):
+        return User.objects.filter(role='customer')
 
 # handling retrieving and destroying users
 class UsersAdminDetailView(generics.RetrieveDestroyAPIView):
-    queryset = User.objects.all()
     serializer_class = UserAdminSerializer
     permission_classes = [IsAdminRole]
 
