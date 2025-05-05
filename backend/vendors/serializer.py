@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.serializer import UserSerializer
+from users.serializer import UserProfileSerializer
 from .models import (
     Vendor,
     VendorCertificationImage,
@@ -436,7 +436,7 @@ class ServiceDestroySerializer(serializers.ModelSerializer):
 
 # vendor retrieve serializer
 class VendorRetrieveSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = UserProfileSerializer(read_only=True)
     certification_images = CertificationImageRetrieveSerializer(many=True, read_only=True)
     services = ServiceRetrieveSerializer(many=True, read_only=True)
     service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
@@ -556,7 +556,7 @@ class VendorDestroySerializer(serializers.ModelSerializer):
 
 # vendor serializer for admin
 class VendorAdminSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = UserProfileSerializer()
     certification_images = CertificationImageRetrieveSerializer(many=True)
     services = ServiceRetrieveSerializer(many=True)
     service_images = ServiceImageRetrieveSerializer(many=True)

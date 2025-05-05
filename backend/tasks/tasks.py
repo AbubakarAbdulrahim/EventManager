@@ -1,7 +1,7 @@
 from background_task import background
 from django.core.mail import send_mail
 
-# # async functions
+# async functions
 # @background(schedule=5)
 # def notify_venue(venue_email, message, subject, sender_email):
 #     send_mail(
