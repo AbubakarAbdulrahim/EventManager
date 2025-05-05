@@ -41,6 +41,8 @@ import {
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 
+import { useAuth } from '../../context/AuthContext';
+
 // Service types and their specific fields
 const SERVICE_TYPES = {
   VENUE: 'venue',
@@ -150,6 +152,7 @@ const DAYS_OF_WEEK = [
 
 // Main component
 const AddServiceDialog = ({ open, onClose }) => {
+  const {authAxios} = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [chipInputs, setChipInputs] = useState({});
   const [mainImagePreview, setMainImagePreview] = useState(null);
@@ -196,58 +199,162 @@ const AddServiceDialog = ({ open, onClose }) => {
     }),
     onSubmit: async (values) => {
 
-        const formDataToSend = new FormData();
-        Object.entries(values).forEach(([key, value]) => {
-            if (value !== null && value !== undefined) {
-              formDataToSend.append(key, value);
+      const formDataToSend = new FormData();
+
+      const formattedData = formatDataForBackend(values);
+      
+      Object.keys(formattedData).forEach(key => {
+        if (Array.isArray(formattedData[key])) {
+          formattedData[key].forEach((item, index) => {
+            if (typeof item === 'object') {
+              Object.keys(item).forEach(subKey => {
+                formDataToSend.append(`${key}`, item[subKey]);
+              });
+            } else {
+              formDataToSend.append(`${key}[${index}]`, item);
             }
           });
+        }
+        else if (typeof formattedData[key] === 'object') {
+          console.log('Object:', formattedData[key]);
+          Object.keys(formattedData[key]).forEach(subKey => {
+            formDataToSend.append(`${key}`, formattedData[key][subKey]);
+          });
+        } else {
+          formDataToSend.append(key, formattedData[key]);
+        }
+      });
+      
+      // for (const pair of formDataToSend.entries()) {
+      //   console.log(`${pair[0]}:`, pair[1]);
+      // }
 
-          if (pricingModels){
-            formDataToSend.append('pricingModels', pricingModels)
-          }
-          if (availabilityType){
-            formDataToSend.append('availabilityType', availabilityType)
-          }
-          if (recurringAvailability){
-            formDataToSend.append('recurringAvailability', recurringAvailability)
-          }
-          if (specificDateSlots){
-            formDataToSend.append('specificDateSlots', specificDateSlots)
-          }
-          for (const pair of formDataToSend.entries()) {
-            console.log(`${pair[0]}:`, pair[1]);
-          }
-        try {
-            setIsSubmitting(true);
-            console.log('Submitting service data:', {
-            ...values,
-            pricingModels,
-            availabilityType,
-            recurringAvailability,
-            specificDateSlots,
-            });
+      try {
+        setIsSubmitting(true);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const response = await authAxios.post('/vendors/services/create/', formDataToSend)
+        if (response.status === 201) {
+          console.log('Service created successfully:', response.data);
+        } else {
+          console.error('Error creating service:', response.data);
+        }
+        
+
+        
+
+        // console.log('Submitting service data:', formattedData);
+        
+        
         
         setIsSubmitting(false);
         // onClose();
         // Reset form
-        formik.resetForm();
-        setActiveStep(0);
-        setPricingModels([]);
-        setRecurringAvailability([]);
-        setSpecificDateSlots([]);
-        setMainImagePreview(null);
-        setAdditionalImagesPreviews([]);
-        setAvailabilityType('dateRange');
+        // formik.resetForm();
+        // setActiveStep(0);
+        // setPricingModels([]);
+        // setRecurringAvailability([]);
+        // setSpecificDateSlots([]);
+        // setMainImagePreview(null);
+        // setAdditionalImagesPreviews([]);
+        // setAvailabilityType('dateRange');
       } catch (error) {
         setIsSubmitting(false);
         console.error('Error submitting service:', error);
       }
     }
   });
+
+  // Format data for backend submission
+  const formatDataForBackend = (values) => {
+    // Format images
+    const images = [];
+    
+    // Add main image
+    if (values.mainImage) {
+      images.push({
+        image: values.mainImage,
+        is_main: true
+      });
+    }
+    
+    // Add additional images
+    if (values.additionalImages && values.additionalImages.length > 0) {
+      values.additionalImages.forEach(img => {
+        images.push({
+          image: img,
+          is_main: false
+        });
+      });
+    }
+  
+    // Format specific date availability
+    const specificDates = specificDateSlots.map(slot => ({
+      date: slot.date ? dayjs(slot.date).format('YYYY-MM-DD') : '',
+      start_time: slot.startTime ? dayjs(slot.startTime).format('HH:mm') : '',
+      end_time: slot.endTime ? dayjs(slot.endTime).format('HH:mm') : ''
+    }));
+    
+    // Format recurring availability
+    const recurringSlots = recurringAvailability.map(slot => ({
+      day_of_the_week: slot.day !== null ? slot.day : '',
+      start_time: slot.startTime ? dayjs(slot.startTime).format('HH:mm') : '',
+      end_time: slot.endTime ? dayjs(slot.endTime).format('HH:mm') : ''
+    }));
+    
+    // Format pricing models
+    const pricingData = pricingModels.map(model => {
+      const pricing = {
+        model_type: model.model,
+        base_price: model.basePrice || '',
+      };
+      
+      // Add packages if available
+      if (model.packages && model.packages.length > 0) {
+        pricing.price_packages = model.packages.map(pkg => ({
+          name: pkg.name || '',
+          description: pkg.description || '',
+          price: pkg.price || '',
+          quantity_description: pkg.quantity || ''
+        }));
+      } else {
+        pricing.price_packages = [];
+      }
+      
+      return pricing;
+    });
+    
+    // Get service specific data
+    const serviceSpecificData = {};
+    if (values.serviceType) {
+      const specificFields = SERVICE_SPECIFIC_FIELDS[values.serviceType] || [];
+      specificFields.forEach(field => {
+        if (values[field.name] !== undefined) {
+          serviceSpecificData[field.name] = values[field.name];
+        }
+      });
+    }
+    
+    // Combine all data
+    return {
+      service_name: values.serviceName,
+      service_type: values.serviceType,
+      location: values.location,
+      description: values.description,
+      availability_start_date: values.availabilityStartDate ? dayjs(values.availabilityStartDate).format('YYYY-MM-DD') : '',
+      availability_end_date: values.availabilityEndDate ? dayjs(values.availabilityEndDate).format('YYYY-MM-DD') : '',
+      availability_type: availabilityType,
+      specific_date_availability: specificDates,
+      recurring_availability: recurringSlots,
+      service_images: images,
+      pricing: pricingData,
+      // Include any service-specific fields
+      amenities: values.amenities,
+      service_quantity: serviceSpecificData.maxPlates || serviceSpecificData.maxClips || serviceSpecificData.capacity || '',
+      service_mode: serviceSpecificData.venueType || serviceSpecificData.cuisineType || serviceSpecificData.style || serviceSpecificData.genre || serviceSpecificData.decorStyle || '',
+      ...serviceSpecificData
+    };
+  };
 
   // Add dynamic validation based on service type
   useEffect(() => {
@@ -452,7 +559,7 @@ const AddServiceDialog = ({ open, onClose }) => {
               !formik.errors.availabilityStartDate && !formik.errors.availabilityEndDate &&
               (availabilityType === 'dateRange' || 
                (availabilityType === 'recurring' && recurringAvailability.length > 0) ||
-               (availabilityType === 'specific' && specificDateSlots.length > 0));
+               (availabilityType === 'specific_date' && specificDateSlots.length > 0));
       case 4: // Images
         return formik.values.mainImage && !formik.errors.mainImage;
       default:
@@ -609,7 +716,7 @@ const AddServiceDialog = ({ open, onClose }) => {
                     value={model.basePrice}
                     onChange={(e) => updatePricingModel(modelIndex, 'basePrice', e.target.value)}
                     InputProps={{
-                      startAdornment: <Typography sx={{ mr: 1 }}>₦</Typography>,
+                      startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
                       inputProps: { min: 0 }
                     }}
                   />
@@ -759,8 +866,8 @@ const AddServiceDialog = ({ open, onClose }) => {
             />
             <FormControlLabel
               control={<Switch 
-                checked={availabilityType === 'specific'} 
-                onChange={() => setAvailabilityType('specific')}
+                checked={availabilityType === 'specific_date'} 
+                onChange={() => setAvailabilityType('specific_date')}
               />}
               label="Specific Dates and Times"
             />
@@ -851,7 +958,7 @@ const AddServiceDialog = ({ open, onClose }) => {
           </Box>
         )}
         
-        {availabilityType === 'specific' && (
+        {availabilityType === 'specific_date' && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Specific Date and Time Slots
