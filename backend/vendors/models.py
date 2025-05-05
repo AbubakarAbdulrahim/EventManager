@@ -96,7 +96,7 @@ class ServiceSpecificDateAvailability(models.Model):
 # recurring availability table
 class ServiceRecurringAvailability(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='recurring_availability')
-    day_of_week = models.PositiveIntegerField()
+    day_of_the_week = models.PositiveIntegerField()
     start_time = models.TimeField()
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
