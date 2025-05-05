@@ -131,15 +131,13 @@ class ServiceDestroyView(generics.DestroyAPIView):
     serializer_class = ServiceDestroySerializer
     permission_classes = [IsVendorRole]
     parser_classes = [MultiPartParser, FormParser]
+    lookup_field = 'pk'
     
     def get_queryset(self):
         vendor = Vendor.objects.get(user=self.request.user)
         return Service.objects.filter(vendor=vendor)
     
     def perform_destroy(self, instance):
-        # ServiceImage.objects.filter(service=instance).delete()
-        # ServiceSpecificDateAvailability.objects.filter(service=instance)
-        # ServiceRecurringAvailability.objects.filter(service=instance).delete()
         instance.delete()
         return instance
     
@@ -150,7 +148,7 @@ class ServiceDestroyView(generics.DestroyAPIView):
 
 
 '''
-for vendor package availability
+for vendor service availability
 '''
 
 # service availability list view

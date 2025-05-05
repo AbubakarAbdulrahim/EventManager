@@ -5,6 +5,7 @@ from .models import (
     VendorCertificationImage,
     ServiceImage, 
     Service,
+    ServiceAmenity,
     ServiceSpecificDateAvailability,
     ServiceRecurringAvailability,
     ServicePricing,
@@ -95,7 +96,6 @@ class SpecificDateAvailabilityCreateSerializer(serializers.ModelSerializer):
             "date",
             "start_time",
             "end_time",
-            "is_available",
         ]
 
 # service specific date availability retrieve serializer (to be referenced)
@@ -123,7 +123,6 @@ class RecurringAvailabilityCreateSerializer(serializers.ModelSerializer):
             "day_of_the_week",
             "start_time",
             "end_time",
-            "is_available",
         ]
 
 # service recurring availability retrieve serializer (to be referenced)
@@ -197,6 +196,13 @@ class ServicePricingRetrieveSerializer(serializers.ModelSerializer):
             "price_packages",
         ]
 
+# service amenities
+class ServiceAmenitiesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceAmenity
+        fields = ['name']
+
+
 
 # 
 # 
@@ -209,6 +215,7 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
     recurring_avail = RecurringAvailabilityRetrieveSerializer(many=True, read_only=True)
     service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
     pricing = ServicePricingRetrieveSerializer(many=True, read_only=True)
+    amenities = ServiceAmenitiesSerializer(many=True, required=False)
     # main_image_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -226,7 +233,6 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "status",
-            "amenities",
             "service_quantity",
             "service_mode", 
 
@@ -235,6 +241,7 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
             "recurring_avail",
             "service_images",
             "pricing",
+            "amenities",
             # "main_image_url",
             ]
         read_only_fields = [
@@ -259,7 +266,8 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
     recurring_availability = RecurringAvailabilityCreateSerializer(many=True, required=False)
     service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
-    
+    amenities = ServiceAmenitiesSerializer(many=True, required=False)
+
     class Meta:
         model = Service
         fields = [
@@ -270,11 +278,11 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
             "availability_end_date",
             "availability_type",
             "description",
-            "amenities",
             "service_quantity",
             "service_mode",
 
             # additional
+            "amenities",
             "specific_date_availability",
             "recurring_availability",
             "service_images",
@@ -286,19 +294,25 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
         date_avail = validated_data.pop('specific_date_availability', [])
         recurring_avail = validated_data.pop('recurring_availability', [])
         pricing_data = validated_data.pop('pricing', [])
+        service_amenities = validated_data.pop('amenities', [])
         service_images = request.FILES.getlist('service_images')
 
+
         # validate that at least one availability type is provided
-        # if not date_avail and not recurring_avail:
-        #     raise serializers.ValidationError(
-        #         {"specific_date_availability or recurring_availability": "One of these fields must be filled."}
-        #     )
+        if not date_avail and not recurring_avail:
+            raise serializers.ValidationError(
+                {"specific_date_availability or recurring_availability": "One of these fields must be filled."}
+            )
 
         if not service_images:
             raise serializers.ValidationError({"service_images": "This field is required."})
 
         # create the main service
         service = Service.objects.create(**validated_data)
+
+        # create its amenities
+        for amenity in service_amenities:
+            ServiceAmenity.objects.create(service=service, **amenity)
 
         # create specific date availabilities
         for availability in date_avail:
@@ -331,6 +345,7 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
     recurring_availability = RecurringAvailabilityCreateSerializer(many=True, required=False)
     service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
+    amenities = ServiceAmenitiesSerializer(many=True, required=False)
 
     class Meta:
         model = Service
@@ -342,7 +357,6 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
             "availability_end_date",
             "availability_type",
             "description",
-            "amenities",
             "service_quantity",
             "service_mode",
 
@@ -351,6 +365,7 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
             "recurring_availability",
             "service_images",
             "pricing",
+            "amenities",
         ]
 
     def update(self, instance, validated_data):
@@ -358,6 +373,7 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
         date_avail = validated_data.pop('specific_date_availability', [])
         recurring_avail = validated_data.pop('recurring_availability', [])
         price_data = validated_data.pop('pricing', [])
+        service_amenities = validated_data.pop('amenities', [])
         service_images = request.FILES.getlist('service_images')
 
         if date_avail and recurring_avail:
@@ -395,6 +411,13 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
 
             for price in price_data:
                 ServicePricing.objects.create(service=instance, **price)
+
+        # if amenities are provided 
+        if service_amenities:
+            ServiceAmenity.objects.filter(service=instance).delete()
+
+            for amenity in service_amenities:
+                ServiceAmenity.objects.create(service=instance, **amenity)
 
         return instance
 
@@ -572,7 +595,7 @@ class VendorAdminSerializer(serializers.ModelSerializer):
             "service_images",
         ]
 
-# vendor package serializer for admin
+# vendor service serializer for admin
 class ServiceAdminSerializer(serializers.ModelSerializer):
     specific_date_avail = SpecificDateAvailabilityRetrieveSerializer(many=True, read_only=True)
     recurring_avail = RecurringAvailabilityRetrieveSerializer(many=True, read_only=True)

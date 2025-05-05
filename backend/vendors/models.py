@@ -59,13 +59,12 @@ class Service(models.Model):
     availability_start_date = models.DateField()
     availability_end_date = models.DateField()
     availability_type = models.CharField(max_length=20, choices=AVAILABILITY_CHOICES)
-    description = models.CharField(max_length=200, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now=True)
     is_approved = models.BooleanField(default=False)
     status = models.CharField(max_length=20, default='pending', choices=STATUS)
     # main_image_url = models.URLField()
-    amenities = models.CharField(max_length=50, null=True, blank=True)
     service_quantity = models.CharField(max_length=50, null=True, blank=True)
     service_mode = models.CharField(max_length=50, null=True, blank=True)
     
@@ -73,7 +72,13 @@ class Service(models.Model):
     def __str__(self):
         return f"{self.service_type.capitalize()} for {self.vendor.business_name}"
 
-## vendor package images
+# service amenities
+class ServiceAmenity(models.Model):
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="service_amenities")
+    name = models.CharField(max_length=20, null=True, blank=True)
+    
+
+# vendor service images
 class ServiceImage(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="service_images")
     image = models.ImageField(upload_to='media/vendor_package_images/')
@@ -87,7 +92,7 @@ class ServiceImage(models.Model):
 
 # date specific availability
 class ServiceSpecificDateAvailability(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='date_specific_availability')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='date_specific_availabilities')
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -95,7 +100,7 @@ class ServiceSpecificDateAvailability(models.Model):
     
 # recurring availability table
 class ServiceRecurringAvailability(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='recurring_availability')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='recurring_availabilities')
     day_of_week = models.PositiveIntegerField()
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -111,6 +116,6 @@ class ServicePricing(models.Model):
 class PricingPackage(models.Model):
     pricing_model = models.ForeignKey(ServicePricing, on_delete=models.CASCADE, related_name='price_packages', null=True, blank=True)
     name = models.CharField(max_length=50, null=True, blank=True)
-    description = models.CharField(max_length=200, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    quantity_description = models.CharField(max_length=200, null=True, blank=True)
+    quantity_description = models.TextField(null=True, blank=True)

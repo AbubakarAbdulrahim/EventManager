@@ -1,6 +1,11 @@
 from rest_framework import generics
 from django.contrib.auth import get_user_model
-from .serializer import UserSerializer
+from .serializer import (
+    UserProfileSerializer,
+    UserCreateSerializer,
+    UserUpdateSerializer,
+    PasswordUpdateSerializer,
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -61,33 +66,34 @@ class LogoutView(APIView):
         response.delete_cookie("refresh", path="/user/token/refresh/")
         # response.delete_cookie("access_token")
         return response
-
-# user update view
-class UserUpdateView(generics.UpdateAPIView):
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
-
-    # on update
-    def perform_update(self, serializer):
-        return super().perform_update(serializer)
-    
-    def get_queryset(self):
-        user= self.request.user
-        return User.objects.filter(id=user.id)
    
 # user retrieve view
 class UserRetrieveView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user= self.request.user
         return User.objects.filter(id=user.id)
     
+# user update view
+class UserUpdateView(generics.UpdateAPIView):
+    serializer_class = UserUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user= self.request.user
+        return User.objects.filter(id=user.id)
+
+    # on update
+    def perform_update(self, serializer):
+        pass
+    
 # user delete view
 class UserDestroyView(generics.DestroyAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
 
     def get_queryset(self):
         user= self.request.user
@@ -96,9 +102,18 @@ class UserDestroyView(generics.DestroyAPIView):
 # user create view
 class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = UserCreateSerializer
     permission_classes = [AllowAny]
 
     # on create
     def perform_create(self, serializer):
         serializer.save()
+        # send_user_welcome_email(user_id)
+
+class PasswordUpdateView(generics.UpdateAPIView):
+    serializer_class = PasswordUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return User.objects.filter(user.id)
