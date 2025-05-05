@@ -106,7 +106,6 @@ class ServicePricing(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='pricing')
     model_type = models.CharField(max_length=20)
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
-    is_active = models.BooleanField()
 
 # pricing package
 class PricingPackage(models.Model):

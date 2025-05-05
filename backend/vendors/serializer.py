@@ -177,7 +177,6 @@ class ServicePricingCreateSerializer(serializers.ModelSerializer):
         fields = [
             "model_type",
             "base_price",
-            "is_active",
 
             # additional
             "price_packages",
@@ -193,7 +192,6 @@ class ServicePricingRetrieveSerializer(serializers.ModelSerializer):
             "id",
             "model_type",
             "base_price",
-            "is_active",
 
             # additional
             "price_packages",

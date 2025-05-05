@@ -168,7 +168,7 @@ class TransactionsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
 # handling linsting  users
 class UsersAdminListView(generics.ListAPIView):
     serializer_class = UserAdminSerializer
-    permission_classes = [IsAdminRole]
+    # permission_classes = [IsAdminRole]
     
     def get_queryset(self):
         return User.objects.filter(role='customer')
