@@ -1,12 +1,14 @@
-from rest_framework import generics
+from rest_framework import generics, status
+from django.core.files.base import ContentFile
+import base64
+import re
 from .models import (
     Vendor,
     VendorCertificationImage,
     Service,
     ServiceImage,
-    ServiceSpecificDateAvailability,
-    ServiceRecurringAvailability,
 )
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permission import IsVendorRole
 from .serializer import(
@@ -16,10 +18,10 @@ from .serializer import(
     VendorDestroySerializer,
     ServiceCreateSerializer,
     ServiceRetrieveSerializer,
-    ServiceDestroySerializer,
+    ServiceUpdateSerializer,
 )
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from .availability import is_service_available
@@ -98,7 +100,7 @@ class ServiceCreateView(generics.CreateAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceCreateSerializer
     permission_classes = [IsVendorRole]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser]
 
     # on creating
     def perform_create(self, serializer):
@@ -109,6 +111,10 @@ class ServiceCreateView(generics.CreateAPIView):
         else:
             raise ValidationError("Vendor not found for this user.")
 
+    def create(self, request, *args, **kwargs):
+        print("RAW DATA:", request.data)
+        return super().create(request, *args, **kwargs)
+ 
 # vendor service retrieve view
 class ServiceRetrieveView(generics.RetrieveAPIView):
     queryset = Service.objects.all()
@@ -120,27 +126,36 @@ class ServiceRetrieveView(generics.RetrieveAPIView):
 class ServiceUpdateView(generics.UpdateAPIView):
     serializer_class = ServiceCreateSerializer
     permission_classes = [IsVendorRole]  
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser]
 
     def get_queryset(self):
         vendor = Vendor.objects.get(user=self.request.user)
         return Service.objects.filter(vendor=vendor)
     
-# vendor service destroy view
-class ServiceDestroyView(generics.DestroyAPIView):
-    serializer_class = ServiceDestroySerializer
-    permission_classes = [IsVendorRole]
+# service image update view
+class ServiceImageUpdateView(APIView):
     parser_classes = [MultiPartParser, FormParser]
-    lookup_field = 'pk'
-    
-    def get_queryset(self):
-        vendor = Vendor.objects.get(user=self.request.user)
-        return Service.objects.filter(vendor=vendor)
-    
-    def perform_destroy(self, instance):
-        instance.delete()
-        return instance
-    
+    permission_classes = [IsVendorRole]
+
+    def post(self, request, service_id):
+        service = Service.objects.get(id=service_id)
+        if not service:
+            return Response({"detail": "Service not found."}, status=status.HTTP_404_NOT_FOUND)
+        files = request.FILES.getlist('service_images')
+
+        if not files:
+            return Response({"detail": "No images provided."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # delete the old instances
+        ServiceImage.objects.filter(service=service).delete()
+
+        # create new ServiceImage instances for each uploaded file
+        for file in files:
+            ServiceImage.objects.create(service=service, image=file)
+        
+        return Response({"detail": "Images updated successfully."}, status=status.HTTP_201_CREATED)
+   
+
 
 #
 #
