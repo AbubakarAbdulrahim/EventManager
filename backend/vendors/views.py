@@ -390,8 +390,11 @@ class VendorApplicationEmailView(generic.TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
         context['current_year'] = datetime.datetime.now().year
         context['vendor'] = '/vendor/'
-        context['support_email'] = 'our_email@gmail.com'
+        context['support_email'] = config('EMAIL_HOST_USER'),
+        context['subject'] = 'Vendor Application Notification!'
+        context['review_days'] = '1 to 3 days'
 
         return context

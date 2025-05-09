@@ -11,6 +11,8 @@ from transactions.models import Transaction
 from transactions.serializer import TransactionAdminSerializer
 from users.models import User
 from users.serializer import UserAdminSerializer
+from tasks.tasks import send_email_task
+from decouple import config
 
 
 
@@ -53,6 +55,14 @@ class VendorAdminSuspendActivateView(APIView):
     def post(self, request, pk):
         action = request.data.get('action')
         vendor = get_object_or_404(Vendor, pk=pk)
+        
+        user = vendor.user
+        context = {
+            'user' : user,
+            'support_email' : config('EMAIL_HOST_USER')
+        }
+        template_prefix = 'request_denial'
+        subject = 'Vendor Application Status'
 
         if action == 'approve':
 
@@ -63,6 +73,14 @@ class VendorAdminSuspendActivateView(APIView):
             message = 'approved'
             vendor.save()
 
+            context['status'] = 'approved'
+            send_email_task(
+                subject=subject,
+                to_email=user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
+
         elif action == 'suspend':
 
             vendor.is_approved = False
@@ -71,6 +89,14 @@ class VendorAdminSuspendActivateView(APIView):
             vendor.user.save()
             message = 'suspended'
             vendor.save()
+
+            context['status'] = 'suspended'
+            send_email_task(
+                subject=subject,
+                to_email=user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
         
         elif action == 'reject':
 
@@ -79,6 +105,14 @@ class VendorAdminSuspendActivateView(APIView):
             vendor.status = 'rejected'
             message = 'rejected'
             vendor.save()
+
+            context['status'] = 'rejected'
+            send_email_task(
+                subject=subject,
+                to_email=user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
 
         return Response({"detail": f"vendor {message}"})
 
