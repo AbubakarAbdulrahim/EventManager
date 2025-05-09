@@ -22,8 +22,9 @@ urlpatterns = [
     path('services/create/', views.ServiceCreateView.as_view(), name='service-create'),
     path('services/<int:pk>/', views.ServiceRetrieveView.as_view(), name='service-detail'),
     path('services/<int:pk>/update/', views.ServiceUpdateView.as_view(), name='service-update'),
-    # path('services/<int:pk>/delete/', views.ServiceDestroyView.as_view(), name='service-delete'),
+    path('services/<int:pk>/delete/', views.ServiceDestroyView.as_view(), name='service-delete'),
     path('service-images-/<int:service_id>/update/', views.ServiceImageUpdateView.as_view(), name='service-image-update'),
+    path('service-images-/<int:service_id>/delete/', views.ServiceImageDestroyView.as_view(), name='service-image-delete'),
     
 
     #
@@ -31,6 +32,7 @@ urlpatterns = [
     #
 
 
-    # vendor package availability endpoints
+    # vendor service availability endpoints
     path('service/<int:pk>/availability/', views.ServiceAvailabilityRetrievView.as_view(), name='service-availability-list'),
+
 ]

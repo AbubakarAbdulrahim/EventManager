@@ -1,0 +1,45 @@
+<!-- Welcome Email -->
+{% extends 'base_email.html' %}
+
+{% block subject %}
+    {{ subject }}
+{% endblock %}
+
+{% block content %}
+<!-- content -->
+<table style="width:100%; font-family: Arial, sans-serif; border-collapse: collapse;">
+    <tr>
+        <td style="padding:20px;">
+            <h2 style="color:#4CAF50;">
+                Welcome to Event Master – 
+                Let’s Plan Something Amazing!
+            </h2>
+            <p>Hi {{ user.username }},</p>
+            <p>Welcome to Event Master. We're thrilled to have you on board!</p>
+            <p>Whether you're planning a wedding, birthday, 
+                corporate event, or just a small get-together, 
+                we’re here to make the process seamless. From 
+                finding the perfect venue to booking trusted event 
+                planners, caterers, photographers, and more – everything 
+                you need is now just a few clicks away.
+            </p>
+            <ul>
+                <li>Browse and book event vendors based on your location and preferences.</li>
+                <li>Communicate directly with service providers.</li>
+                <li>Manage your bookings all in one place.</li>
+                <li>Read and leave reviews.</li>
+            </ul>
+            <p>Ready to get started?</p>
+            <p>
+                <a href="{{ dashboard_url }}" 
+                style="background-color:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">
+                    Log in to your dashboard
+                </a>
+            </p>
+            <p>If you have any questions, we are just an email away at {{ email }}</p>
+            <p>Thanks for joining – we can’t wait to help bring your events to life!</p>
+            <p>Warm wishes,<br>The Event Master Team</p>
+        </td>
+    </tr>
+</table>
+{% endblock %}

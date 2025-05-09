@@ -96,6 +96,13 @@ class ServiceImageCreateSerializer(serializers.ModelSerializer):
             "is_main",
         ]
 
+# service image destroy serializer
+class ServiceImageDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceImage
+        fields = ['id']
+        lookup_field = 'pk'
+
 # service specific date availability create serializer (to be referenced)
 class SpecificDateAvailabilityCreateSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,31 +1,24 @@
 from pathlib import Path
 from datetime import timedelta
+from decouple import config, Csv
 import os
 
-
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+# media
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# security
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e5vr94@4)7ivgb_t7&k$ernv2b1ln@pcjjd@fn#82(^-kp9o_k'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+# user authentication model
 AUTH_USER_MODEL = 'users.User'
 
-ALLOWED_HOSTS = ["*"] # set to allows every host for now
-
-# rest framework stuffs
+# rest franework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -35,20 +28,27 @@ REST_FRAMEWORK = {
     ],
 }
 
-# tokens expiry periods
+# JWT tokens expiry periods
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),  # smalller
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),  # larger
-    "ROTATE_REFRESH_TOKEN": True,
-    "BLACKLIST_AFTER_ROTATION" : True,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "AUTH_COOKIE": "access_token",
-    "AUTH_COOKIE_HTTP_ONLY": True,
+    "ACCESS_TOKEN_LIFETIME": timedelta(config('ACCESS_TOKEN_LIFETIME_MINUTES', cast=int)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(config('REFRESH_TOKEN_LIFETIME_DAYS', cast=int)),
+    "ROTATE_REFRESH_TOKEN": config('ROTATE_REFRESH_TOKEN', cast=bool),
+    "BLACKLIST_AFTER_ROTATION": config('BLACKLIST_AFTER_ROTATION', cast=bool),
+    "AUTH_HEADER_TYPES": (config('AUTH_HEADER_TYPES'),),
+    "AUTH_COOKIE": config('AUTH_COOKIE'),
+    "AUTH_COOKIE_HTTP_ONLY": config('AUTH_COOKIE_HTTP_ONLY', cast=bool),
 }
 
+# email config
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT', cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-# Application definition
-
+# application definitions
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -56,17 +56,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'apiadmin', # custom admin app
-    'users', # users app
-    'bookings', # bookings app
-    'vendors',  # vendors app
-    'transactions', # trxns app
-    'rest_framework', # rest framework app
-    'corsheaders', # headers app
-    'background_task', # background tasks app
-    'rest_framework_simplejwt.token_blacklist', # secured token hands
+    'apiadmin',
+    'users',
+    'bookings',
+    'vendors',
+    'transactions',
+    'rest_framework',
+    'corsheaders',
+    'background_task',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
+# django middlewares
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -75,15 +76,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "corsheaders.middleware.CorsMiddleware",  # cors headers middleware
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = 'core.urls'
 
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -98,10 +100,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+# database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -109,55 +108,30 @@ DATABASES = {
     }
 }
 
-
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
+# password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
+# internationalization
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+# static files
 STATIC_URL = 'static/'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
+# default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# cors headers stuffs 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173"
-]
-CORS_ALLOW_CREDENTIALS = True
+# CORS
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', cast=bool)
+CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', cast=bool)
 
-
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+# session / CSRF
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', cast=bool)
