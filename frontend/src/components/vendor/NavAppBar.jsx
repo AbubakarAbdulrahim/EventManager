@@ -41,6 +41,7 @@ import {
   VisibilityOff, Person, Business, AttachMoney, Settings as SettingsIcon, 
   Logout, Menu as MenuIcon, Search, CheckCircle, Cancel, Star
 } from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
 
 const drawerItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, page: 'dashboard' },
@@ -55,6 +56,7 @@ const drawerItems = [
 export default function NavAppBar({currentPage, setCurrentPage}) {
     const [open, setOpen] = useState(false);
     const drawerWidth = open ? 240 : 60;
+    const { logout } = useAuth();
       
       const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
       const [accountAnchorEl, setAccountAnchorEl] = useState(null);
@@ -123,12 +125,12 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
           </List>
           <Divider />
           <List>
-            <ListItem button>
+            <ListItemButton onClick={()=>{logout()}} >
               <ListItemIcon>
                 <Logout />
               </ListItemIcon>
               <ListItemText primary="Logout" />
-            </ListItem>
+            </ListItemButton>
           </List>
         </div>
       );

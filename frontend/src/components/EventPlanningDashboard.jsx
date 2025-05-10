@@ -57,14 +57,32 @@ const SearchSection = styled(Box)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius
 }));
 
+import { useEffect } from 'react';
+
 import { mockServices } from '../services/mockServices';
 
 
+const transformServiceData = (backendData) => {
+  console.log(backendData);
+  return backendData.map(service => ({
+    id: service.id,
+    type: service.service_type,
+    name: service.service_name,
+    location: service.location,
+    capacity: parseInt(service.service_quantity, 10),
+    price: service.pricing[0]?.base_price || 0, // fallback to 0 if pricing is empty
+    image: service.service_images[0]?.image_url || '/placeholder.jpg',
+    rating: 0 // Set default rating or fetch if available elsewhere
+  }));
+};
 
+
+const data = transformServiceData(mockServices);
   
 
 const EventPlanningDashboard = ( props) => {
-    const [services, setServices] = useState(mockServices);
+  const { fetchServices} = useAuth()
+    const [services, setServices] = useState(data);
     const [bookings, setBookings] = useState([]);
     // const [selectedService, setSelectedService] = useState("");
     // const [bookingOpen, setBookingOpen] = useState(false);
@@ -96,6 +114,22 @@ const EventPlanningDashboard = ( props) => {
   // };
   
   // console.log(selectedService)
+
+  useEffect(() => {
+    async function fetchService () {
+      try {
+        const response = await fetchServices();
+        const transformedData = transformServiceData(response);
+        setServices(transformedData);
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      }
+    }
+    fetchService();
+  }, []);
+
+
+
   console.log(bookings)
   const filteredServices = services.filter(service => {
     return (

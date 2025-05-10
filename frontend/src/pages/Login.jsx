@@ -23,7 +23,7 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useState,useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Alert } from '@mui/material';
+import { Alert, CircularProgress } from '@mui/material';
 import Snackbar from '@mui/material/Snackbar';
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -91,6 +91,7 @@ export default function Login(props) {
   const navigate = useNavigate();
     const { user, loading, login } = useAuth();
     const [error, setError] = useState(null);
+    const [logLoading, setLogLoading] = useState(false)
 
     useEffect(() => {
       if (!loading && user) {
@@ -106,7 +107,7 @@ export default function Login(props) {
     onSubmit: async (values) => {
       console.log(values);
       try {
-
+        setLogLoading(true)
         await login(values);
         // If login is successful, redirect to dashboard
         // navigate('/dashboard');
@@ -114,26 +115,16 @@ export default function Login(props) {
         
       } catch (error) {
         console.error('Login failed:', error);
-        if (error.response) {
-          // Server responded with 4xx/5xx status
-          const { data } = error.response;
-          
-          if (error.response.status === 400) {
-            setError(data.detail || 'Invalid email or password format');
-          } else if (error.response.status === 401) {
-            setError('Invalid credentials');
-          } else {
-            setError('Login failed. Please try again later.');
-          }
-        } else if (error.request) {
-          // No response received
-          setError('Network error. Please check your connection.');
+        const message = error.message || '';
+      
+        if (message.includes('Invalid') || message.includes('Login')) {
+          setError(message);
         } else {
-          // Other errors
           setError('An unexpected error occurred.');
         }
+      } finally {
+        setLogLoading(false)
       }
-    
       // alert(JSON.stringify(values, null, 2));
       // navigate("/dashboard")
     },
@@ -256,6 +247,11 @@ export default function Login(props) {
               </Link>
             </Box>
             <ForgotPassword open={open} handleClose={handleClose} />
+            {
+            logLoading ? 
+            <Box sx={{width:'100%', display: 'flex', justifyContent:'center'}}>
+                  <CircularProgress sx={{ color: '#033043'}} size={30} />
+            </Box> :
             <Button
               type="submit"
               fullWidth
@@ -273,6 +269,7 @@ export default function Login(props) {
             >
               Sign in
             </Button>
+            }
           </Box>
           <Divider >or</Divider>
           <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>

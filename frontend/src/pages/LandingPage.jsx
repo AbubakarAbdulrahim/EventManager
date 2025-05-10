@@ -3,20 +3,20 @@
 import EventPlanningDashboard from "../components/EventPlanning";
 import SearchBar from "../components/SearchBar";
 import BookingProcess from "../components/BookingProcess";
-
+import HomePage from "../components/HomePage";
 
 
 export default function LandingPage() {
     return (
       <div>
-        <h1>Landing Page</h1>
-        <SearchBar/>
+        {/* <h1>Landing Page</h1>
+        <SearchBar/> */}
         {/* <EventPlanningDashboard/> */}
-        <BookingProcess/>
+        {/* <BookingProcess/> */}
         
         {/* <BookingDialog open={true} service={{ id: 1, name: 'Catering', price: 500 }}/> */}
         {/* <ErrorDialog open={true}  title={"Registration failed"}/> */}
-
+        <HomePage/>
         {/* <FlutterwaveDemo/> */}
         {/* <BookingDialog service={{title:"venue"}}/> */}
       </div>

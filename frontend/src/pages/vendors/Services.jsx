@@ -15,6 +15,7 @@ import {
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AddServiceDialog from './AddServiceDialog';
+import { useAuth } from '../../context/AuthContext';
 
 
 const initialServices = [
@@ -23,7 +24,21 @@ const initialServices = [
     { id: 3, name: 'SEO Optimization', description: 'Search engine optimization services', price: 750, isActive: false, customers: 8, income: 6000 },
   ];
 
+  const transformedData= (data) => {
+    console.log(data);
+    return data.map((service) => ({
+      id: service.id,
+      name: service.service_name,
+      description: service.description,
+      price: service.pricing[0].base_price,
+      isActive: service.status,
+      customers: service.customers || 10,
+      income: service.pricing[0].base_price * (service.customers || 10),
+    }));
+  }
+
 export default function Services  () {
+    const { authAxios } = useAuth();
     const [services, setServices] = useState(initialServices);
     const [serviceFormOpen, setServiceFormOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
@@ -32,6 +47,22 @@ export default function Services  () {
         setServiceFormOpen(false);
         setEditingService(null);
     }
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const response = await authAxios.get('vendors/services/');
+                const transformedServices = transformedData(response.data);
+                setServices(transformedServices);
+            } catch (error) {
+                console.error('Error fetching services:', error);
+            }
+        };
+        fetchServices();
+    
+    }, []);
+
+
 
     return(
 
@@ -73,9 +104,9 @@ export default function Services  () {
                 <TableCell>{service.id}</TableCell>
                 <TableCell>{service.name}</TableCell>
                 <TableCell>{service.description}</TableCell>
-                <TableCell align='center' >${service.price}</TableCell>
+                <TableCell align='center' >₦{service.price}</TableCell>
                 <TableCell align='center'>{service.customers}</TableCell>
-                <TableCell>${service.income}</TableCell>
+                <TableCell>₦{service.income}</TableCell>
                 <TableCell align='center'>
                   {service.isActive ? (
                     <Chip color="success" label="Active" />
@@ -202,7 +233,7 @@ export default function Services  () {
                     fullWidth
                     id="price"
                     name="price"
-                    label="Price ($)"
+                    label="Price (₦)"
                     type="number"
                     value={values.price}
                     onChange={handleChange}

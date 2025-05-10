@@ -243,7 +243,7 @@ export default function Dashboard (){
                 Total Revenue
               </Typography>
               <Typography component="p" variant="h4">
-                ${getTotalIncome().toLocaleString()}
+                ₦{getTotalIncome().toLocaleString()}
               </Typography>
               <Typography color="inherit" sx={{ flex: 1 }}>
                 from {services.length} services
@@ -313,7 +313,7 @@ export default function Dashboard (){
                   {services.slice(0, 5).map((service) => (
                     <TableRow key={service.id}>
                       <TableCell>{service.name}</TableCell>
-                      <TableCell>${service.price}</TableCell>
+                      <TableCell>₦{service.price}</TableCell>
                       <TableCell>
                         {service.isActive ? (
                           <Chip size="small" color="success" label="Active" />
@@ -352,7 +352,7 @@ export default function Dashboard (){
                     <TableRow key={customer.id}>
                       <TableCell>{customer.name}</TableCell>
                       <TableCell>{customer.company}</TableCell>
-                      <TableCell>${customer.totalSpent}</TableCell>
+                      <TableCell>₦{customer.totalSpent}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

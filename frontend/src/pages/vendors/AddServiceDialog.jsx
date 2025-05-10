@@ -199,39 +199,85 @@ const AddServiceDialog = ({ open, onClose }) => {
     }),
     onSubmit: async (values) => {
 
-      const formDataToSend = new FormData();
-
       const formattedData = formatDataForBackend(values);
+      // const formDataToSend = new FormData();
       
-      Object.keys(formattedData).forEach(key => {
-        if (Array.isArray(formattedData[key])) {
-          formattedData[key].forEach((item, index) => {
-            if (typeof item === 'object') {
-              Object.keys(item).forEach(subKey => {
-                formDataToSend.append(`${key}`, item[subKey]);
-              });
-            } else {
-              formDataToSend.append(`${key}[${index}]`, item);
-            }
-          });
-        }
-        else if (typeof formattedData[key] === 'object') {
-          console.log('Object:', formattedData[key]);
-          Object.keys(formattedData[key]).forEach(subKey => {
-            formDataToSend.append(`${key}`, formattedData[key][subKey]);
-          });
-        } else {
-          formDataToSend.append(key, formattedData[key]);
-        }
-      });
-      
-      // for (const pair of formDataToSend.entries()) {
-      //   console.log(`${pair[0]}:`, pair[1]);
-      // }
 
+
+      // Object.keys(formattedData).forEach(key => {
+      //   if (Array.isArray(formattedData[key])) {
+      //     formattedData[key].forEach((item, index) => {
+      //       if (typeof item === 'object') {
+      //         Object.keys(item).forEach(subKey => {
+      //           formDataToSend.append(`${key}[${index}][${subKey}]`, item[subKey]);
+      //         });
+      //       } else {
+      //         formDataToSend.append(`${key}[${index}]`, item);
+      //       }
+      //     });
+      //   }
+      //   else if (typeof formattedData[key] === 'object') {
+      //     Object.keys(formattedData[key]).forEach(subKey => {
+      //       formDataToSend.append(`${key}[${subKey}]`, formattedData[key][subKey]);
+      //     });
+      //   } else {
+      //     formDataToSend.append(key, formattedData[key]);
+      //   }
+      // });
+      console.log(formattedData, 'formattedData');
+
+      const buildFormData = (formattedData) => {
+        const formData = new FormData();
+      
+        const appendNested = (key, value) => {
+          if (value === null || value === undefined) return;
+      
+          if (Array.isArray(value)) {
+            value.forEach((item, i) => {
+              appendNested(`${key}[${i}]`, item);
+            });
+          } else if (typeof value === "object" && !(value instanceof File)) {
+            Object.entries(value).forEach(([k, v]) => {
+              appendNested(`${key}[${k}]`, v);
+            });
+          } else {
+            formData.append(key, value);
+          }
+        };
+      
+        // Go through all keys
+        Object.entries(formattedData).forEach(([key, value]) => {
+          if (key === "service_images") {
+            // handle separately below
+            return;
+          }
+      
+          appendNested(key, value);
+        });
+      
+        // Handle service_images separately to preserve image + is_main
+        formattedData.service_images.forEach((imgObj, i) => {
+          if (imgObj.image) {
+            formData.append(`service_images[${i}][image]`, imgObj.image); // File object
+          }
+          formData.append(`service_images[${i}][is_main]`, imgObj.is_main);
+        });
+      
+        return formData;
+      };
+      
+
+
+      const formDataToSend = buildFormData(formattedData);
+
+      for(const pairs of formDataToSend.entries()) {
+        console.log(pairs[0] + ', ' + pairs[1]);
+      }
+      
       try {
         setIsSubmitting(true);
         
+        // Format data according to backend structure
         
         const response = await authAxios.post('/vendors/services/create/', formDataToSend)
         if (response.status === 201) {
@@ -241,9 +287,7 @@ const AddServiceDialog = ({ open, onClose }) => {
         }
         
 
-        
-
-        // console.log('Submitting service data:', formattedData);
+        console.log('Submitting service data:', formattedData);
         
         
         
@@ -287,7 +331,7 @@ const AddServiceDialog = ({ open, onClose }) => {
         });
       });
     }
-  
+    
     // Format specific date availability
     const specificDates = specificDateSlots.map(slot => ({
       date: slot.date ? dayjs(slot.date).format('YYYY-MM-DD') : '',
@@ -334,6 +378,11 @@ const AddServiceDialog = ({ open, onClose }) => {
         }
       });
     }
+
+    const amenities = (values.amenities || values.instruments).map(item => ({
+      name: item || '',
+    }));
+    
     
     // Combine all data
     return {
@@ -349,7 +398,7 @@ const AddServiceDialog = ({ open, onClose }) => {
       service_images: images,
       pricing: pricingData,
       // Include any service-specific fields
-      amenities: values.amenities,
+      amenities: amenities,
       service_quantity: serviceSpecificData.maxPlates || serviceSpecificData.maxClips || serviceSpecificData.capacity || '',
       service_mode: serviceSpecificData.venueType || serviceSpecificData.cuisineType || serviceSpecificData.style || serviceSpecificData.genre || serviceSpecificData.decorStyle || '',
       ...serviceSpecificData
@@ -559,7 +608,7 @@ const AddServiceDialog = ({ open, onClose }) => {
               !formik.errors.availabilityStartDate && !formik.errors.availabilityEndDate &&
               (availabilityType === 'dateRange' || 
                (availabilityType === 'recurring' && recurringAvailability.length > 0) ||
-               (availabilityType === 'specific_date' && specificDateSlots.length > 0));
+               (availabilityType === 'specific' && specificDateSlots.length > 0));
       case 4: // Images
         return formik.values.mainImage && !formik.errors.mainImage;
       default:
@@ -866,8 +915,8 @@ const AddServiceDialog = ({ open, onClose }) => {
             />
             <FormControlLabel
               control={<Switch 
-                checked={availabilityType === 'specific_date'} 
-                onChange={() => setAvailabilityType('specific_date')}
+                checked={availabilityType === 'specific'} 
+                onChange={() => setAvailabilityType('specific')}
               />}
               label="Specific Dates and Times"
             />
@@ -958,7 +1007,7 @@ const AddServiceDialog = ({ open, onClose }) => {
           </Box>
         )}
         
-        {availabilityType === 'specific_date' && (
+        {availabilityType === 'specific' && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Specific Date and Time Slots

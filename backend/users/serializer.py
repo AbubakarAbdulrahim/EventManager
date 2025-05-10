@@ -5,8 +5,8 @@ from bookings.serializer import BookingRetrieveSerializer
 
 User = get_user_model()
 
-# user serializer
-class UserSerializer(serializers.ModelSerializer):
+# user profile serializer (retrieve)
+class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -14,41 +14,88 @@ class UserSerializer(serializers.ModelSerializer):
             "full_name", 
             "username", 
             "email", 
-            "password", 
             "role", 
             "phone_number", 
             "is_active",
             "date_joined",
         ] 
         read_only_fields = [
-            "role",
+            "id", 
+            "full_name", 
+            "username", 
+            "email", 
+            "role", 
+            "phone_number", 
             "is_active",
-            "date_joined",
+            "date_joined"
+        ]
+        
+# user create serializer
+class UserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "full_name", 
+            "username", 
+            "email", 
+            "phone_number",
+            "password", 
         ]
         extra_kwargs = {
-            "password": {"write_only" : True},
+            "password" : {"write_only" : True}
         }
 
-    # on creating
+    # create
     def create(self, validated_data):
-        full_name = validated_data['full_name']
-        username = validated_data['username']
-        email = validated_data['email']
-        phone_number = validated_data['phone_number']
-        password = validated_data['password']
-        role = 'customer'  # default role
-        user = User.objects.create_user(
-            full_name=full_name,
-            username=username,
-            email=email,
-            password=password,
-            role=role,
-            phone_number=phone_number
-        )
-        # welcome email
-        
-        validated_data.pop('date_joined', None) # remove date_joined
+        password = validated_data.pop('password')
+        user = User.objects.create_user(password=password, role='customer', **validated_data)
         return user
+
+# user update serializer
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "full_name", 
+            "username", 
+            "email", 
+            "phone_number",
+        ]
+    
+    # update
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+# password change serializer
+class PasswordUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['password']
+        extra_kwargs = {
+            "password" : {"write_only" : True}
+        }
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        instance.set_password(password)
+        instance.save()
+        return instance
+    
+# user destroy serializer
+class UserDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id']
+        lookup_field = 'pk'
+
+
+#
+#
+#
+
 
 # user serializer for admin
 class UserAdminSerializer(serializers.ModelSerializer):

@@ -56,6 +56,8 @@ const StepIcon = ({ active, completed, icon }) => {
 
 function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const { user } = useAuth();
+
+  console.log(service);
   
   // Define steps for booking process
   const steps = [
@@ -251,7 +253,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     window.FlutterwaveCheckout({
       public_key: "FLWPUBK_TEST-f26186bcd6a1340b7d354280b2605ad2-X",
       tx_ref: Date.now(),
-      amount: calculatePrice(service?.price, bookingData.duration),
+      amount: calculatePrice(service?.basePrice, bookingData.duration),
       currency: "NGN",
       payment_options: "card,ussd",
       customer: {
@@ -531,7 +533,7 @@ console.log(e);
                   
                   <Typography variant="body2" color="text.secondary">Price:</Typography>
                   <Typography variant="body1" gutterBottom fontWeight="medium">
-                    ₦{calculatePrice(service?.price, bookingData.duration)}
+                    ₦{calculatePrice(service?.basePrice, bookingData.duration)}
                   </Typography>
                 </Grid>
               </Grid>

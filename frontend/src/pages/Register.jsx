@@ -236,7 +236,7 @@ export default function Register(props) {
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="space-between">
         <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
-        <Card variant="outlined" sx={{ alignItems: 'center', overflow: 'visible' }}>
+        <Card variant="outlined" sx={{ alignItems: 'center', justifyContent:'center', overflow: 'visible' }}>
           <img src="/logo.png" height={50} width={50} alt="Logo" />
           <Typography
             component="h1"
@@ -358,6 +358,11 @@ export default function Register(props) {
               />
             </FormControl>
 
+            {loading ? 
+            <Box sx={{width:'100%', display: 'flex', justifyContent:'center'}}>
+                  <CircularProgress sx={{ color: '#033043'}} size={30} />
+            </Box>
+                  : 
             <Button
               type="submit"
               fullWidth
@@ -371,11 +376,9 @@ export default function Register(props) {
                 '&:hover': { backgroundColor: '#013d56' }
               }}
             >
-              {loading ? 
-                  <CircularProgress sx={{ color: '#033043'}} size={30} />
-                  : 'Register'
-                }
+                Register
             </Button>
+                }
           </Box>
 
           <Divider>or</Divider>
