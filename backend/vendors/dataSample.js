@@ -1,6 +1,6 @@
 
 // service create data
-service = {
+a = {
     
     "service_name" : "Luxury Wedding Hall",
     "service_type" : "Venue",
@@ -9,9 +9,14 @@ service = {
     "availability_end_date" : "2025-12-31",
     "availability_type" : "recurring",
     "description": "A beautiful venue for weddings and corporate events.",
-    "amenities": "WiFi, Parking, Catering",
     "service_quantity": 5,
     "service_mode": "on-site",
+
+    "amenities": [
+        {"name" : "WiFi"}, 
+        {"name" : "Parking"}, 
+        {"name" : "Catering"},
+    ],
 
     "recurring_availability": [
         {
@@ -30,7 +35,7 @@ service = {
         {
             "model_type": "Hourly",
             "base_price": 500,
-            
+
             "price_packages": [
                 {
                     "description": "Full-day package",

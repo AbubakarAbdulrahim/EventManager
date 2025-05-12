@@ -94,32 +94,54 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [isSlotAvailable, setIsSlotAvailable] = useState(null);
   
-  // Fetch available dates when component mounts
-  useEffect(() => {
-    fetchAvailableDates();
-  }, []);
-  
-  // Mock function to fetch available dates
   const fetchAvailableDates = () => {
     setLoadingDates(true);
-    
-    // Simulate API call to fetch available dates
-    setTimeout(() => {
-      const today = dayjs();
-      const dates = [];
-      
-      // Generate next 30 days as available (skipping some days to simulate unavailability)
-      for (let i = 1; i <= 30; i++) {
-        if (![5, 10, 15, 20, 25].includes(i)) { // Skip these days to simulate unavailability
-          dates.push(today.add(i, 'day'));
-        }
+  
+    try {
+      const data = service?.availability;
+  
+      const datesSet = new Set();
+  
+      if (data.type === 'specific_date') {
+        data.specificDates.forEach(({ date, is_available }) => {
+          if (is_available) {
+            datesSet.add(dayjs(date).format('YYYY-MM-DD'));
+          }
+        });
+      } else if (data.type === 'recurring') {
+        const start = dayjs(data.startDate).startOf('day');
+        const end = dayjs(data.endDate).startOf('day');
+  
+        data.recurring.forEach(({ day_of_the_week, is_available }) => {
+          if (!is_available) return;
+  
+          // Find first occurrence of the desired day_of_the_week
+          let date = start.clone();
+          while (date.day() !== day_of_the_week) {
+            date = date.add(1, 'day');
+          }
+  
+          // Add this weekday repeatedly until the end date
+          while (date.isSame(end) || date.isBefore(end)) {
+            datesSet.add(date.format('YYYY-MM-DD'));
+            date = date.add(7, 'day'); // Jump by 7 days (same weekday)
+          }
+        });
       }
-      
-      setAvailableDates(dates);
+  
+      const sortedDates = Array.from(datesSet).sort().map(date => dayjs(date));
+      setAvailableDates(sortedDates);
+    } catch (err) {
+      console.error('Failed to fetch availability:', err);
+    } finally {
       setLoadingDates(false);
-    }, 800);
+    }
   };
   
+  
+  useEffect(() => {
+    fetchAvailableDates();
+  }, [service]);
   // Handle date selection
   const handleDateChange = (date) => {
     if (!date) return;

@@ -12,6 +12,7 @@ from .models import (
     PricingPackage,
 )
 from django.contrib.auth import get_user_model
+from drf_extra_fields.fields import Base64ImageField
 
 User = get_user_model()
 
@@ -22,6 +23,11 @@ class CertificationImageCreateSerializer(serializers.ModelSerializer):
         fields =[
             "image",
         ]
+    
+    def validate_image(self, value):
+        if value.size > 10 * 1024 * 1024:  # Example: Limit to 10MB
+            raise serializers.ValidationError("Image file size should not exceed 10MB.")
+        return value
 
 # vendor certification images serializer (to be referenced)
 class CertificationImageRetrieveSerializer(serializers.ModelSerializer):
@@ -81,12 +87,21 @@ class ServiceImageRetrieveSerializer(serializers.ModelSerializer):
 
 # vendor service image create serializer (to be referenced)
 class ServiceImageCreateSerializer(serializers.ModelSerializer):
+    image = Base64ImageField()
+
     class Meta:
         model = ServiceImage
         fields = [
             "image",
             "is_main",
         ]
+
+# service image destroy serializer
+class ServiceImageDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceImage
+        fields = ['id']
+        lookup_field = 'pk'
 
 # service specific date availability create serializer (to be referenced)
 class SpecificDateAvailabilityCreateSerializer(serializers.ModelSerializer):
@@ -117,6 +132,8 @@ class SpecificDateAvailabilityRetrieveSerializer(serializers.ModelSerializer):
 
 # service recurring availability create serializer (to be referenced)
 class RecurringAvailabilityCreateSerializer(serializers.ModelSerializer):
+    day_of_the_week = serializers.CharField()  # Or if it's an integer, use serializers.IntegerField()
+
     class Meta:
         model = ServiceRecurringAvailability
         fields = [
@@ -264,9 +281,9 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
 class ServiceCreateSerializer(serializers.ModelSerializer):
     specific_date_availability = SpecificDateAvailabilityCreateSerializer(many=True, required=False)
     recurring_availability = RecurringAvailabilityCreateSerializer(many=True, required=False)
-    service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
     amenities = ServiceAmenitiesSerializer(many=True, required=False)
+    service_images = ServiceImageCreateSerializer(many=True, required=False)
 
     class Meta:
         model = Service
@@ -285,57 +302,45 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
             "amenities",
             "specific_date_availability",
             "recurring_availability",
-            "service_images",
             "pricing",
+            "service_images",
         ]
-
+    
+    # create
     def create(self, validated_data):
         request = self.context.get('request')
-        date_avail = validated_data.pop('specific_date_availability', [])
-        recurring_avail = validated_data.pop('recurring_availability', [])
+        amenities_data = validated_data.pop('amenities', [])
+        recurring_availability_data = validated_data.pop('recurring_availability', [])
+        specific_date_availability_data = validated_data.pop('specific_date_availability', [])
         pricing_data = validated_data.pop('pricing', [])
-        service_amenities = validated_data.pop('amenities', [])
-        service_images = request.FILES.getlist('service_images')
+        service_images_data = validated_data.pop('service_images', [])
 
-
-        # validate that at least one availability type is provided
-        if not date_avail and not recurring_avail:
-            raise serializers.ValidationError(
-                {"specific_date_availability or recurring_availability": "One of these fields must be filled."}
-            )
-
-        if not service_images:
-            raise serializers.ValidationError({"service_images": "This field is required."})
-
-        # create the main service
         service = Service.objects.create(**validated_data)
 
-        # create its amenities
-        for amenity in service_amenities:
+        # create amenities
+        for amenity in amenities_data:
             ServiceAmenity.objects.create(service=service, **amenity)
 
-        # create specific date availabilities
-        for availability in date_avail:
-            ServiceSpecificDateAvailability.objects.create(service=service, **availability)
-
-        # create recurring availabilities
-        for availability in recurring_avail:
+        # create recurring availability
+        for availability in recurring_availability_data:
             ServiceRecurringAvailability.objects.create(service=service, **availability)
 
-        # create the service pricing
-        for price_data in pricing_data:
-            pricing_packages = price_data.pop('pricing_packages', [])
-            service_pricing = ServicePricing.objects.create(service=service, **price_data)
-            
-            # if nested price packages are provided
-            if pricing_packages:
-                # create them
-                for package in pricing_packages:
-                    PricingPackage.objects.create(pricing_model=service_pricing, **package)
+        # create specific date availability
+        for availability in specific_date_availability_data:
+            ServiceSpecificDateAvailability.objects.create(service=service, **availability)
 
-        # save images
-        for image in service_images:
-            ServiceImage.objects.create(service=service, image=image)
+        # create pricing + nested price packages
+        for pricing in pricing_data:
+            price_packages_data = pricing.pop('price_packages', [])
+            pricing_obj = ServicePricing.objects.create(service=service, **pricing)
+            
+            for package in price_packages_data:
+                PricingPackage.objects.create(pricing_model=pricing_obj, **package)
+        
+        # create the images
+        for image_data in service_images_data:
+            ServiceImage.objects.create(service=service, **image_data)
+
 
         return service
     
@@ -343,7 +348,6 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
 class ServiceUpdateSerializer(serializers.ModelSerializer):
     specific_date_availability = SpecificDateAvailabilityCreateSerializer(many=True, required=False)
     recurring_availability = RecurringAvailabilityCreateSerializer(many=True, required=False)
-    service_images = ServiceImageCreateSerializer(many=True, required=False)
     pricing = ServicePricingCreateSerializer(many=True, required=False)
     amenities = ServiceAmenitiesSerializer(many=True, required=False)
 
@@ -363,24 +367,18 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
             # additional
             "specific_date_availability",
             "recurring_availability",
-            "service_images",
             "pricing",
             "amenities",
         ]
 
+    # update
     def update(self, instance, validated_data):
         request = self.context.get('request')
         date_avail = validated_data.pop('specific_date_availability', [])
         recurring_avail = validated_data.pop('recurring_availability', [])
         price_data = validated_data.pop('pricing', [])
         service_amenities = validated_data.pop('amenities', [])
-        service_images = request.FILES.getlist('service_images')
-
-        if date_avail and recurring_avail:
-            raise serializers.ValidationError(
-                {"specific_date_availability or recurring_availability": "Can't fill both fields at the same time."}
-            )        
-
+        
         # update simple service fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -397,13 +395,6 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
             elif recurring_avail:
                 for avail in recurring_avail:
                     ServiceRecurringAvailability.objects.create(service=instance, **avail)
-
-        # if images are provided, delete the old ones
-        if service_images:
-            ServiceImage.objects.filter(service=instance).delete()
-
-            for image in service_images:
-                ServiceImage.objects.create(service=instance, image=image)
 
         # if pricing are provided
         if price_data:

@@ -13,6 +13,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework import status
+from tasks.tasks import send_email_task
+from datetime import datetime
+from decouple import config
 
 User = get_user_model() 
 
@@ -107,13 +110,52 @@ class UserCreateView(generics.CreateAPIView):
 
     # on create
     def perform_create(self, serializer):
-        serializer.save()
-        # send_user_welcome_email(user_id)
+        user = serializer.save()
+        template_prefix = 'welcome'
+        context = {
+            'user' : user,
+            'current_year' : datetime.now().year,
+            'dashboard_url' : '/',
+            'email' : config('EMAIL_HOST_USER'),
+            'subject' : 'Welcome to Event Master!'
+        }
 
+        # send welcome email to a user
+        send_email_task(
+            subject='Welcome to Event Master!', 
+            to_email=user.email, 
+            context=context, 
+            template_prefix=template_prefix
+            )
+
+# user password update view
 class PasswordUpdateView(generics.UpdateAPIView):
     serializer_class = PasswordUpdateSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return User.objects.filter(user.id)
+        return User.objects.filter(id=user.id)
+    
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        
+        user = request.user
+        template_prefix = 'password_reset'
+        context = {
+            'current_year' : datetime.now().year,
+            'subject' : 'Reset Your Password',
+            'user' : user,
+            'password_reset_link' : '/',
+            'duration' : '1 hour'
+        }
+        
+        # send password reset email
+        send_email_task(
+            subject='Password Reset Comfirmation!', 
+            to_email=user.email, 
+            context=context, 
+            template_prefix=template_prefix
+            )
+        
+        return response

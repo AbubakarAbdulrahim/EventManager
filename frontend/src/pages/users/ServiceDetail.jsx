@@ -66,7 +66,9 @@ const transformServiceData = (backendData) => {
     availability: {
       type: service.availability_type,
       startDate: service.availability_start_date,
-      endDate: service.availability_end_date
+      endDate: service.availability_end_date,
+      recurring: service.recurring_avail || [],
+      specificDates: service.specific_date_avail || [],
     },
     status: service.status,
     createdAt: service.created_at,
@@ -93,6 +95,13 @@ const transformServiceData = (backendData) => {
     }
   }));
 };
+
+const formatTime = (timeStr) =>
+  new Date(`1970-01-01T${timeStr}`).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
 
 // Generate sample reviews since backend doesn't provide them
 const generateSampleReviews = () => [
@@ -175,15 +184,15 @@ useEffect(() => {
       if (foundService) {
         // Add sample reviews and availability dates
         foundService.reviews = generateSampleReviews();
-        foundService.availability = generateAvailabilityDates(
-          foundService.availability.startDate,
-          foundService.availability.endDate
-        );
+        // foundService.availability = generateAvailabilityDates(
+        //   foundService.availability.startDate,
+        //   foundService.availability.endDate
+        // );
         
         // Store the service
         setService(foundService);
 
-        console.log(foundService);
+        console.log(foundService.availability);
         
         // Fetch vendor details using the vendor_id from the service
         if (foundService.provider.id) {
@@ -501,40 +510,84 @@ useEffect(() => {
         </Box>
 
         {/* Availability Tab */}
-        <Box role="tabpanel" hidden={tabValue !== 2}>
-          {tabValue === 2 && (
+        <Box role="tabpanel" hidden={tabValue !== 2}>    
+          {tabValue === 2 && (      
             <Grid container spacing={2}>
-              {service.availability && service.availability.length > 0 ? (
-                service.availability.slice(0, 8).map((day, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                    <Paper elevation={1} sx={{ p: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <DateRange color="primary" sx={{ mr: 1 }} />
-                        <Typography variant="subtitle1">
-                          {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                        </Typography>
-                      </Box>
-                      <Divider sx={{ my: 1 }} />
-                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        {day.slots.map((slot, slotIndex) => (
-                          <Box key={slotIndex} sx={{ display: 'flex', alignItems: 'center', my: 0.5 }}>
-                            <AccessTime fontSize="small" sx={{ mr: 1 }} />
-                            <Typography variant="body2">{slot}</Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    </Paper>
-                  </Grid>
-                ))
-              ) : (
-                <Grid item xs={12}>
-                  <Typography>
-                    Available from {service.availability?.startDate} to {service.availability?.endDate}
-                  </Typography>
-                </Grid>
-              )}
-            </Grid>
-          )}
+              {/* Header showing overall availability dates */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Service Available from {new Date(service.availability.startDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} to {new Date(service.availability.endDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                </Typography>
+              </Grid>
+
+              {service.availability.type === 'specific_date' && service.availability.specificDates.length > 0 ? (          
+                service.availability.specificDates.slice(0, 8).map((dateAvail, index) => (            
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={index}>              
+                    <Paper elevation={1} sx={{ p: 2 }}>                
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>                  
+                        <DateRange color="primary" sx={{ mr: 1 }} />                  
+                        <Typography variant="subtitle1">                    
+                          {new Date(dateAvail.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}                  
+                        </Typography>                
+                      </Box>                
+                      <Divider sx={{ my: 1 }} />                
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>                  
+                        <Box sx={{ display: 'flex', alignItems: 'center', my: 0.5 }}>                    
+                          <AccessTime fontSize="small" sx={{ mr: 1 }} />                    
+                          <Typography variant="body2">
+                            Opening Time: {formatTime(dateAvail.start_time)}
+                          </Typography>                  
+                        </Box>                  
+                        <Box sx={{ display: 'flex', alignItems: 'center', my: 0.5 }}>                    
+                          <AccessTime fontSize="small" sx={{ mr: 1 }} />                    
+                          <Typography variant="body2">
+                            Closing Time: {formatTime(dateAvail.end_time)}
+                          </Typography>                  
+                        </Box>                
+                      </Box>              
+                    </Paper>            
+                  </Grid>          
+                ))        
+              ) : service.availability.type === 'recurring' && service.availability.recurring.length > 0 ? (         
+                service.availability.recurring.slice(0, 8).map((recurAvail, index) => (            
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={index}>              
+                    <Paper elevation={1} sx={{ p: 2 }}>                
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>                  
+                        <DateRange color="primary" sx={{ mr: 1 }} />                  
+                        <Typography variant="subtitle1">                    
+                          {'Every ' + (() => {                     
+                            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];                     
+                            return days[recurAvail.day_of_the_week];                   
+                          })()}                  
+                        </Typography>                
+                      </Box>                
+                      <Divider sx={{ my: 1 }} />                
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>                  
+                        <Box sx={{ display: 'flex', alignItems: 'center', my: 0.5 }}>                    
+                          <AccessTime fontSize="small" sx={{ mr: 1 }} />                    
+                          <Typography variant="body2">
+                            Opening Time: {formatTime(recurAvail.start_time)}
+                          </Typography>                  
+                        </Box>                  
+                        <Box sx={{ display: 'flex', alignItems: 'center', my: 0.5 }}>                    
+                          <AccessTime fontSize="small" sx={{ mr: 1 }} />                    
+                          <Typography variant="body2">
+                            Closing Time: {formatTime(recurAvail.end_time)}
+                          </Typography>                  
+                        </Box>                
+                      </Box>              
+                    </Paper>            
+                  </Grid>          
+                ))       
+              ) : (          
+                <Grid item xs={12}>            
+                  <Typography>              
+                    No specific availability information available.            
+                  </Typography>          
+                </Grid>        
+              )}      
+            </Grid>    
+          )}  
         </Box>
 
         {/* Reviews Tab */}

@@ -267,19 +267,25 @@ const EventPlanningDashboard = ( props) => {
         {/* <Grid container spacing={3} sx={{ p: 4 }}>
           {filteredServices.map((service)=> <ServicesCard key={service.id} service={service} bookings={bookings} handleBookNow={handleBookNow} handleCancelBooking={handleCancelBooking}/>)}
         </Grid> */}
-        
+        {services.length === 0 && (
+          <Typography variant="h6" sx={{ p: 4, color: '#0a7273', textAlign: 'center' }}>
+            No services available at the moment.
+          </Typography>
+        )}
         {Object.keys(groupedServices).map((type) => (<div key={type}>
 
           <Typography variant='h4' sx={{pl:5, pt:2, fontWeight:'550', color:'#0a7273'}} >{type.charAt(0).toUpperCase() + type.slice(1)}s</Typography>
           <Grid container spacing={3} sx={{ p: 4 }}>
-          {groupedServices[type].map((service) => (
+          {groupedServices ? groupedServices[type].map((service) => (
             <ServicesCard 
               key={service.id}
               service={service}
               
   
             />
-          ))}
+          )) : <Typography>
+            No {type.charAt(0).toUpperCase() + type.slice(1)}s available at the moment.
+          </Typography>}
         </Grid>
         </div>
           ))}

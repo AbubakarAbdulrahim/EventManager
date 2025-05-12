@@ -46,7 +46,7 @@ import { useAuth } from '../../context/AuthContext';
 // Service types and their specific fields
 const SERVICE_TYPES = {
   VENUE: 'venue',
-  CATERING: 'catering',
+  CATERER: 'caterer',
   PHOTOGRAPHY: 'photography',
   MUSIC: 'music',
   DECORATION: 'decoration',
@@ -65,7 +65,7 @@ const SERVICE_SPECIFIC_FIELDS = {
     ]},
     { name: 'amenities', label: 'Amenities', type: 'chips' },
   ],
-  [SERVICE_TYPES.CATERING]: [
+  [SERVICE_TYPES.CATERER]: [
     { name: 'cuisineType', label: 'Cuisine Type', type: 'select', options: [
       { value: 'italian', label: 'Italian' },
       { value: 'indian', label: 'Indian' },
@@ -117,7 +117,7 @@ const PRICING_MODELS = {
     { value: 'daily', label: 'Per Day' },
     { value: 'event', label: 'Per Event' },
   ],
-  [SERVICE_TYPES.CATERING]: [
+  [SERVICE_TYPES.CATERER]: [
     { value: 'perPlate', label: 'Per Plate' },
     { value: 'package', label: 'Package Based' },
     { value: 'custom', label: 'Custom Quote' },
@@ -226,60 +226,60 @@ const AddServiceDialog = ({ open, onClose }) => {
       // });
       console.log(formattedData, 'formattedData');
 
-      const buildFormData = (formattedData) => {
-        const formData = new FormData();
+      // const buildFormData = (formattedData) => {
+      //   const formData = new FormData();
       
-        const appendNested = (key, value) => {
-          if (value === null || value === undefined) return;
+      //   const appendNested = (key, value) => {
+      //     if (value === null || value === undefined) return;
       
-          if (Array.isArray(value)) {
-            value.forEach((item, i) => {
-              appendNested(`${key}[${i}]`, item);
-            });
-          } else if (typeof value === "object" && !(value instanceof File)) {
-            Object.entries(value).forEach(([k, v]) => {
-              appendNested(`${key}[${k}]`, v);
-            });
-          } else {
-            formData.append(key, value);
-          }
-        };
+      //     if (Array.isArray(value)) {
+      //       value.forEach((item, i) => {
+      //         appendNested(`${key}[${i}]`, item);
+      //       });
+      //     } else if (typeof value === "object" && !(value instanceof File)) {
+      //       Object.entries(value).forEach(([k, v]) => {
+      //         appendNested(`${key}[${k}]`, v);
+      //       });
+      //     } else {
+      //       formData.append(key, value);
+      //     }
+      //   };
       
-        // Go through all keys
-        Object.entries(formattedData).forEach(([key, value]) => {
-          if (key === "service_images") {
-            // handle separately below
-            return;
-          }
+      //   // Go through all keys
+      //   Object.entries(formattedData).forEach(([key, value]) => {
+      //     if (key === "service_images") {
+      //       // handle separately below
+      //       return;
+      //     }
       
-          appendNested(key, value);
-        });
+      //     appendNested(key, value);
+      //   });
       
-        // Handle service_images separately to preserve image + is_main
-        formattedData.service_images.forEach((imgObj, i) => {
-          if (imgObj.image) {
-            formData.append(`service_images[${i}][image]`, imgObj.image); // File object
-          }
-          formData.append(`service_images[${i}][is_main]`, imgObj.is_main);
-        });
+      //   // Handle service_images separately to preserve image + is_main
+      //   formattedData.service_images.forEach((imgObj, i) => {
+      //     if (imgObj.image) {
+      //       formData.append(`service_images[${i}][image]`, imgObj.image); // File object
+      //     }
+      //     formData.append(`service_images[${i}][is_main]`, imgObj.is_main);
+      //   });
       
-        return formData;
-      };
+      //   return formData;
+      // };
       
 
 
-      const formDataToSend = buildFormData(formattedData);
+      // const formDataToSend = buildFormData(formattedData);
 
-      for(const pairs of formDataToSend.entries()) {
-        console.log(pairs[0] + ', ' + pairs[1]);
-      }
+      // for(const pairs of formDataToSend.entries()) {
+      //   console.log(pairs[0] + ', ' + pairs[1]);
+      // }
       
       try {
         setIsSubmitting(true);
         
         // Format data according to backend structure
         
-        const response = await authAxios.post('/vendors/services/create/', formDataToSend)
+        const response = await authAxios.post('/vendors/services/create/', formattedData)
         if (response.status === 201) {
           console.log('Service created successfully:', response.data);
         } else {
@@ -315,16 +315,16 @@ const AddServiceDialog = ({ open, onClose }) => {
     const images = [];
     
     // Add main image
-    if (values.mainImage) {
+    if (mainImagePreview) {
       images.push({
-        image: values.mainImage,
+        image: mainImagePreview,
         is_main: true
       });
     }
     
     // Add additional images
-    if (values.additionalImages && values.additionalImages.length > 0) {
-      values.additionalImages.forEach(img => {
+    if (additionalImagesPreviews && additionalImagesPreviews.length > 0) {
+      additionalImagesPreviews.forEach(img => {
         images.push({
           image: img,
           is_main: false
@@ -379,7 +379,9 @@ const AddServiceDialog = ({ open, onClose }) => {
       });
     }
 
-    const amenities = (values.amenities || values.instruments).map(item => ({
+    console.log(values)
+
+    const amenities = (values.amenities || values.instruments || values.dietaryOptions).map(item => ({
       name: item || '',
     }));
     
@@ -398,10 +400,10 @@ const AddServiceDialog = ({ open, onClose }) => {
       service_images: images,
       pricing: pricingData,
       // Include any service-specific fields
+      ...serviceSpecificData,
       amenities: amenities,
       service_quantity: serviceSpecificData.maxPlates || serviceSpecificData.maxClips || serviceSpecificData.capacity || '',
       service_mode: serviceSpecificData.venueType || serviceSpecificData.cuisineType || serviceSpecificData.style || serviceSpecificData.genre || serviceSpecificData.decorStyle || '',
-      ...serviceSpecificData
     };
   };
 
@@ -608,7 +610,7 @@ const AddServiceDialog = ({ open, onClose }) => {
               !formik.errors.availabilityStartDate && !formik.errors.availabilityEndDate &&
               (availabilityType === 'dateRange' || 
                (availabilityType === 'recurring' && recurringAvailability.length > 0) ||
-               (availabilityType === 'specific' && specificDateSlots.length > 0));
+               (availabilityType === 'specific_date' && specificDateSlots.length > 0));
       case 4: // Images
         return formik.values.mainImage && !formik.errors.mainImage;
       default:
@@ -915,8 +917,8 @@ const AddServiceDialog = ({ open, onClose }) => {
             />
             <FormControlLabel
               control={<Switch 
-                checked={availabilityType === 'specific'} 
-                onChange={() => setAvailabilityType('specific')}
+                checked={availabilityType === 'specific_date'} 
+                onChange={() => setAvailabilityType('specific_date')}
               />}
               label="Specific Dates and Times"
             />
@@ -1007,7 +1009,7 @@ const AddServiceDialog = ({ open, onClose }) => {
           </Box>
         )}
         
-        {availabilityType === 'specific' && (
+        {availabilityType === 'specific_date' && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom>
               Specific Date and Time Slots
@@ -1188,7 +1190,7 @@ const AddServiceDialog = ({ open, onClose }) => {
                 label="Service Type"
               >
                 <MenuItem value={SERVICE_TYPES.VENUE}>Venue</MenuItem>
-                <MenuItem value={SERVICE_TYPES.CATERING}>Catering</MenuItem>
+                <MenuItem value={SERVICE_TYPES.CATERER}>Caterer</MenuItem>
                 <MenuItem value={SERVICE_TYPES.PHOTOGRAPHY}>Photography</MenuItem>
                 <MenuItem value={SERVICE_TYPES.MUSIC}>Music</MenuItem>
                 <MenuItem value={SERVICE_TYPES.DECORATION}>Decoration</MenuItem>
