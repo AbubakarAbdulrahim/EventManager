@@ -1,0 +1,23 @@
+<!-- Leave a review -->
+{% extends 'base_email.html' %}
+
+{% block subject %}
+    {{ subject }}
+{% endblock %}
+
+{% block content %}
+
+<table width="100%" style="font-family: Arial, sans-serif; border-collapse: collapse;">
+    <tr>
+      <td style="padding: 20px;">
+        <h2 style="color: #9C27B0;">How Did It Go? Leave a Review!</h2>
+        <p>Hi {{ client_name }},</p>
+        <p>We hope your recent event went well! Help others by reviewing <strong>{{ vendor_name }}</strong>.</p>
+        <p><a href="{{ review_link }}" style="background-color: #9C27B0; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Leave a Review</a></p>
+        <p>Your feedback helps us improve and supports great vendors.</p>
+        <p>Thanks again,<br>The Event Master Team</p>
+      </td>
+    </tr>
+  </table>
+
+{% endblock %}

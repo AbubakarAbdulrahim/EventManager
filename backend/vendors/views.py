@@ -27,7 +27,7 @@ import datetime
 from django.contrib.auth import get_user_model
 from decouple import config
 from tasks.tasks import send_email_task
-from .availability import is_service_available
+# from .availability import is_service_available
 
 
 User = get_user_model()
@@ -53,16 +53,16 @@ class VendorCreateView(generics.CreateAPIView):
     # on creating
     def perform_create(self, serializer):
         vendor = serializer.save()
-        template_prefix = 'vendor_application'
+
+        template_prefix = 'vendor_emails/vendor_application'
         context = {
-            'vendor' : vendor,
-            'current_year' : datetime.now().year,
+            'vendor_username' : vendor.user.username,
+            'current_year' : datetime.datetime.now().year,
             'review_days' : '1 to 3 days',
             'support_email' : config('EMAIL_HOST_USER'),
             'subject' : 'Vendor Application Notification!'
         }
 
-        # send welcome email to a user
         send_email_task(
             subject='Welcome to Event Master!', 
             to_email=vendor.user.email, 
@@ -84,17 +84,18 @@ class VendorUpdateView(generics.UpdateAPIView):
         response = super().update(request, *args, **kwargs)
         
         vendor = Vendor.objects.get(user=request.user)
+        
         recent_users = User.objects.filter(
-            bookings__vendor=vendor
+            bookings__vendors=vendor
         ).distinct()
 
-        template_prefix = 'vendor_profile_update'
+        template_prefix = 'vendor_emails/vendor_profile_update'
         support_email = config('EMAIL_HOST_USER')
 
         context = {
-            'current_year': datetime.now().year,
+            'current_year': datetime.datetime.now().year,
             'subject': 'Vendor Profile Update Notification',
-            'vendor': vendor,
+            'vendor_username': vendor.user.username,
             'added_service': False,
             'update_profile': True,
             'vendor_profile_link': '/',
@@ -102,7 +103,7 @@ class VendorUpdateView(generics.UpdateAPIView):
         }
 
         for user in recent_users:
-            context['user'] = user
+            context['user_username'] = user.username
             send_email_task(
                 subject='Vendor Profile Update!',
                 to_email=user.email,
@@ -169,17 +170,19 @@ class ServiceCreateView(generics.CreateAPIView):
         response = super().create(request, *args, **kwargs)
 
         vendor = Vendor.objects.get(user=request.user)
+        
         recent_users = User.objects.filter(
-            bookings__vendor=vendor
+            bookings__vendors=vendor
         ).distinct()
 
-        template_prefix = 'vendor_profile_update'
+        template_prefix = 'vendor_emails/vendor_profile_update'
         support_email = config('EMAIL_HOST_USER')
 
         context = {
-            'current_year': datetime.now().year,
+            'current_year': datetime.datetime.now().year,
             'subject': 'Vendor Service Addition Notification',
-            'vendor': vendor,
+            'vendor_username': vendor.user.username,
+            'vendor_business_name' : vendor.business_name,
             'added_service': True,
             'update_profile': False,
             'vendor_profile_link': '/',
@@ -187,7 +190,7 @@ class ServiceCreateView(generics.CreateAPIView):
         }
 
         for user in recent_users:
-            context['user'] = user
+            context['user_username'] = user.username
             send_email_task(
                 subject='Vendor Profile Update!',
                 to_email=user.email,
@@ -218,17 +221,19 @@ class ServiceUpdateView(generics.UpdateAPIView):
         response = super().update(request, *args, **kwargs)
         
         vendor = Vendor.objects.get(user=request.user)
+        
         recent_users = User.objects.filter(
-            bookings__vendor=vendor
+            bookings__vendors=vendor
         ).distinct()
 
-        template_prefix = 'vendor_profile_update'
+        template_prefix = 'vendor_emails/vendor_profile_update'
         support_email = config('EMAIL_HOST_USER')
 
         context = {
-            'current_year': datetime.now().year,
+            'current_year': datetime.datetime.now().year,
             'subject': 'Vendor Service Update Notification',
-            'vendor': vendor,
+            'vendor_username': vendor.user.username,
+            'vendor_business_name' : vendor.business_name,
             'added_service': False,
             'update_profile': True,
             'vendor_profile_link': '/',
@@ -236,7 +241,7 @@ class ServiceUpdateView(generics.UpdateAPIView):
         }
 
         for user in recent_users:
-            context['user'] = user
+            context['user_username'] = user.username
             send_email_task(
                 subject='Vendor Profile Update!',
                 to_email=user.email,
@@ -320,13 +325,12 @@ class ServiceAvailabilityRetrievView(generics.RetrieveAPIView):
     #     return VendorPackageAvailability.filter(is_available=True)
 
 
-'''
-for email messages preview
-'''
+
+''' for users email preview '''
 
 # welcome email view
 class WelcomeEmailView(generic.TemplateView):
-    template_name = 'welcome.html'
+    template_name = 'user_emails/welcome.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -340,7 +344,7 @@ class WelcomeEmailView(generic.TemplateView):
     
 # password reset email view
 class PasswordResetEmailView(generic.TemplateView):
-    template_name = 'password_reset.html'
+    template_name = 'user_emails/password_reset.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -351,11 +355,13 @@ class PasswordResetEmailView(generic.TemplateView):
         context['duration'] = '1 hour'
 
         return context
-    
+
+
+''' for vendors email previews '''
 
 # profile update email view
 class VendorProfileUpdateEmailView(generic.TemplateView):
-    template_name = 'Vendor_profile_update.html'
+    template_name = 'vendor_emails/vendor_profile_update.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -370,31 +376,62 @@ class VendorProfileUpdateEmailView(generic.TemplateView):
 
         return context
     
-
-# request denial email view
-class RequestDenialEmailView(generic.TemplateView):
-    template_name = 'request_denial.html'
+# vendor request status email view
+class VendorRequestStatusEmailView(generic.TemplateView):
+    template_name = 'vendor_emails/vendor_request_status.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['current_year'] = datetime.datetime.now().year
         context['user'] = self.request.user
-        context['support_email'] = 'our_email@gmail.com'
-
+        context['support_email'] = config('EMAIL_HOST_USER')
+        context['status'] = 'approved'
+ 
         return context
     
-
 # vendor application email view
 class VendorApplicationEmailView(generic.TemplateView):
-    template_name = 'vendor_application.html'
+    template_name = 'vendor_emails/vendor_application.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
         context['current_year'] = datetime.datetime.now().year
         context['vendor'] = '/vendor/'
-        context['support_email'] = config('EMAIL_HOST_USER'),
+        context['support_email'] = config('EMAIL_HOST_USER')
         context['subject'] = 'Vendor Application Notification!'
         context['review_days'] = '1 to 3 days'
 
         return context
+    
+
+''' for bookings email previews'''
+
+# new booking email view
+class NewBookingEmailView(generic.TemplateView):
+    template_name = 'booking_emails/new_booking_alert.html'
+        
+# booking confirmed email view
+class BookingConfirmedEmailView(generic.TemplateView):
+    template_name = 'booking_emails/booking_confirmed.html'
+
+# booking canellation email view
+class BookingCancelledEmailView(generic.TemplateView):
+    template_name = 'booking_emails/booking_cancelled.html' 
+
+
+''' other email previews '''
+
+# event reminder email view
+class EventReminderEmailView(generic.TemplateView):
+    template_name = 'other_emails/event_reminder.html'
+
+# leave a review email view
+class LeaveReviewEmailView(generic.TemplateView):
+    template_name = 'other_emails/review.html'
+
+# new message email view
+class NewMessageEmailView(generic.TemplateView):
+    template_name = 'other_emails/new_message.html'
+
+

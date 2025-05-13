@@ -308,7 +308,6 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
     
     # create
     def create(self, validated_data):
-        request = self.context.get('request')
         amenities_data = validated_data.pop('amenities', [])
         recurring_availability_data = validated_data.pop('recurring_availability', [])
         specific_date_availability_data = validated_data.pop('specific_date_availability', [])

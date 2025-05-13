@@ -16,7 +16,7 @@
         <td style="padding:20px;">
             {% if status == 'approved' %}
                 <h2 style="color:#4CAF50;">Congratulations! Your Application is Approved</h2>
-                <p>Hi {{ user.username }},</p>
+                <p>Hi {{ user_username }},</p>
                 <p>We’re excited to let you know that your application to become a service provider on Event Master has been approved.</p>
                 <p>You can now log in and start offering your services to customers.</p>
                 <p>If you have any questions, feel free to contact us at {{ support_email }}.</p>
@@ -24,7 +24,7 @@
             
             {% elif status == 'rejected' %}
                 <h2 style="color:#F44336;">Update on Your Vendor Application</h2>
-                <p>Hi {{ user.username }},</p>
+                <p>Hi {{ user_username }},</p>
                 <p>Thank you for your interest in becoming a service provider on Event Master.</p>
                 <p>After carefully reviewing your application, we regret to inform you that your request has not been approved at this time.</p>
                 <p>If you believe this was a mistake or have additional information to support your application, feel free to contact us at {{ support_email }}.</p>
@@ -32,10 +32,10 @@
                 <p>Warm regards,<br>The Event Master Team</p>
             
             {% elif status == 'suspended' %}
-                <h2 style="color:#FF9800;">Important: Vendor Account Suspended</h2>
-                <p>Hi {{ user.username }},</p>
+                <h2 style="color:#FF5722;"> Vendor Account Suspended</h2>
+                <p>Hi {{ user_username }},</p>
                 <p>We wanted to let you know that your vendor account on Event Master has been temporarily suspended due to a violation of our terms or guidelines.</p>
-                <p>Please check your email for details or contact us at {{ support_email }} for further clarification.</p>
+                <p>Please contact us at {{ support_email }} for further clarification.</p>
                 <p>We value your partnership and hope to resolve this matter soon.</p>
                 <p>Best regards,<br>The Event Master Team</p>
             {% endif %}

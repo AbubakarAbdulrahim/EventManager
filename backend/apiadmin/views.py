@@ -48,7 +48,7 @@ class VendorAdminDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = VendorAdminSerializer
     permission_classes = [IsAdminRole]
 
-# handling suspending and activating vendors
+# handling suspending, approving and rejecting vendor accounts
 class VendorAdminSuspendActivateView(APIView):
     permission_classes = [IsAdminRole]
 
@@ -58,10 +58,10 @@ class VendorAdminSuspendActivateView(APIView):
         
         user = vendor.user
         context = {
-            'user' : user,
+            'user_username' : user.username,
             'support_email' : config('EMAIL_HOST_USER')
         }
-        template_prefix = 'request_denial'
+        template_prefix = 'vendor_emails/vendor_request_status'
         subject = 'Vendor Application Status'
 
         if action == 'approve':
@@ -144,6 +144,17 @@ class ServiceAdminSuspendActivateView(APIView):
         service = get_object_or_404(Service, pk=pk)
         action = request.data.get('request')
 
+        vendor = Vendor.objects.get(Service=service)
+        context = {
+            'vendor_username' : vendor.user.username,
+            'service_name' : service.service_name,
+            'vendor_dashboard_url' : '/',
+            'support_email' : config('EMAIL_HOST_USER')
+        }
+        template_prefix = 'service_emails/service_request_status'
+        subject = 'Service Listing Status'
+
+
         if action == 'approve':
 
             service.is_approved = True
@@ -153,6 +164,14 @@ class ServiceAdminSuspendActivateView(APIView):
             message = 'approved'
             service.save()
 
+            context['status'] = 'approved'
+            send_email_task(
+                subject=subject,
+                to_email=vendor.user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
+
         elif action == 'suspend':
 
             service.is_approved = False
@@ -161,6 +180,15 @@ class ServiceAdminSuspendActivateView(APIView):
             service.user.save()
             message = 'suspended'
             service.save()
+
+            context['status'] = 'suspended'
+            context['reason'] = '....'
+            send_email_task(
+                subject=subject,
+                to_email=vendor.user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
         
         elif action == 'reject':
 
@@ -169,6 +197,15 @@ class ServiceAdminSuspendActivateView(APIView):
             service.status = 'rejected'
             message = 'rejected'
             service.save()
+
+            context['status'] = 'rejected'
+            context['reason'] = '....'
+            send_email_task(
+                subject=subject,
+                to_email=vendor.user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
 
         return Response({"detail": f"vendor service {message} successfully"})
 
@@ -222,14 +259,40 @@ class UsersAdminSuspendActivateView(APIView):
     def post(self, request, pk):
         user = get_object_or_404(User, pk=pk)
         
+        context = {
+            'username' : user.username,
+            'support_email' : config('EMAIL_HOST_USER'),
+            'suspension_reason' : '',
+            'login_url' : '/'
+
+        }
+        template_prefix = 'user_emails/user_request_status'
+        subject = 'User Accounr Status'
+        
         if user.is_active == False:
             user.is_active = True
             user.save()
             message = 'approved'
+            
+            context['is_suspended'] = False
+            send_email_task(
+                subject=subject,
+                to_email=user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
 
         elif user.is_active == True:
             user.is_active = False
             user.save()
             message = 'suspended'
+
+            context['is_suspended'] = True
+            send_email_task(
+                subject=subject,
+                to_email=user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
 
         return Response({"detail": f"user {message} successfully"})

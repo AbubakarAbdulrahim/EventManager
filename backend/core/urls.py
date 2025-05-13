@@ -14,12 +14,26 @@ urlpatterns = [
     path('vendors/', include('vendors.urls')), # vendors app route
     
     
-    # for email previews
+    
+    # for users email previews
     path('welcome-email/', views.WelcomeEmailView.as_view(), name='welcome-email'),
     path('password-reset-email/', views.PasswordResetEmailView.as_view(), name='password-reset-email'),
-    path('vendor-profile-update-email/', views.VendorProfileUpdateEmailView.as_view(), name='profile-update-email'),
-    path('request-denial-email/', views.RequestDenialEmailView.as_view(), name='request-denial-email'),
-    path('vendor-application-email/', views.VendorApplicationEmailView.as_view(), name='vendor-application-email'),
+    
+    # for vendors
+    path('vendor-profile-update-email/', views.VendorProfileUpdateEmailView.as_view()),
+    path('vendor-request-status-email/', views.VendorRequestStatusEmailView.as_view()),
+    path('vendor-application-email/', views.VendorApplicationEmailView.as_view()),
+
+    # for bookings
+    path('new-booking-email/', views.NewBookingEmailView.as_view()),
+    path('booking-confirmed-email/', views.BookingConfirmedEmailView.as_view()),
+    path('booking-cancelled-email/', views.BookingCancelledEmailView.as_view()),
+
+    # other email previews
+    path('event-reminder-email/', views.EventReminderEmailView.as_view()),
+    path('leave-a-review-email/', views.LeaveReviewEmailView.as_view()),
+    path('new-message-email/', views.NewMessageEmailView.as_view()),
+
 ]
 
 

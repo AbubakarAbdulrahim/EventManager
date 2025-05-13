@@ -111,9 +111,9 @@ class UserCreateView(generics.CreateAPIView):
     # on create
     def perform_create(self, serializer):
         user = serializer.save()
-        template_prefix = 'welcome'
+        template_prefix = 'user_emails/welcome'
         context = {
-            'user' : user,
+            'username' : user.username,
             'current_year' : datetime.now().year,
             'dashboard_url' : '/',
             'email' : config('EMAIL_HOST_USER'),
@@ -141,11 +141,11 @@ class PasswordUpdateView(generics.UpdateAPIView):
         response = super().update(request, *args, **kwargs)
         
         user = request.user
-        template_prefix = 'password_reset'
+        template_prefix = 'user_emails/password_reset'
         context = {
             'current_year' : datetime.now().year,
             'subject' : 'Reset Your Password',
-            'user' : user,
+            'username' : user.username,
             'password_reset_link' : '/',
             'duration' : '1 hour'
         }
