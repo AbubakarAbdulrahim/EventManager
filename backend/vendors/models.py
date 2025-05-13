@@ -96,7 +96,7 @@ class ServiceSpecificDateAvailability(models.Model):
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-    is_available = models.BooleanField(default=True)
+    is_booked = models.BooleanField(default=True)
     
 # recurring availability table
 class ServiceRecurringAvailability(models.Model):
@@ -104,7 +104,7 @@ class ServiceRecurringAvailability(models.Model):
     day_of_the_week = models.PositiveIntegerField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-    is_available = models.BooleanField(default=True)
+    is_booked = models.BooleanField(default=True)
     
 # pricing table
 class ServicePricing(models.Model):

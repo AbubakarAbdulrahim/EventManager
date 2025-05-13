@@ -123,7 +123,7 @@ class SpecificDateAvailabilityRetrieveSerializer(serializers.ModelSerializer):
             "date",
             "start_time",
             "end_time",
-            "is_available",
+            "is_booked",
         ]
         read_only_fields = [
             "id",
@@ -152,7 +152,7 @@ class RecurringAvailabilityRetrieveSerializer(serializers.ModelSerializer):
             "day_of_the_week",
             "start_time",
             "end_time",
-            "is_available",
+            "is_booked",
         ]
         read_only_fields = [
             "service",

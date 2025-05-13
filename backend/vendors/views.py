@@ -4,6 +4,8 @@ from .models import (
     VendorCertificationImage,
     Service,
     ServiceImage,
+    ServiceRecurringAvailability,
+    ServiceSpecificDateAvailability
 )
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
@@ -17,10 +19,14 @@ from .serializer import(
     ServiceRetrieveSerializer,
     ServiceDestroySerializer,
     ServiceImageDestroySerializer,
+    RecurringAvailabilityCreateSerializer,
+    RecurringAvailabilityRetrieveSerializer,
+    SpecificDateAvailabilityCreateSerializer,
+    SpecificDateAvailabilityRetrieveSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.response import Response
 from django.views import generic
 import datetime
@@ -266,10 +272,90 @@ class ServiceDestroyView(generics.DestroyAPIView):
         return instance
 
 
+
 #
 #
 #
 
+
+# service availability detail view
+class ServiceAvailabilityDetailView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    lookup_field = 'service_id'
+
+    def get_queryset(self):
+        service_id = self.kwargs.get('service_id')
+        availability_type = self.request.query_params.get('availability_type')
+
+        try:
+            service = Service.objects.get(id=service_id)
+        except Service.DoesNotExist:
+            raise NotFound("Service not found")
+
+        if availability_type == 'recurring':
+            return ServiceRecurringAvailability.objects.filter(service=service)
+        elif availability_type == 'specific_date':
+            return ServiceSpecificDateAvailability.objects.filter(service=service)
+        
+        return ServiceRecurringAvailability.objects.none()
+
+    def get_serializer_class(self):
+        method = self.request.method
+        availability_type = self.request.data.get('availability_type') if method in ['PUT', 'PATCH'] else self.request.query_params.get('availability_type')
+
+        if method in ['PUT', 'PATCH']:
+            if availability_type == 'recurring':
+                return RecurringAvailabilityCreateSerializer
+            elif availability_type == 'specific_date':
+                return SpecificDateAvailabilityCreateSerializer
+        elif method == 'GET':
+            if availability_type == 'recurring':
+                return RecurringAvailabilityRetrieveSerializer
+            elif availability_type == 'specific_date':
+                return SpecificDateAvailabilityRetrieveSerializer
+
+        return super().get_serializer_class()
+
+    def update(self, request, *args, **kwargs):
+        availability_type = request.data.get('availability_type')
+        service_id = request.data.get('service_id')
+
+        try:
+            service = Service.objects.get(id=service_id)
+        except Service.DoesNotExist:
+            return Response({'detail': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Replace old availability with new
+        if availability_type == 'recurring':
+            ServiceRecurringAvailability.objects.filter(service=service).delete()
+            new_instance = ServiceRecurringAvailability.objects.create(
+                service=service,
+                day_of_the_week=request.data.get('day_of_the_week'),
+                start_time=request.data.get('start_time'),
+                end_time=request.data.get('end_time'),
+                is_booked=request.data.get('is_booked')
+            )
+            serializer = self.get_serializer(new_instance)
+        elif availability_type == 'specific_date':
+            ServiceSpecificDateAvailability.objects.filter(service=service).delete()
+            new_instance = ServiceSpecificDateAvailability.objects.create(
+                service=service,
+                date=request.data.get('date'),
+                start_time=request.data.get('start_time'),
+                end_time=request.data.get('end_time'),
+                is_booked=request.data.get('is_booked')
+            )
+            serializer = self.get_serializer(new_instance)
+        else:
+            return Response({'detail': 'Invalid availability type'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.data)
+
+
+
+#
+#
+#
 
 
 # service image update view
