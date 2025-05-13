@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import {Modal} from '@mui/material';
+import '../../services/leaflet-icon-fix'
+import OpenStreetMapView from '../../components/OpenStreetMapView'
+import { geocodePlace } from '../../services/geoCodePlace';
 import {
   Box,
   Container,
@@ -60,6 +63,7 @@ const transformServiceData = (backendData) => {
     name: service.service_name,
     type: service.service_type,
     location: service.location,
+    amenities: service.amenities,
     description: service.description,
     capacity: parseInt(service.service_quantity, 10),
     mode: service.service_mode,
@@ -167,6 +171,14 @@ const ServiceDetail = () => {
   const [bookings, setBookings] = useState([]);
   const [openSuccess, setOpenSuccess] = useState(false);
   const [selectedService, setSelectedService] = useState("");
+   const [coords, setCoords] = useState(null);
+
+   useEffect(() => {
+    geocodePlace(service?.location)
+      .then(setCoords)
+      .catch(console.error)
+      // .finally(() => setLoading(false));
+  }, [service?.location]);
 
   // First, let's update the useEffect to fetch both services and vendor details
 useEffect(() => {
@@ -192,7 +204,7 @@ useEffect(() => {
         // Store the service
         setService(foundService);
 
-        console.log(foundService.availability);
+        console.log(foundService);
         
         // Fetch vendor details using the vendor_id from the service
         if (foundService.provider.id) {
@@ -350,7 +362,9 @@ useEffect(() => {
     `Capacity: ${service.capacity} people`,
     `Location: ${service.location}`,
     `Type: ${service.type}`,
-    `Mode: ${service.mode || 'Standard'}`
+    `Mode: ${service.mode || 'Standard'}`,
+    `Amenities: ${service.amenities.map(item=> item.name)}`,
+
   ];
 
   return (
@@ -679,8 +693,9 @@ useEffect(() => {
                 }}
               >
                 <Typography variant="body1" color="text.secondary">
-                  Map showing location at {service.location}
+                  {/* Map showing location at {service.location} */}
                 </Typography>
+                  <OpenStreetMapView lat={coords.lat} lng={coords.lng} />
               </Paper>
             </>
           )}

@@ -96,16 +96,16 @@ import {
 } from 'recharts';
 
   const initialServices = [
-    { id: 1, name: 'Web Development', description: 'Custom website development services', price: 1500, isActive: true, customers: 12, income: 18000 },
-    { id: 2, name: 'Logo Design', description: 'Professional logo design service', price: 350, isActive: true, customers: 25, income: 8750 },
-    { id: 3, name: 'SEO Optimization', description: 'Search engine optimization services', price: 750, isActive: false, customers: 8, income: 6000 },
-  ];
+  { id: 1, name: 'Photography', description: 'Professional event photography services', price: 1200, isActive: true, customers: 10, income: 12000 },
+  { id: 2, name: 'Venue Rental', description: 'Spacious and well-decorated event venues', price: 5000, isActive: true, customers: 4, income: 20000 },
+  { id: 3, name: 'Catering Services', description: 'Delicious traditional and continental meals', price: 3000, isActive: false, customers: 6, income: 18000 },
+];
 
-  const initialCustomers = [
-    { id: 1, name: 'John Smith', email: 'john@example.com', company: 'ABC Corp', services: [1, 2], totalSpent: 1850 },
-    { id: 2, name: 'Sarah Johnson', email: 'sarah@example.com', company: 'XYZ Inc', services: [1], totalSpent: 1500 },
-    { id: 3, name: 'Michael Brown', email: 'michael@example.com', company: 'Acme Co', services: [2, 3], totalSpent: 1100 },
-  ];
+const initialCustomers = [
+  { id: 1, name: 'Amina Bello', email: 'amina.bello@example.com', company: 'Arewa Events', services: [1, 2], totalSpent: 6200 },
+  { id: 2, name: 'Musa Abdullahi', email: 'musa.abdullahi@example.com', company: 'Northern Touch', services: [1], totalSpent: 1200 },
+  { id: 3, name: 'Hauwa Yusuf', email: 'hauwa.yusuf@example.com', company: 'Zaria Planners', services: [2, 3], totalSpent: 8000 },
+];
 
 export default function Income  () {
     const [period, setPeriod] = useState('monthly');
@@ -142,7 +142,7 @@ export default function Income  () {
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="body1">
-              Total Revenue: ${getTotalIncome().toLocaleString()}
+              Total Revenue: ₦{getTotalIncome().toLocaleString()}
             </Typography>
             <Typography variant="body1">
               Services: {services.length}
@@ -172,9 +172,9 @@ export default function Income  () {
                   return (
                     <TableRow key={service.id}>
                       <TableCell>{service.name}</TableCell>
-                      <TableCell>${service.price}</TableCell>
+                      <TableCell>₦{service.price}</TableCell>
                       <TableCell>{service.customers}</TableCell>
-                      <TableCell>${service.income}</TableCell>
+                      <TableCell>₦{service.income}</TableCell>
                       <TableCell>{percentOfTotal.toFixed(1)}%</TableCell>
                     </TableRow>
                   );

@@ -767,7 +767,7 @@ const AddServiceDialog = ({ open, onClose }) => {
                     value={model.basePrice}
                     onChange={(e) => updatePricingModel(modelIndex, 'basePrice', e.target.value)}
                     InputProps={{
-                      startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
+                      startAdornment: <Typography sx={{ mr: 1 }}>₦</Typography>,
                       inputProps: { min: 0 }
                     }}
                   />
@@ -804,7 +804,7 @@ const AddServiceDialog = ({ open, onClose }) => {
                             value={pkg.price}
                             onChange={(e) => updatePackage(modelIndex, pkgIndex, 'price', e.target.value)}
                             InputProps={{
-                              startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
+                              startAdornment: <Typography sx={{ mr: 1 }}>₦</Typography>,
                               inputProps: { min: 0 }
                             }}
                           />

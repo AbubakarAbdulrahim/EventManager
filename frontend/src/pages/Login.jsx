@@ -95,7 +95,14 @@ export default function Login(props) {
 
     useEffect(() => {
       if (!loading && user) {
+          // Redirect based on role
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'vendor') {
+        navigate('/vendor');
+      } else {
         navigate('/dashboard');
+      }
       }
     }, [user,loading, navigate]);
   const formik = useFormik({

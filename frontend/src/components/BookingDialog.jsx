@@ -154,36 +154,65 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
       duration: '' 
     }));
     setIsSlotAvailable(null);
-    
+    const data =service?.availability
+    console.log(data);
     // Fetch available time slots for selected date
-    fetchAvailableTimeSlots(date);
+    fetchAvailableTimeSlots(date, data);
   };
   
   // Mock function to fetch available time slots for a date
-  const fetchAvailableTimeSlots = (date) => {
-    setLoadingTimeSlots(true);
-    
-    // Simulate API call to fetch available time slots
-    setTimeout(() => {
-      const selectedDate = date.format('YYYY-MM-DD');
-      console.log('Fetching time slots for:', selectedDate);
-      
-      // Generate time slots (in a real app, this would come from your backend)
-      const slots = [];
-      const startHour = 6; // 6 AM
-      const endHour = 20; // 8 PM
-      
-      // Generate hourly slots, skipping some to simulate unavailability
-      for (let hour = startHour; hour < endHour; hour++) {
-        if (![9, 13, 17].includes(hour)) { // Skip these hours to simulate unavailability
-          slots.push(`${hour}:00`);
-        }
+  const fetchAvailableTimeSlots = (date, availabilityData) => {
+  setLoadingTimeSlots(true);
+
+  setTimeout(() => {
+    const selectedDate = date.format('YYYY-MM-DD');
+    const selectedDay = date.day(); // 0 (Sun) to 6 (Sat)
+    let timeRange = null;
+
+    console.log('Fetching time slots for:', selectedDate);
+
+    // Check for specific date availability
+    const specific = availabilityData.specificDates?.find(
+      (entry) => entry.date === selectedDate && entry.is_available
+    );
+
+    if (specific) {
+      timeRange = { start: specific.start_time, end: specific.end_time };
+    } else if (availabilityData.type === 'recurring') {
+      // Check for recurring availability
+      const recurring = availabilityData.recurring?.find(
+        (entry) => entry.day_of_the_week === selectedDay && entry.is_available
+      );
+
+      console.log(recurring);
+
+      if (recurring) {
+        timeRange = { start: recurring.start_time, end: recurring.end_time };
       }
+    }
+
+    const slots = [];
+
+    if (timeRange) {
+      const [startHour, startMin] = timeRange.start.split(':').map(Number);
+      const [endHour, endMin] = timeRange.end.split(':').map(Number);
       
-      setAvailableTimeSlots(slots);
-      setLoadingTimeSlots(false);
-    }, 800);
-  };
+      const start = new Date(`1970-01-01T${timeRange.start}`);
+      const end = new Date(`1970-01-01T${timeRange.end}`);
+      
+      console.log(start, end);
+      while (start < end) {
+        const hour = String(start.getHours()).padStart(2, '0');
+        const minute = String(start.getMinutes()).padStart(2, '0');
+        slots.push(`${hour}:${minute}`);
+        start.setMinutes(start.getMinutes() + 60); // hourly slots
+      }
+    }
+
+    setAvailableTimeSlots(slots);
+    setLoadingTimeSlots(false);
+  }, 800);
+};
   
   // Handle time slot selection
   const handleTimeSelect = (time) => {
@@ -209,30 +238,46 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   };
   
   // Mock function to check if the time slot is available for the specified duration
-  const checkTimeSlotAvailability = (time, duration) => {
-    setCheckingAvailability(true);
-    setError('');
+  
+const checkTimeSlotAvailability = (time, duration) => {
+  setCheckingAvailability(true);
+  setError('');
+
+  // Simulated booked slots (replace this with actual API data)
+  const bookedSlots = [
+    { start: '10:00', end: '12:00' },
+    { start: '14:00', end: '15:30' },
+  ];
+
+  setTimeout(() => {
+    const [startHour, startMin] = time.split(':').map(Number);
+    const durationMins = parseFloat(duration) * 60;
     
-    // Simulate API call to check availability
-    setTimeout(() => {
-      const timeHour = parseInt(time.split(':')[0]);
-      const durationHours = parseFloat(duration);
-      
-      // Simulate some conflicts in the database
-      // For demo purposes, let's say any booking that ends after 5PM is unavailable
-      // or any booking longer than 5 hours is unavailable
-      const endTimeHour = timeHour + durationHours;
-      const isAvailable = endTimeHour <= 17 && durationHours <= 5;
-      
-      setIsSlotAvailable(isAvailable);
-      
-      if (!isAvailable) {
-        setError('This time slot is not available for the selected duration. Please choose a different time or duration.');
+    const bookingStart = new Date(`1970-01-01T${time}`);
+    const bookingEnd = new Date(bookingStart.getTime() + durationMins * 60000);
+
+    let conflict = false;
+
+    for (let slot of bookedSlots) {
+      const slotStart = new Date(`1970-01-01T${slot.start}`);
+      const slotEnd = new Date(`1970-01-01T${slot.end}`);
+
+      if (bookingStart < slotEnd && bookingEnd > slotStart) {
+        conflict = true;
+        break;
       }
-      
-      setCheckingAvailability(false);
-    }, 800);
-  };
+    }
+
+    setIsSlotAvailable(!conflict);
+
+    if (conflict) {
+      setError('This time slot overlaps with an existing booking.');
+    }
+
+    setCheckingAvailability(false);
+  }, 800);
+};
+
   
   // Handle submit review
   const handleSubmitReview = () => {

@@ -97,12 +97,13 @@ import {
 
 
 const recentBookings = [
-    { id: 'BK001', customer: 'John Doe', service: 'Photography', vendor: 'ProShots Inc.', date: '2025-04-22', amount: 1200, status: 'Completed' },
-    { id: 'BK002', customer: 'Jane Smith', service: 'Catering', vendor: 'Delicious Foods', date: '2025-04-23', amount: 2500, status: 'Upcoming' },
-    { id: 'BK003', customer: 'Mike Johnson', service: 'Venue', vendor: 'Grand Ballroom', date: '2025-04-25', amount: 5000, status: 'Pending' },
-    { id: 'BK004', customer: 'Sarah Williams', service: 'DJ Services', vendor: 'Beat Masters', date: '2025-04-20', amount: 800, status: 'Completed' },
-    { id: 'BK005', customer: 'Robert Brown', service: 'Decor', vendor: 'Elegant Designs', date: '2025-04-24', amount: 1500, status: 'Cancelled' },
-  ];
+  { id: 'BK001', customer: 'Fatima Musa', service: 'Photography', vendor: 'Arewa Lens Studio', date: '2025-04-22', amount: 1200, status: 'Completed' },
+  { id: 'BK002', customer: 'Abubakar Sani', service: 'Catering', vendor: 'Lafiya Kitchen', date: '2025-04-23', amount: 2500, status: 'Upcoming' },
+  { id: 'BK003', customer: 'Zainab Aliyu', service: 'Venue Rental', vendor: 'Kano Royal Hall', date: '2025-04-25', amount: 5000, status: 'Pending' },
+  { id: 'BK004', customer: 'Umar Bello', service: 'DJ Services', vendor: 'Sauti Vibes', date: '2025-04-20', amount: 800, status: 'Completed' },
+  { id: 'BK005', customer: 'Aisha Ibrahim', service: 'Event Decor', vendor: 'Zamani Events', date: '2025-04-24', amount: 1500, status: 'Cancelled' },
+];
+
   
 
 export default function Bookings() {

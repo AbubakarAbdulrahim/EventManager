@@ -143,7 +143,7 @@ export default function Dashboard() {
               Revenue
             </Typography>
             <Typography component="p" variant="h4">
-              $45,756
+              ₦45,756
             </Typography>
             <Typography variant="body2" sx={{ flex: 1 }}>
               23% increase from last month
@@ -191,7 +191,7 @@ export default function Dashboard() {
                 <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
                 <Tooltip />
                 <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#033043" activeDot={{ r: 8 }} name="Revenue ($)" />
+                <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#033043" activeDot={{ r: 8 }} name="Revenue (₦)" />
                 <Line yAxisId="right" type="monotone" dataKey="bookings" stroke="#82ca9d" name="Bookings" />
               </LineChart>
             </ResponsiveContainer>
@@ -260,7 +260,7 @@ export default function Dashboard() {
                       <TableCell>{booking.service}</TableCell>
                       <TableCell>{booking.vendor}</TableCell>
                       <TableCell>{booking.date}</TableCell>
-                      <TableCell align="right">${booking.amount}</TableCell>
+                      <TableCell align="right">₦{booking.amount}</TableCell>
                       <TableCell>
                         <Chip 
                           label={booking.status} 
