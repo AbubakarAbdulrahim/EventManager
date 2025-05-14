@@ -132,15 +132,9 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
               style={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}
             >
-              <Box sx={{ 
-                width: 36, 
-                height: 36, 
-                borderRadius: '50%', 
-                bgcolor: 'white',
-                mr: 1
-              }} />
+              <img src="./EventMaster.png" height={'36'} alt="" />
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white' }}>
-                EventBook
+                EventMaster
               </Typography>
             </motion.div>
             
@@ -808,15 +802,8 @@ export default function HomePage() {
           <Grid container spacing={4}>
             <Grid item xs={12} md={4}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ 
-                  width: 24, 
-                  height: 24, 
-                  borderRadius: '50%', 
-                  bgcolor: primaryColor,
-                  mr: 1
-                }} />
                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: primaryColor }}>
-                  EventBook
+                  EventMaster
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" paragraph>
@@ -907,7 +894,7 @@ export default function HomePage() {
           <Divider sx={{ my: 4 }} />
           
           <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} EventBook. All rights reserved.
+            © {new Date().getFullYear()} EventMaster. All rights reserved.
           </Typography>
         </Container>
       </Box>

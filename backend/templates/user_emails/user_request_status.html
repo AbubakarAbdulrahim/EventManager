@@ -1,0 +1,33 @@
+<!-- Password Reset -->
+{% extends 'base_email.html' %}
+
+{% block subject %}
+    {{ subject }}
+{% endblock %}
+
+{% block content %}
+
+<table width="100%" style="font-family: Arial, sans-serif; border-collapse: collapse;">
+    <tr>
+      <td style="padding: 20px;">
+        {% if is_suspended %}
+          <h2 style="color: #F44336;">Your Account Has Been Suspended</h2>
+          <p>Hi {{ username }},</p>
+          <p>We're reaching out to inform you that your account has been temporarily suspended due to:</p>
+          <p><strong>{{ suspension_reason }}</strong></p>
+          <p>If you believe this was a mistake or need more information, please contact support at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+          <p>Regards,<br>The Event Master Team</p>
+        {% else %}
+          <h2 style="color: #4CAF50;">Your Account Has Been Reactivated</h2>
+          <p>Hi {{ username }},</p>
+          <p>Good news! Your account suspension has been lifted and your access has been restored.</p>
+          <p>You can now log back in and continue using Event Master:</p>
+          <p><a href="{{ login_url }}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Dashboard</a></p>
+          <p>Thanks for your patience.</p>
+          <p>Cheers,<br>The Event Master Team</p>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+  {% endblock %}

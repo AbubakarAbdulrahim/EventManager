@@ -89,10 +89,10 @@ export default function Login(props) {
     });
     const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
-    const { user, loading, login } = useAuth();
-    const [error, setError] = useState(null);
+    const { user, loading, login, error } = useAuth();
+    // const [error, setError] = useState(null);
     const [logLoading, setLogLoading] = useState(false)
-
+    
     useEffect(() => {
       if (!loading && user) {
           // Redirect based on role
@@ -122,16 +122,18 @@ export default function Login(props) {
         
       } catch (error) {
         console.error('Login failed:', error);
-        const message = error.message || '';
+        const message = error.response.data || '';
+        console.log(message);
       
-        if (message.includes('Invalid') || message.includes('Login')) {
-          setError(message);
-        } else {
-          setError('An unexpected error occurred.');
-        }
+        // if (message.includes('Invalid') || message.includes('Login')) {
+          // setError(message);
+        // } else {
+        //   setError('An unexpected error occurred.');
+        // }
       } finally {
         setLogLoading(false)
       }
+      console.log(error);
       // alert(JSON.stringify(values, null, 2));
       // navigate("/dashboard")
     },
@@ -322,11 +324,11 @@ export default function Login(props) {
       {error && (
         <Snackbar
         open={Boolean(error)}
-        autoHideDuration={2000}
-        onClose={() => setError(null)}
+        autoHideDuration={500}
+        // onClose={() => setError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={() => setError(null)}  severity="error" sx={{ width: '100%' }}>
+        <Alert   severity="error" sx={{ width: '100%' }}>
           {error}
         </Alert>
       </Snackbar>

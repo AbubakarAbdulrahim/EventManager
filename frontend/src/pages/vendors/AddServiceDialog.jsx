@@ -29,6 +29,8 @@ import {
   FormControlLabel,
   Checkbox,
   Switch,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
@@ -151,13 +153,17 @@ const DAYS_OF_WEEK = [
 ];
 
 // Main component
-const AddServiceDialog = ({ open, onClose }) => {
+const AddServiceDialog = ({ open, onClose, title, service }) => {
   const {authAxios} = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [chipInputs, setChipInputs] = useState({});
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [mainImagePreview, setMainImagePreview] = useState(null);
   const [additionalImagesPreviews, setAdditionalImagesPreviews] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [newChip, setNewChip] = useState({});
   
   // State for new features
@@ -282,29 +288,36 @@ const AddServiceDialog = ({ open, onClose }) => {
         const response = await authAxios.post('/vendors/services/create/', formattedData)
         if (response.status === 201) {
           console.log('Service created successfully:', response.data);
+            setSnackbarMessage('Service created successfully!');
+            setSnackbarSeverity('success');
+            setSnackbarOpen(true);
         } else {
           console.error('Error creating service:', response.data);
+            setSnackbarMessage('Error creating service. Please try again.');
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
         }
         
-
-        console.log('Submitting service data:', formattedData);
         
         
         
         setIsSubmitting(false);
-        // onClose();
+        onClose();
         // Reset form
-        // formik.resetForm();
-        // setActiveStep(0);
-        // setPricingModels([]);
-        // setRecurringAvailability([]);
-        // setSpecificDateSlots([]);
-        // setMainImagePreview(null);
-        // setAdditionalImagesPreviews([]);
-        // setAvailabilityType('dateRange');
+        formik.resetForm();
+        setActiveStep(0);
+        setPricingModels([]);
+        setRecurringAvailability([]);
+        setSpecificDateSlots([]);
+        setMainImagePreview(null);
+        setAdditionalImagesPreviews([]);
+        setAvailabilityType('dateRange');
       } catch (error) {
         setIsSubmitting(false);
         console.error('Error submitting service:', error);
+        setSnackbarMessage('An error occurred while submitting the service. Please try again.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
     }
   });
@@ -381,10 +394,15 @@ const AddServiceDialog = ({ open, onClose }) => {
 
     console.log(values)
 
-    const amenities = (values.amenities || values.instruments || values.dietaryOptions).map(item => ({
+    let amenities = (values.amenities || values.instruments || values.dietaryOptions || values.materials || []).map(item => ({
       name: item || '',
     }));
     
+    if(values.equipmentDetails){
+      amenities = [{
+        name: values.equipmentDetails
+      }]
+    }
     
     // Combine all data
     return {
@@ -1259,6 +1277,8 @@ const AddServiceDialog = ({ open, onClose }) => {
   };
 
   return (
+    <>
+
     <Dialog 
       open={open} 
       onClose={onClose}
@@ -1267,7 +1287,7 @@ const AddServiceDialog = ({ open, onClose }) => {
       scroll="paper"
     >
       <DialogTitle variant='h5'>
-        Add New Service
+        {title}
       </DialogTitle>
       
       <DialogContent dividers>
@@ -1302,6 +1322,23 @@ const AddServiceDialog = ({ open, onClose }) => {
         </Button>
       </DialogActions>
     </Dialog>
+    {/* Snackbar notifications */}
+      <Snackbar 
+        open={snackbarOpen} 
+        autoHideDuration={2000} 
+        onClose={()=>{setSnackbarOpen(false)}}
+        anchorOrigin={{ vertical: 'top', horizontal:'center' }}
+      >
+        <Alert 
+          onClose={()=>{setSnackbarOpen(false)}}
+          severity={snackbarSeverity} 
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

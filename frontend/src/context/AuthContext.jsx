@@ -15,6 +15,8 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasTriedRefresh, setHasTriedRefresh] = useState(false);
+
   const navigate = useNavigate();
 
   const accessTokenRef = useRef(null);
@@ -25,17 +27,31 @@ export const AuthProvider = ({ children }) => {
     accessTokenRef.current = accessToken;
   }, [accessToken]);
 
-  // Auto-run on first mount
   useEffect(() => {
-    const initAuth = async () => {
-      if (initializedRef.current) return;
-      initializedRef.current = true;
+  const initAuth = async () => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
 
-      await refreshToken();
+    try {
+      const token = await refreshToken();
+      if (token) {
+        setAccessToken(token);
+      } else {
+        setAccessToken(null);
+        setUser(null);
+      }
+    } catch {
+      setAccessToken(null);
+      setUser(null);
+    } finally {
       setLoading(false);
-    };
-    initAuth();
-  }, []);
+    }
+  };
+
+  initAuth();
+}, []);
+
+
 
   // Axios 401 handler
   useEffect(() => {
@@ -43,7 +59,7 @@ export const AuthProvider = ({ children }) => {
       (res) => res,
       async (err) => {
         const original = err.config;
-        if (err.response?.status === 401 && !original._retry) {
+        if (err.response?.status === 401 && !original._retry && accessTokenRef.current) {
           original._retry = true;
           const newToken = await refreshToken();
           if (newToken) {
@@ -60,31 +76,32 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
-    try {
-      setLoading(true);
-      const res = await authAxios.post('/user/token/', credentials);
-      const { access } = res.data;
+  try {
+    setLoading(true);
+    const res = await authAxios.post('/user/token/', credentials);
+    const { access } = res.data;
 
-      setAccessToken(access);
-      const decoded = jwtDecode(access);
-      const userId = decoded.user_id;
+    setAccessToken(access);
+    const decoded = jwtDecode(access);
+    const userId = decoded.user_id;
 
-      const userRes = await authAxios.get(`/user/${userId}/`, {
-        headers: { Authorization: `Bearer ${access}` },
-      });
+    const userRes = await authAxios.get(`/user/${userId}/`, {
+      headers: { Authorization: `Bearer ${access}` },
+    });
 
-      setUser(userRes.data);
-      setError(null);
-    } catch (err) {
-      setAccessToken(null);
-      setUser(null);
-      const msg = err.response?.data?.message || 'Login failed';
-      setError(msg);
-      throw new Error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setUser(userRes.data);
+    setError(null);
+  } catch (err) {
+    console.error("Login failed:", err);
+    setAccessToken(null);
+    setUser(null);
+    setError("Invalid username or password");
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const logout = async () => {
     try {
@@ -99,39 +116,38 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshToken = async () => {
+  try {
+    const response = await authAxios.post('/user/token/refresh/');
+    const { access } = response.data;
+
+    if (!access) return null;
+
+    setAccessToken(access);
+
+    // Try decoding and fetching user
     try {
-      const response = await authAxios.post('/user/token/refresh/');
-      const { access } = response.data;
-  
-      if (!access) {
-        return null;
-      }
-  
-      setAccessToken(access);
-      const decodedToken = jwtDecode(access);
-      const userId = decodedToken.user_id;
-  
+      const decoded = jwtDecode(access);
+      const userId = decoded.user_id;
+
       const userResponse = await authAxios.get(`/user/${userId}/`, {
         headers: { Authorization: `Bearer ${access}` },
       });
-  
+
       setUser(userResponse.data);
-      setError(null);
-  
-      return access;
     } catch (err) {
-      // ❗Don't logout if already unauthenticated (prevents loop)
-      if (user) {
-        await logout(); // Only logout if user was logged in
-      } else {
-        setAccessToken(null);
-        setUser(null);
-      }
-  
-      setError('Session expired');
+      console.error("User fetch failed after refresh:", err);
+      // Prevent loop if user doesn't exist
       return null;
     }
-  };
+
+    return access;
+  } catch (err) {
+    console.error("Refresh token invalid:", err);
+    return null;
+  }
+};
+
+
   
 
 

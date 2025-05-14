@@ -97,7 +97,7 @@ export default function ServicesCard({service}) {
     bookedService = booked;
 
   }
-  console.log(service.image);
+  // console.log(service.image);
 
   
     return (

@@ -5,12 +5,15 @@ import {
   Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tab, Tabs, 
   Avatar, Chip, MenuItem, Select, FormControl, InputLabel, Switch, FormControlLabel, 
-  Alert, CircularProgress, Badge, ThemeProvider, createTheme, useTheme
+  Alert, CircularProgress, Badge, ThemeProvider, createTheme, useTheme,
+  ImageList,
+    ImageListItem,
+    Modal, Snackbar,
 } from '@mui/material';
 import { 
   Dashboard as DashboardIcon, AddCircle, Delete, Edit, Visibility, 
   VisibilityOff, Person, Business, AttachMoney, Settings as SettingsIcon, 
-  Logout, Menu as MenuIcon, Search, CheckCircle, Cancel, Star
+  Logout, Menu as MenuIcon, Search, CheckCircle, Cancel, Star, Close as CloseIcon, ZoomIn as ZoomInIcon
 } from '@mui/icons-material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -25,7 +28,6 @@ const initialServices = [
   ];
 
   const transformedData= (data) => {
-    console.log(data);
     return data.map((service) => ({
       id: service.id,
       name: service.service_name,
@@ -34,6 +36,7 @@ const initialServices = [
       isActive: service.status,
       customers: service.customers || 10,
       income: service.pricing[0].base_price * (service.customers || 10),
+      service_images: service.service_images
     }));
   }
 
@@ -42,26 +45,67 @@ export default function Services  () {
     const [services, setServices] = useState(initialServices);
     const [serviceFormOpen, setServiceFormOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
+    const [selectedService, setSelectedService] = useState(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [selectedImage, setSelectedImage] = useState('');
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
     
     const handleClose = () => {
         setServiceFormOpen(false);
         setEditingService(null);
     }
 
-    useEffect(() => {
-        const fetchServices = async () => {
-            try {
-                const response = await authAxios.get('vendors/services/');
-                const transformedServices = transformedData(response.data);
-                setServices(transformedServices);
-            } catch (error) {
-                console.error('Error fetching services:', error);
-            }
-        };
-        fetchServices();
+    const handleOpenDialog = (service) => {
+      setSelectedService(service);
+      setDialogOpen(true);
+    };
     
+    const handleCloseDialog = () => {
+      setSelectedService(null);
+      setDialogOpen(false);
+    };
+
+    const handleOpenImage = (imageUrl) => {
+    setSelectedImage(imageUrl.image);
+    setImageModalOpen(true);
+  };
+
+    const handleCloseImageModal = () => {
+      setImageModalOpen(false);
+      setSelectedImage('');
+    };
+
+    useEffect(() => {
+      const fetchServices = async () => {
+        try {
+          const response = await authAxios.get('vendors/services/');
+          const transformedServices = transformedData(response.data);
+          setServices(transformedServices);
+        } catch (error) {
+          console.error('Error fetching services:', error);
+        }
+      };
+
+      fetchServices();
     }, []);
 
+    const handleDelete = async (serviceId) => {
+      try {
+      await authAxios.delete(`vendors/services/${serviceId}/delete/`);
+      setServices(services.filter((service) => service.id !== serviceId));
+      setSnackbarMessage('Service deleted successfully!');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      } catch (error) {
+      console.error('Error deleting service:', error);
+      setSnackbarMessage('Failed to delete service.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      }
+    };
 
 
     return(
@@ -99,11 +143,19 @@ export default function Services  () {
             </TableRow>
           </TableHead>
           <TableBody>
-            {services.map((service) => (
+            {services.length > 0 ? services.map((service) => (
               <TableRow key={service.id}>
                 <TableCell>{service.id}</TableCell>
                 <TableCell>{service.name}</TableCell>
-                <TableCell>{service.description}</TableCell>
+                <TableCell sx={{maxWidth:200}} >
+                  <Typography
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  >{service.description}</Typography>
+                </TableCell>
                 <TableCell align='center' >₦{service.price}</TableCell>
                 <TableCell align='center'>{service.customers}</TableCell>
                 <TableCell>₦{service.income}</TableCell>
@@ -119,165 +171,197 @@ export default function Services  () {
                     variant="outlined"
                     color="primary"
                     size='small'
+                    onClick={() => handleOpenDialog(service)}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size='small'
                     onClick={() => {
-                      setEditingService(service);
+                      setEditingService(service.id);
                       setServiceFormOpen(true);
                     }}
                   >
                     Edit
                     </Button>
+                  
                     <Button
                     variant="outlined"
                     size='small'
                     color="error"
                     onClick={() => {
-                      setServices(services.filter((s) => s.id !== service.id));
+                      handleDelete(service.id)
                     }}
                   >
                     Delete
                     </Button>
-                    <Button
-                    variant="outlined"
-                    size='small'
-                    color={service.isActive ? 'warning' : 'success'}
-                    onClick={() => {
-                      setServices(services.map((s) => 
-                        s.id === service.id ? { ...s, isActive: !s.isActive } : s
-                      ));
-                    }}
-                    >
-                    {service.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
                 </TableCell>
               </TableRow>
-            ))}
+            )) :
+            <TableRow>
+                <TableCell align='center' colSpan={8}>
+                    <Typography>
+                      No services added yet.
+                    </Typography>   
+                </TableCell>
+            </TableRow>
+            }
           </TableBody>
         </Table>
       </TableContainer>
 
       {/* Service Form Dialog */}
-      <AddServiceDialog open={serviceFormOpen} onClose={handleClose} />
-      <Dialog 
-        // open={serviceFormOpen} 
-        // onClose={() => {
-        //   setServiceFormOpen(false);
-        //   setEditingService(null);
-        // }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          {editingService ? 'Edit Service' : 'Add New Service'}
-        </DialogTitle>
-        <Formik
-          initialValues={
-            editingService 
-              ? { ...editingService } 
-              : { name: '', description: '', price: '', isActive: true }
-          }
-          validationSchema={Yup.object({
-            name: Yup.string().required('Name is required'),
-            description: Yup.string().required('Description is required'),
-            price: Yup.number()
-              .required('Price is required')
-              .positive('Price must be positive'),
-          })}
-          onSubmit={values => {
-            const serviceData = {
-              ...values,
-              price: Number(values.price)
-            };
-            
-            if (editingService) {
-              handleEditService(serviceData);
-            } else {
-              handleAddService(serviceData);
-            }
-          }}
+      <AddServiceDialog open={serviceFormOpen} onClose={handleClose} title={editingService ? 'Edit Service' : 'Add New Service'} service={selectedService} />
+
+      {/* Service Details Dialog */}
+      {selectedService && (
+        <Dialog
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          fullWidth
+          maxWidth="md"
         >
-          {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
-            <Form>
-              <DialogContent>
-                <Box mb={2}>
-                  <TextField
-                    fullWidth
-                    id="name"
-                    name="name"
-                    label="Service Name"
-                    value={values.name}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.name && Boolean(errors.name)}
-                    helperText={touched.name && errors.name}
-                  />
-                </Box>
-                
-                <Box mb={2}>
-                  <TextField
-                    fullWidth
-                    id="description"
-                    name="description"
-                    label="Description"
-                    multiline
-                    rows={3}
-                    value={values.description}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.description && Boolean(errors.description)}
-                    helperText={touched.description && errors.description}
-                  />
-                </Box>
-                
-                <Box mb={2}>
-                  <TextField
-                    fullWidth
-                    id="price"
-                    name="price"
-                    label="Price (₦)"
-                    type="number"
-                    value={values.price}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.price && Boolean(errors.price)}
-                    helperText={touched.price && errors.price}
-                  />
-                </Box>
-                
-                <FormControlLabel
-                  control={
-                    <Switch
-                      name="isActive"
-                      checked={values.isActive}
-                      onChange={handleChange}
-                      color="primary"
-                    />
-                  }
-                  label="Active"
-                />
-              </DialogContent>
-              
-              <DialogActions>
-                <Button 
-                  onClick={() => {
-                    setServiceFormOpen(false);
-                    setEditingService(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  variant="contained" 
-                  color="primary"
-                  disabled={isSubmitting}
-                >
-                  {editingService ? 'Update' : 'Add'}
-                </Button>
-              </DialogActions>
-            </Form>
-          )}
-        </Formik>
-      </Dialog>
+          <DialogTitle>
+            Service Details
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseDialog}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={12}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>Service Information</Typography>
+                    <Typography variant="body1"><strong>Name:</strong> {selectedService.name}</Typography>
+                    <Typography variant="body1"><strong>Description:</strong> {selectedService.description}</Typography>
+                    <Typography variant="body1"><strong>Price:</strong> ₦{selectedService.price}</Typography>
+                    <Typography variant="body1"><strong>Customers:</strong> {selectedService.customers}</Typography>
+                    <Typography variant="body1"><strong>Income:</strong> ₦{selectedService.income}</Typography>
+                    <Typography variant="body1"><strong>Status:</strong> {selectedService.isActive ? 'Active' : 'Inactive'}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Service Images:
+                    </Typography>
+                    
+                    <ImageList cols={3} gap={16}>
+                      {selectedService?.service_images.map((img, index) => (
+                        <ImageListItem 
+                          key={index} 
+                          sx={{ 
+                            cursor: 'pointer',
+                            '&:hover': {
+                              opacity: 0.9,
+                              transition: 'opacity 0.2s'
+                            }
+                          }}
+                          onClick={() => handleOpenImage(img)}
+                        >
+                          <img
+                            src={img.image}
+                            alt={`Certification ${index + 1}`}
+                            loading="lazy"
+                            style={{ height: '150px', objectFit: 'cover' }}
+                          />
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: 0,
+                              right: 0,
+                              backgroundColor: 'rgba(0,0,0,0.5)',
+                              color: 'white',
+                              p: 0.5,
+                              borderTopLeftRadius: 4
+                            }}
+                          >
+                            <ZoomInIcon fontSize="small" />
+                          </Box>
+                        </ImageListItem>
+                      ))}
+                    </ImageList>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} variant="outlined">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+        {/* Image Modal for viewing larger images */}
+        <Modal
+          open={imageModalOpen}
+          onClose={handleCloseImageModal}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            maxWidth: '90%',
+            maxHeight: '90%',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 1,
+            outline: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}>
+            <img 
+              src={selectedImage} 
+              alt="Certificate" 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: 'calc(90vh - 100px)',
+                objectFit: 'contain' 
+              }} 
+            />
+            <Button 
+              onClick={handleCloseImageModal} 
+              sx={{ mt: 2 }}
+              variant="contained"
+            >
+              Close
+            </Button>
+          </Box>
+        </Modal>
+        {/* Snackbar notifications */}
+        <Snackbar 
+          open={snackbarOpen} 
+          autoHideDuration={2000} 
+          onClose={()=>{setSnackbarOpen(false)}}
+          anchorOrigin={{ vertical: 'top', horizontal:'center' }}
+        >
+          <Alert 
+            onClose={()=>{setSnackbarOpen(false)}}
+            severity={snackbarSeverity} 
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
     </Container>
     )
 

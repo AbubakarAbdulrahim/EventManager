@@ -59,11 +59,11 @@ const SearchSection = styled(Box)(({ theme }) => ({
 
 import { useEffect } from 'react';
 
-import { mockServices } from '../services/mockServices';
+// import { mockServices } from '../services/mockServices';
 
 
 const transformServiceData = (backendData) => {
-  console.log(backendData);
+  // console.log(backendData);
   return backendData.map(service => ({
     id: service.id,
     type: service.service_type,
@@ -77,12 +77,12 @@ const transformServiceData = (backendData) => {
 };
 
 
-const data = transformServiceData(mockServices);
+// const data = transformServiceData(mockServices);
   
 
 const EventPlanningDashboard = ( props) => {
   const { fetchServices} = useAuth()
-    const [services, setServices] = useState(data);
+    const [services, setServices] = useState([]);
     const [bookings, setBookings] = useState([]);
     // const [selectedService, setSelectedService] = useState("");
     // const [bookingOpen, setBookingOpen] = useState(false);
