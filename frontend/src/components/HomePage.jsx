@@ -11,6 +11,7 @@ import {
   CameraAlt, MusicNote, Restaurant, Room, Brush, 
   CalendarToday, Search, People, ArrowForward, Menu, Close 
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 // Main colors: primary #033043, secondary #0a7273
 const primaryColor = '#033043';
@@ -48,6 +49,7 @@ export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+  const navigate = useNavigate()
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -155,6 +157,7 @@ export default function HomePage() {
                     bgcolor: '#086263'
                   }
                 }}
+                onClick={()=>{navigate('/register')}}
               >
                 Sign Up
               </Button>
@@ -165,6 +168,7 @@ export default function HomePage() {
                   borderColor: 'grey.300',
                   color: '#fff'
                 }}
+                onClick={()=>{navigate('/login')}}
               >
                 Log In
               </Button>
