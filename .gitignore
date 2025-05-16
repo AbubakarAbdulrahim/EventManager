@@ -1,0 +1,12 @@
+env/
+.vscode/
+.idea/
+static/
+media/
+*.log
+.env
+*/__pycache__/
+*.pyc
+*.pyo
+node_modules/
+backend/

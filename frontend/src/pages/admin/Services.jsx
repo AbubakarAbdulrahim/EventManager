@@ -94,19 +94,56 @@ import {
   Legend, 
   Cell 
 } from 'recharts';
+import { useAuth } from '../../context/AuthContext';
 
 
-const services = [
-    { id: 1, name: 'Wedding Photography', vendor: 'ProShots Inc.', price: 1200, bookings: 28, rating: 4.8, status: 'Active' },
-    { id: 2, name: 'Corporate Event Catering', vendor: 'Delicious Foods', price: 2500, bookings: 15, rating: 4.6, status: 'Active' },
-    { id: 3, name: 'Grand Hall Rental', vendor: 'Grand Ballroom', price: 5000, bookings: 10, rating: 4.9, status: 'Active' },
-    { id: 4, name: 'DJ Services', vendor: 'Beat Masters', price: 800, bookings: 22, rating: 4.3, status: 'Active' },
-    { id: 5, name: 'Wedding Decor Package', vendor: 'Elegant Designs', price: 1500, bookings: 18, rating: 4.7, status: 'Pending Approval' },
-  ];
-
+// const services = [
+//     { id: 1, name: 'Wedding Photography', vendor: 'ProShots Inc.', price: 1200, bookings: 28, rating: 4.8, status: 'Active' },
+//     { id: 2, name: 'Corporate Event Catering', vendor: 'Delicious Foods', price: 2500, bookings: 15, rating: 4.6, status: 'Active' },
+//     { id: 3, name: 'Grand Hall Rental', vendor: 'Grand Ballroom', price: 5000, bookings: 10, rating: 4.9, status: 'Active' },
+//     { id: 4, name: 'DJ Services', vendor: 'Beat Masters', price: 800, bookings: 22, rating: 4.3, status: 'Active' },
+//     { id: 5, name: 'Wedding Decor Package', vendor: 'Elegant Designs', price: 1500, bookings: 18, rating: 4.7, status: 'Pending Approval' },
+//   ];
+const transformedData= (data) => {
+  console.log(data);
+    return data.map((service) => ({
+      id: service.id,
+      name: service.service_name,
+      vendor: service.vendor,
+      price: service.pricing[0].base_price,
+      status: service.status,
+      bookings: 10,
+      rating:4.7,
+    }));
+  }
   
  export default function Services() {
     const [categoryFilter, setCategoryFilter] = useState('All');
+    const [services, setServices] = useState([])
+    const {authAxios} =useAuth()
+
+    useEffect(() => {
+      const fetchServices = async () => {
+        try {
+          const response = await authAxios.get('vendors/services/');
+          const transformedServices = transformedData(response.data);
+          setServices(transformedServices);
+        } catch (error) {
+          console.error('Error fetching services:', error);
+        }
+      };
+
+      fetchServices();
+    }, []);
+
+    const handleAction = async (id, action)=>{
+      try{
+        const res = await authAxios.post(`api-admin/service/${id}/suspend-activate/`, {action: action})
+        console.log(res);
+      } catch (error){
+        console.error(error)
+      }
+    }
     
     return (
       <Grid container spacing={3} padding={3}>
@@ -179,9 +216,9 @@ const services = [
                       <TableCell>
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                           <Button size="small" variant="outlined">View</Button>
-                          {service.status === 'Pending Approval' ? (
+                          {service.status === 'pending' ? (
                             <>
-                              <Button size="small" variant="outlined" color="success">Approve</Button>
+                              <Button size="small" variant="outlined" color="success" onClick={()=>{handleAction(service.id,'approve')}} >Approve</Button>
                               <Button size="small" variant="outlined" color="error">Reject</Button>
                             </>
                           ) : (

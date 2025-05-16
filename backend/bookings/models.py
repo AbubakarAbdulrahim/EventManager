@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from vendors.models import Service
+from vendors.models import Service, Vendor
 
 User = get_user_model()
 
@@ -16,6 +16,7 @@ STATUS_CHOICES = (
 class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
+    vendors = models.ManyToManyField('vendors.Vendor', related_name='bookings', blank=True)
     event_date = models.DateField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)

@@ -69,6 +69,7 @@ const transformServiceData = (backendData) => {
     type: service.service_type,
     name: service.service_name,
     location: service.location,
+    status: service.status,
     capacity: parseInt(service.service_quantity, 10),
     price: service.pricing[0]?.base_price || 0, // fallback to 0 if pricing is empty
     image: service.service_images[0]?.image_url || '/placeholder.jpg',
@@ -120,7 +121,10 @@ const EventPlanningDashboard = ( props) => {
       try {
         const response = await fetchServices();
         const transformedData = transformServiceData(response);
-        setServices(transformedData);
+        const filteredData = transformedData.filter(service=>
+          service.status !== 'pending'
+        )
+        setServices(filteredData);
       } catch (error) {
         console.error('Error fetching services:', error);
       }

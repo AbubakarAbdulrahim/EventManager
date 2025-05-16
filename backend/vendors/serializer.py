@@ -123,7 +123,7 @@ class SpecificDateAvailabilityRetrieveSerializer(serializers.ModelSerializer):
             "date",
             "start_time",
             "end_time",
-            "is_available",
+            "is_booked",
         ]
         read_only_fields = [
             "id",
@@ -152,7 +152,7 @@ class RecurringAvailabilityRetrieveSerializer(serializers.ModelSerializer):
             "day_of_the_week",
             "start_time",
             "end_time",
-            "is_available",
+            "is_booked",
         ]
         read_only_fields = [
             "service",
@@ -308,7 +308,6 @@ class ServiceCreateSerializer(serializers.ModelSerializer):
     
     # create
     def create(self, validated_data):
-        request = self.context.get('request')
         amenities_data = validated_data.pop('amenities', [])
         recurring_availability_data = validated_data.pop('recurring_availability', [])
         specific_date_availability_data = validated_data.pop('specific_date_availability', [])

@@ -152,7 +152,7 @@ const generateAvailabilityDates = (startDate, endDate) => {
 };
 
 const ServiceDetail = () => {
-  const { fetchServices, fetchVendors } = useAuth();
+  const { fetchServices, fetchVendors, authAxios } = useAuth();
   const [services, setServices] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [tabValue, setTabValue] = useState(0);
@@ -316,7 +316,27 @@ useEffect(() => {
     setOpenBookingDialog(false);
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async (item) => {
+    const end_time = (parseInt(item.time) + parseInt(item.duration)).toString()
+    const newTime =new Date(`1970-01-01T${end_time +':00'}`).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: false,
+  });
+    const data = {
+      event_date: item.date,
+      start_time: item.time,
+      end_time: newTime,
+      total_price: item.price,
+      duration: item.duration,
+      service: service.id
+    }
+    try{
+      const response = await authAxios.post('/bookings/', data)
+      console.log(response);
+    } catch(error){
+      console.log(error);
+    }
     handleBookService(selectedService);
     addBooking(selectedService);
     setBooked(true);

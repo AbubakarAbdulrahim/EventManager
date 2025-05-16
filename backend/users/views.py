@@ -6,6 +6,8 @@ from .serializer import (
     UserUpdateSerializer,
     PasswordUpdateSerializer,
 )
+from django.contrib.auth import get_user_model
+User = get_user_model()
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -46,6 +48,10 @@ class RefreshAccessView(APIView):
             return Response({"error": "No refresh token"}, status=401)
         try:
             refresh = RefreshToken(refresh_token)
+            user_id = refresh.payload.get("user_id")
+            if not User.objects.filter(id=user_id).exists():
+                return Response({"error": "User not found"}, status=401)
+            
             access = str(refresh.access_token)
             return Response({"access": access})
         except Exception as e:
@@ -111,9 +117,9 @@ class UserCreateView(generics.CreateAPIView):
     # on create
     def perform_create(self, serializer):
         user = serializer.save()
-        template_prefix = 'welcome'
+        template_prefix = 'user_emails/welcome'
         context = {
-            'user' : user,
+            'username' : user.username,
             'current_year' : datetime.now().year,
             'dashboard_url' : '/',
             'email' : config('EMAIL_HOST_USER'),
@@ -141,11 +147,11 @@ class PasswordUpdateView(generics.UpdateAPIView):
         response = super().update(request, *args, **kwargs)
         
         user = request.user
-        template_prefix = 'password_reset'
+        template_prefix = 'user_emails/password_reset'
         context = {
             'current_year' : datetime.now().year,
             'subject' : 'Reset Your Password',
-            'user' : user,
+            'username' : user.username,
             'password_reset_link' : '/',
             'duration' : '1 hour'
         }

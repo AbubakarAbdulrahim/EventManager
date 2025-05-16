@@ -74,7 +74,7 @@ class Service(models.Model):
 
 # service amenities
 class ServiceAmenity(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="service_amenities")
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="amenities")
     name = models.CharField(max_length=20, null=True, blank=True)
     
 
@@ -92,19 +92,19 @@ class ServiceImage(models.Model):
 
 # date specific availability
 class ServiceSpecificDateAvailability(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='date_specific_availabilities')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='specific_date_avail')
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-    is_available = models.BooleanField(default=True)
+    is_booked = models.BooleanField(default=True)
     
 # recurring availability table
 class ServiceRecurringAvailability(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='recurring_availabilities')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='recurring_avail')
     day_of_the_week = models.PositiveIntegerField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-    is_available = models.BooleanField(default=True)
+    is_booked = models.BooleanField(default=True)
     
 # pricing table
 class ServicePricing(models.Model):

@@ -363,7 +363,7 @@ const AddServiceDialog = ({ open, onClose, title, service }) => {
     const pricingData = pricingModels.map(model => {
       const pricing = {
         model_type: model.model,
-        base_price: model.basePrice || '',
+        base_price: model.basePrice || 0,
       };
       
       // Add packages if available
@@ -563,7 +563,12 @@ const AddServiceDialog = ({ open, onClose, title, service }) => {
 
   // Add recurring availability
   const addRecurringAvailability = () => {
-    if (!newRecurringSlot.day || !newRecurringSlot.startTime || !newRecurringSlot.endTime) return;
+    if (
+    newRecurringSlot.day === null || 
+    newRecurringSlot.day === undefined || 
+    !newRecurringSlot.startTime || 
+    !newRecurringSlot.endTime
+  ) return;
     
     setRecurringAvailability([...recurringAvailability, { ...newRecurringSlot }]);
     setNewRecurringSlot({ day: null, startTime: null, endTime: null });

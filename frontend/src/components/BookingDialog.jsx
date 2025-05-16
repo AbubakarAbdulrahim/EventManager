@@ -79,6 +79,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     date: null,
     time: '',
     duration: '',
+    price:'',
     name: user?.full_name || '',
     email: user?.email || '',
     phone: user.phone_number
@@ -99,12 +100,12 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   
     try {
       const data = service?.availability;
-  
+      console.log(data.recurring);
       const datesSet = new Set();
   
       if (data.type === 'specific_date') {
-        data.specificDates.forEach(({ date, is_available }) => {
-          if (is_available) {
+        data.specificDates.forEach(({ date, is_booked }) => {
+          if (is_booked) {
             datesSet.add(dayjs(date).format('YYYY-MM-DD'));
           }
         });
@@ -112,8 +113,8 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
         const start = dayjs(data.startDate).startOf('day');
         const end = dayjs(data.endDate).startOf('day');
   
-        data.recurring.forEach(({ day_of_the_week, is_available }) => {
-          if (!is_available) return;
+        data.recurring.forEach(({ day_of_the_week, is_booked }) => {
+          if (!is_booked) return;
   
           // Find first occurrence of the desired day_of_the_week
           let date = start.clone();
@@ -173,7 +174,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
 
     // Check for specific date availability
     const specific = availabilityData.specificDates?.find(
-      (entry) => entry.date === selectedDate && entry.is_available
+      (entry) => entry.date === selectedDate && entry.is_booked
     );
 
     if (specific) {
@@ -181,7 +182,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     } else if (availabilityData.type === 'recurring') {
       // Check for recurring availability
       const recurring = availabilityData.recurring?.find(
-        (entry) => entry.day_of_the_week === selectedDay && entry.is_available
+        (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
       );
 
       console.log(recurring);
@@ -227,7 +228,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   // Handle duration change
   const handleDurationChange = (e) => {
     const duration = e.target.value;
-    setBookingData(prev => ({ ...prev, duration }));
+    setBookingData(prev => ({ ...prev, duration, price: calculatePrice(service?.basePrice, duration) }));
     
     // Only check availability if we have a selected time and valid duration
     if (bookingData.time && duration) {
@@ -332,10 +333,11 @@ const checkTimeSlotAvailability = (time, duration) => {
         console.log("Payment Response:", response);
         // alert("Payment successful: " + response.tx_ref);
         setShowCancelMsg(false);
-        response.status === 'completed' && (onConfirm({
+        response.status === 'completed' && (
+          onConfirm({
           ...bookingData,
-          date: bookingData.date?.format('YYYY-MM-DD'),
-          service: service.name
+          // date: bookingData.date?.format('YYYY-MM-DD'),
+          service: service
         }), addBooking(service),
          
         setTimeout(() => {
@@ -378,7 +380,13 @@ console.log(e);
       setActiveStep((prev) => prev + 1);
     } else {
       // Final step - process payment
-      handlePayment();
+      // handlePayment();
+      onConfirm({
+          ...bookingData,
+          date: bookingData.date?.format('YYYY-MM-DD'),
+          service: service.name
+        })
+        addBooking(service)
     }
   };
   

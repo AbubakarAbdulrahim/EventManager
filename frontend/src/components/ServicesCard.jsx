@@ -110,7 +110,7 @@ export default function ServicesCard({service}) {
                 component="img"
                 
                 height="200"
-                image={service.image}
+                image={service.image || service.mainImage}
                 alt={service.name}
                 sx={{ objectFit: 'cover' }}
               />
@@ -141,7 +141,7 @@ export default function ServicesCard({service}) {
                   <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                     ₦
                     <Typography variant="body2">
-                      {service.price.toLocaleString()}
+                      {service.price}
                     </Typography>
                   </Grid>
                 </Grid>
