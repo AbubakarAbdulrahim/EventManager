@@ -4,6 +4,7 @@ from django.template.loader import render_to_string
 from decouple import config
 
 
+# func to log a background task => sending emails
 @background(schedule=1)
 def send_email_task(subject, to_email, context, template_prefix):
     from_email = config('EMAIL_HOST_USER')

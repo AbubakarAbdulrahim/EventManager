@@ -17,6 +17,7 @@ urlpatterns = [
     #
 
 
+
     # vendor package endpoints
     path('services/', views.ServiceListView.as_view(), name='service-list'),
     path('services/create/', views.ServiceCreateView.as_view(), name='service-create'),
@@ -31,6 +32,7 @@ urlpatterns = [
     #
     #
     #
+
 
 
     # vendor service availability endpoints

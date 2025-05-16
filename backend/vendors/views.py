@@ -325,7 +325,7 @@ class ServiceAvailabilityDetailView(generics.RetrieveUpdateAPIView):
         except Service.DoesNotExist:
             return Response({'detail': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Replace old availability with new
+        # replace old availability with new
         if availability_type == 'recurring':
             ServiceRecurringAvailability.objects.filter(service=service).delete()
             new_instance = ServiceRecurringAvailability.objects.create(

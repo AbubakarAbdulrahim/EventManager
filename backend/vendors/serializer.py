@@ -372,7 +372,6 @@ class ServiceUpdateSerializer(serializers.ModelSerializer):
 
     # update
     def update(self, instance, validated_data):
-        request = self.context.get('request')
         date_avail = validated_data.pop('specific_date_availability', [])
         recurring_avail = validated_data.pop('recurring_availability', [])
         price_data = validated_data.pop('pricing', [])

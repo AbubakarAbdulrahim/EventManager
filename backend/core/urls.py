@@ -16,8 +16,8 @@ urlpatterns = [
     
     
     # for users email previews
-    path('welcome-email/', views.WelcomeEmailView.as_view(), name='welcome-email'),
-    path('password-reset-email/', views.PasswordResetEmailView.as_view(), name='password-reset-email'),
+    path('welcome-email/', views.WelcomeEmailView.as_view()),
+    path('password-reset-email/', views.PasswordResetEmailView.as_view()),
     
     # for vendors
     path('vendor-profile-update-email/', views.VendorProfileUpdateEmailView.as_view()),

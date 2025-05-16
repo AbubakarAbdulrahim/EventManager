@@ -210,9 +210,11 @@ class ServiceAdminSuspendActivateView(APIView):
         return Response({"detail": f"vendor service {message} successfully"})
 
 
+
 #
 #
 #
+
 
 
 '''  for managing transactions  '''
@@ -227,6 +229,7 @@ class TransactionsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionAdminSerializer
     permission_classes = [IsAdminRole]
+
 
 
 #
