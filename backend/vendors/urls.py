@@ -36,5 +36,6 @@ urlpatterns = [
 
 
     # vendor service availability endpoints
-    path('service/<int:service_id>/availability/', views.ServiceAvailabilityDetailView.as_view(), name='service-availability-detail'),
+    path('service/<int:service_id>/availability/', views.ServiceAvailabilityListView.as_view(), name='service-availability-list'),
+    path('service/<int:service_id>/availability/update/', views.ServiceAvailabilityBulkUpdateView.as_view(), name='service-availability-update'),
 ]

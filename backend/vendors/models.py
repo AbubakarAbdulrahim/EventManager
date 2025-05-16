@@ -41,7 +41,7 @@ class Vendor(models.Model):
     is_approved = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.id} - {self.business_name}"
+        return f"{self.id} - {self.business_name}"
 
 # vendor certification image table
 class VendorCertificationImage(models.Model):
@@ -70,13 +70,12 @@ class Service(models.Model):
     
     
     def __str__(self):
-        return f"{self.service_type.capitalize()} for {self.vendor.business_name}"
+        return f"{self.id}-{self.service_type.capitalize()} for {self.vendor.business_name}"
 
 # service amenities
 class ServiceAmenity(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="amenities")
     name = models.CharField(max_length=20, null=True, blank=True)
-    
 
 # vendor service images
 class ServiceImage(models.Model):

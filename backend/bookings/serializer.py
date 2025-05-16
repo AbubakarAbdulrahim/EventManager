@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Booking
-from vendors.models import Service
+from vendors.models import Service, Vendor
+from django.shortcuts import get_object_or_404
 
 # funcs. to import serializers (avoiding circular import)
 def get_user_serializer_class():
@@ -24,8 +25,8 @@ def get_service_retrieve_serializer_class():
 
 # booking create serializer
 class BookingCreateSerializer(serializers.ModelSerializer):
-    # booking services
-    services = serializers.ListField(write_only=True)
+    service_id = serializers.IntegerField(write_only=True)
+    vendor_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Booking
@@ -37,35 +38,50 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             "duration",
             
             # additional fields
-            "services",
+            "service_id",
+            "vendor_id",
         ]
 
     # on create
     def create(self, validated_data):
         user = self.context['request'].user
 
-        # getting the service ids
-        service_ids = validated_data.pop("services", [])
+        # getting the service
+        service_id = validated_data.pop("service_id")
+        vendor_id = validated_data.pop("vendor_id")
 
         # validate
-        if not service_ids:
-            raise serializers.ValidationError({"vendor_packages": "This field is required"})
+        if not service_id:
+            raise serializers.ValidationError({"service_id": "This field is required"})
+
+        if not vendor_id:
+            raise serializers.ValidationError({"vendor_id": "This field is required"})
+        
+        try:
+            service = Service.objects.get(pk=service_id)
+        except Service.DoesNotExist:
+            raise serializers.ValidationError({"service_id": "Invalid service ID"})
+
+        try:
+            vendor = Vendor.objects.get(pk=vendor_id)
+        except Vendor.DoesNotExist:
+            raise serializers.ValidationError({"vendor_id": "Invalid vendor ID"})
 
         # save the booking
-        booking = Booking.objects.create(user=user, **validated_data)
-
-        # manually setting the bookings service ids
-        booking.services.set(service_ids)
-        booking.save()
+        booking = Booking.objects.create(
+            user=user, 
+            service=service,
+            vendor=vendor,
+            **validated_data
+            )
 
         return booking
 
 # booking retrieve serializer
 class BookingRetrieveSerializer(serializers.ModelSerializer):
-    # bookings services
-    services = serializers.SerializerMethodField()
-    # bookings user
+    service = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
+    vendor = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -81,12 +97,17 @@ class BookingRetrieveSerializer(serializers.ModelSerializer):
             "duration",
 
             # additional fields
-            "services",
+            "service",
+            "vendor"
         ]
 
-    def get_services(self, obj):
+    def get_service(self, obj):
         SerializerClass = get_service_retrieve_serializer_class()
-        return SerializerClass(obj.services.all(), many=True).data
+        return SerializerClass(obj.service).data
+
+    def get_vendor(self, obj):
+        SerializerClass = get_service_retrieve_serializer_class()
+        return SerializerClass(obj.vendor).data
 
     def get_user(self, obj):
         SerializerClass = get_user_serializer_class()
@@ -104,13 +125,14 @@ class BookingUpdateSerializer(serializers.ModelSerializer):
             "duration",
 
             # additional fields
-            "services",
+            "service_id",
+            "vendor_id"
         ]
     
     # on update
     def update(self, instance, validated_data):
-        request = self.context.get('request')
-        services = validated_data.pop('services', None)
+        service_id = validated_data.pop('service_id', None)
+        vendor_id = validated_data.pop('vendor_id', None)
 
         # update the booking
         for attr, value in validated_data.items():
@@ -118,11 +140,12 @@ class BookingUpdateSerializer(serializers.ModelSerializer):
         instance.save()
 
         # validation
-        if services is not None:
-            # delete the service reference from the booking
-            # and add the new ones
-            pass
-        
+        if service_id is not None:
+            instance.service.set(service_id)
+
+        if vendor_id is not None:
+            instance.vendor.set(vendor_id)
+            
         return instance
     
 # booking destroy serializer
@@ -141,12 +164,17 @@ class BookingDestroySerializer(serializers.ModelSerializer):
 
 # booking admin serializer
 class BookingAdminSerializer(serializers.ModelSerializer):
+    service = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
+    vendor = serializers.SerializerMethodField()
+    
     class Meta:
         model = Booking
         fields = [
             "id",
             "user", 
-            "services",
+            "service",
+            "vendor",
             "event_date",
             "start_time", 
             "end_time",
@@ -158,7 +186,8 @@ class BookingAdminSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "user", 
-            "services",
+            "service",
+            "vendor",
             "event_date",
             "start_time", 
             "end_time",
@@ -167,3 +196,15 @@ class BookingAdminSerializer(serializers.ModelSerializer):
             "total_price", 
             "duration",
         ]
+    
+    def get_service(self, obj):
+        SerializerClass = get_service_retrieve_serializer_class()
+        return SerializerClass(obj.service).data
+
+    def get_vendor(self, obj):
+        SerializerClass = get_service_retrieve_serializer_class()
+        return SerializerClass(obj.vendor).data
+
+    def get_user(self, obj):
+        SerializerClass = get_user_serializer_class()
+        return SerializerClass(obj.user).data

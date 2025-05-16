@@ -46,6 +46,10 @@ class RefreshAccessView(APIView):
             return Response({"error": "No refresh token"}, status=401)
         try:
             refresh = RefreshToken(refresh_token)
+            user_id = refresh.payload.get('user_id')
+            if not User.objects.filter(id=user_id).exists():
+                return Response({"error": "user not found"}, status=401)
+            
             access = str(refresh.access_token)
             return Response({"access": access})
         except Exception as e:
@@ -62,12 +66,11 @@ class LogoutView(APIView):
                 token = RefreshToken(refresh_token)
                 token.blacklist()  # blacklists the token
             except TokenError as e:
-                # Token already expired or invalid
+                # token already expired or invalid
                 pass
 
         response = Response({"detail": "Logged out"}, status=status.HTTP_200_OK)
         response.delete_cookie("refresh", path="/user/token/refresh/")
-        # response.delete_cookie("access_token")
         return response
    
 # user retrieve view

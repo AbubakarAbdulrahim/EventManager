@@ -89,33 +89,33 @@ class VendorUpdateView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)
         
-        vendor = Vendor.objects.get(user=request.user)
+        # vendor = Vendor.objects.get(user=request.user)
         
-        recent_users = User.objects.filter(
-            bookings__vendors=vendor
-        ).distinct()
+        # recent_users = User.objects.filter(
+        #     bookings__vendors=vendor
+        # ).distinct()
 
-        template_prefix = 'vendor_emails/vendor_profile_update'
-        support_email = config('EMAIL_HOST_USER')
+        # template_prefix = 'vendor_emails/vendor_profile_update'
+        # support_email = config('EMAIL_HOST_USER')
 
-        context = {
-            'current_year': datetime.datetime.now().year,
-            'subject': 'Vendor Profile Update Notification',
-            'vendor_username': vendor.user.username,
-            'added_service': False,
-            'update_profile': True,
-            'vendor_profile_link': '/',
-            'support_email': support_email,
-        }
+        # context = {
+        #     'current_year': datetime.datetime.now().year,
+        #     'subject': 'Vendor Profile Update Notification',
+        #     'vendor_username': vendor.user.username,
+        #     'added_service': False,
+        #     'update_profile': True,
+        #     'vendor_profile_link': '/',
+        #     'support_email': support_email,
+        # }
 
-        for user in recent_users:
-            context['user_username'] = user.username
-            send_email_task(
-                subject='Vendor Profile Update!',
-                to_email=user.email,
-                context=context,
-                template_prefix=template_prefix
-            )
+        # for user in recent_users:
+        #     context['user_username'] = user.username
+        #     send_email_task(
+        #         subject='Vendor Profile Update!',
+        #         to_email=user.email,
+        #         context=context,
+        #         template_prefix=template_prefix
+        #     )
         
         return response
 
@@ -142,6 +142,7 @@ class VendorDestroyView(generics.DestroyAPIView):
         Service.objects.filter(vendor=instance).delete()
         instance.delete()
         return instance
+
 
 
 '''
@@ -175,34 +176,34 @@ class ServiceCreateView(generics.CreateAPIView):
         
         response = super().create(request, *args, **kwargs)
 
-        vendor = Vendor.objects.get(user=request.user)
+        # vendor = Vendor.objects.get(user=request.user)
         
-        recent_users = User.objects.filter(
-            bookings__vendors=vendor
-        ).distinct()
+        # recent_users = User.objects.filter(
+        #     bookings__vendor=vendor
+        # ).distinct()
 
-        template_prefix = 'vendor_emails/vendor_profile_update'
-        support_email = config('EMAIL_HOST_USER')
+        # template_prefix = 'vendor_emails/vendor_profile_update'
+        # support_email = config('EMAIL_HOST_USER')
 
-        context = {
-            'current_year': datetime.datetime.now().year,
-            'subject': 'Vendor Service Addition Notification',
-            'vendor_username': vendor.user.username,
-            'vendor_business_name' : vendor.business_name,
-            'added_service': True,
-            'update_profile': False,
-            'vendor_profile_link': '/',
-            'support_email': support_email,
-        }
+        # context = {
+        #     'current_year': datetime.datetime.now().year,
+        #     'subject': 'Vendor Service Addition Notification',
+        #     'vendor_username': vendor.user.username,
+        #     'vendor_business_name' : vendor.business_name,
+        #     'added_service': True,
+        #     'update_profile': False,
+        #     'vendor_profile_link': '/',
+        #     'support_email': support_email,
+        # }
 
-        for user in recent_users:
-            context['user_username'] = user.username
-            send_email_task(
-                subject='Vendor Profile Update!',
-                to_email=user.email,
-                context=context,
-                template_prefix=template_prefix
-            )
+        # for user in recent_users:
+        #     context['user_username'] = user.username
+        #     send_email_task(
+        #         subject='Vendor Profile Update!',
+        #         to_email=user.email,
+        #         context=context,
+        #         template_prefix=template_prefix
+        #     )
 
         return response
 
@@ -226,34 +227,34 @@ class ServiceUpdateView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)
         
-        vendor = Vendor.objects.get(user=request.user)
+        # vendor = Vendor.objects.get(user=request.user)
         
-        recent_users = User.objects.filter(
-            bookings__vendors=vendor
-        ).distinct()
+        # recent_users = User.objects.filter(
+        #     bookings__vendors=vendor
+        # ).distinct()
 
-        template_prefix = 'vendor_emails/vendor_profile_update'
-        support_email = config('EMAIL_HOST_USER')
+        # template_prefix = 'vendor_emails/vendor_profile_update'
+        # support_email = config('EMAIL_HOST_USER')
 
-        context = {
-            'current_year': datetime.datetime.now().year,
-            'subject': 'Vendor Service Update Notification',
-            'vendor_username': vendor.user.username,
-            'vendor_business_name' : vendor.business_name,
-            'added_service': False,
-            'update_profile': True,
-            'vendor_profile_link': '/',
-            'support_email': support_email,
-        }
+        # context = {
+        #     'current_year': datetime.datetime.now().year,
+        #     'subject': 'Vendor Service Update Notification',
+        #     'vendor_username': vendor.user.username,
+        #     'vendor_business_name' : vendor.business_name,
+        #     'added_service': False,
+        #     'update_profile': True,
+        #     'vendor_profile_link': '/',
+        #     'support_email': support_email,
+        # }
 
-        for user in recent_users:
-            context['user_username'] = user.username
-            send_email_task(
-                subject='Vendor Profile Update!',
-                to_email=user.email,
-                context=context,
-                template_prefix=template_prefix
-            )
+        # for user in recent_users:
+        #     context['user_username'] = user.username
+        #     send_email_task(
+        #         subject='Vendor Profile Update!',
+        #         to_email=user.email,
+        #         context=context,
+        #         template_prefix=template_prefix
+        #     )
         
         return response
 
@@ -278,9 +279,9 @@ class ServiceDestroyView(generics.DestroyAPIView):
 #
 
 
-# service availability detail view
-class ServiceAvailabilityDetailView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
+# service availability lisst view
+class ServiceAvailabilityListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
     lookup_field = 'service_id'
 
     def get_queryset(self):
@@ -302,60 +303,105 @@ class ServiceAvailabilityDetailView(generics.RetrieveUpdateAPIView):
     def get_serializer_class(self):
         method = self.request.method
         availability_type = self.request.data.get('availability_type') if method in ['PUT', 'PATCH'] else self.request.query_params.get('availability_type')
-
-        if method in ['PUT', 'PATCH']:
-            if availability_type == 'recurring':
-                return RecurringAvailabilityCreateSerializer
-            elif availability_type == 'specific_date':
-                return SpecificDateAvailabilityCreateSerializer
-        elif method == 'GET':
-            if availability_type == 'recurring':
-                return RecurringAvailabilityRetrieveSerializer
-            elif availability_type == 'specific_date':
-                return SpecificDateAvailabilityRetrieveSerializer
+   
+        if availability_type == 'recurring':
+            return RecurringAvailabilityRetrieveSerializer
+        elif availability_type == 'specific_date':
+            return SpecificDateAvailabilityRetrieveSerializer
 
         return super().get_serializer_class()
+    
+    def get_object(self):
+        service_id = self.kwargs.get('service_id')
+        availability_type = self.request.query_params.get('availability_type')
 
-    def update(self, request, *args, **kwargs):
+        try:
+            service = Service.objects.get(id=service_id)
+        except Service.DoesNotExist:
+            raise NotFound("Service not found")
+
+        if availability_type == 'recurring':
+            try:
+                return ServiceRecurringAvailability.objects.get(service=service)
+            except ServiceRecurringAvailability.DoesNotExist:
+                raise NotFound("No recurring availability found")
+        elif availability_type == 'specific_date':
+            try:
+                return ServiceSpecificDateAvailability.objects.get(service=service)
+            except ServiceSpecificDateAvailability.DoesNotExist:
+                raise NotFound("No specific date availability found")
+
+        raise NotFound("Invalid availability type")
+
+# service availability update view
+class ServiceAvailabilityBulkUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        service_id = self.kwargs.get('service_id')
+        availability_type = self.request.query_params.get('availability_type')
+
+        try:
+            service = Service.objects.get(id=service_id)
+        except Service.DoesNotExist:
+            raise NotFound("Service not found")
+
+        if availability_type == 'recurring':
+            return ServiceRecurringAvailability.objects.filter(service=service)
+        elif availability_type == 'specific_date':
+            return ServiceSpecificDateAvailability.objects.filter(service=service)
+        
+        return ServiceRecurringAvailability.objects.none()
+
+
+    def put(self, request, service_id):
         availability_type = request.data.get('availability_type')
-        service_id = request.data.get('service_id')
+        availabilities = request.data.get('availabilities', [])
 
         try:
             service = Service.objects.get(id=service_id)
         except Service.DoesNotExist:
             return Response({'detail': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # replace old availability with new
         if availability_type == 'recurring':
             ServiceRecurringAvailability.objects.filter(service=service).delete()
-            new_instance = ServiceRecurringAvailability.objects.create(
-                service=service,
-                day_of_the_week=request.data.get('day_of_the_week'),
-                start_time=request.data.get('start_time'),
-                end_time=request.data.get('end_time'),
-                is_booked=request.data.get('is_booked')
-            )
-            serializer = self.get_serializer(new_instance)
+            new_instances = []
+            for item in availabilities:
+                new_instances.append(ServiceRecurringAvailability(
+                    service=service,
+                    day_of_the_week=item.get('day_of_the_week'),
+                    start_time=item.get('start_time'),
+                    end_time=item.get('end_time'),
+                    is_booked=item.get('is_booked', False)
+                ))
+            ServiceRecurringAvailability.objects.bulk_create(new_instances)
+            serializer = RecurringAvailabilityRetrieveSerializer(new_instances, many=True)
+
         elif availability_type == 'specific_date':
             ServiceSpecificDateAvailability.objects.filter(service=service).delete()
-            new_instance = ServiceSpecificDateAvailability.objects.create(
-                service=service,
-                date=request.data.get('date'),
-                start_time=request.data.get('start_time'),
-                end_time=request.data.get('end_time'),
-                is_booked=request.data.get('is_booked')
-            )
-            serializer = self.get_serializer(new_instance)
+            new_instances = []
+            for item in availabilities:
+                new_instances.append(ServiceSpecificDateAvailability(
+                    service=service,
+                    date=item.get('date'),
+                    start_time=item.get('start_time'),
+                    end_time=item.get('end_time'),
+                    is_booked=item.get('is_booked', False)
+                ))
+            ServiceSpecificDateAvailability.objects.bulk_create(new_instances)
+            serializer = SpecificDateAvailabilityRetrieveSerializer(new_instances, many=True)
+
         else:
             return Response({'detail': 'Invalid availability type'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
 #
 #
 #
+
 
 
 # service image update view
@@ -396,19 +442,6 @@ class ServiceImageDestroyView(generics.DestroyAPIView):
 #
 #
 #
-
-
-'''
-for vendor service availability
-'''
-
-# service availability list view
-class ServiceAvailabilityRetrievView(generics.RetrieveAPIView):
-    # serializer_class = VendorPackageAvailability
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    # def get_queryset(self):
-    #     return VendorPackageAvailability.filter(is_available=True)
 
 
 

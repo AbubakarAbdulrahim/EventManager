@@ -7,52 +7,63 @@ from .serializer import (
     BookingDestroySerializer
 )
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model
 
-User = get_user_model()
 
-# booking retrieve view
-class BookingRetrieveView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Booking.objects.all()
+# retrieve booking by id
+class BookingRetrieveView(generics.RetrieveAPIView):
     serializer_class = BookingRetrieveSerializer
     permission_classes = [IsAuthenticated]
 
-# booking create view
-class BookingCreateView(generics.ListCreateAPIView):
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
+
+# create booking
+class BookingCreateView(generics.CreateAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingCreateSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save()
 
-# booking list view
-class BookingListView(generics.ListCreateAPIView):
+# list bookings for a specific user
+class UserBookingListView(generics.ListAPIView):
     serializer_class = BookingRetrieveSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Booking.objects.filter(user=self.request.user)
 
-# booking update view
-class BookingUpdateView(generics.ListCreateAPIView):
+# list bookings for a specific vendor
+class VendorBookingListView(generics.ListAPIView):
+    serializer_class = BookingRetrieveSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        vendor_id = self.request.query_params.get('vendor_id')
+        return Booking.objects.filter(vendor_id=vendor_id)
+
+# update booking by id
+class BookingUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = BookingUpdateSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
 
     def get_queryset(self):
         return Booking.objects.filter(user=self.request.user)
 
-# booking delete view
+# delete booking by id
 class BookingDestroyView(generics.DestroyAPIView):
     serializer_class = BookingDestroySerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
 
     def get_queryset(self):
         return Booking.objects.filter(user=self.request.user)
 
     def perform_destroy(self, instance):
         instance.delete()
-        return instance
+
 
 
 #
