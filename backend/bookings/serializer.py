@@ -74,7 +74,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             vendor=vendor,
             **validated_data
             )
-
+        
         return booking
 
 # booking retrieve serializer
