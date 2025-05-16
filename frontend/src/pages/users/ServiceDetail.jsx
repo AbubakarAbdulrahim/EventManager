@@ -54,6 +54,7 @@ import BookingDialog from '../../components/BookingDialog';
 import SuccessDialog from '../../components/SuccessDialog';
 
 import {useAuth} from '../../context/AuthContext';
+import {useVendorContext} from '../../context/VendorContext';
 import { use } from 'react';
 
 // Function to transform backend data to the format our component expects
@@ -152,7 +153,7 @@ const generateAvailabilityDates = (startDate, endDate) => {
 };
 
 const ServiceDetail = () => {
-  const { fetchServices, fetchVendors, authAxios } = useAuth();
+  const { authAxios } = useAuth();
   const [services, setServices] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [tabValue, setTabValue] = useState(0);
@@ -162,7 +163,8 @@ const ServiceDetail = () => {
   const [selectedSlot, setSelectedSlot] = useState('');
   const { id } = useParams();
   const [service, setService] = useState(null);
-  const {isFavorite, addToFavorites, removeFromFavorites} = useServiceContext();
+  const {isFavorite, addToFavorites, removeFromFavorites, fetchServices} = useServiceContext();
+  const {fetchVendors} = useVendorContext();
   const {isBooked, addBooking, cancelBooking} = useBookingContext();
   const [booked, setBooked] = useState(false);
   const [favorite, setFavorite] = useState(false);
@@ -204,7 +206,6 @@ useEffect(() => {
         // Store the service
         setService(foundService);
 
-        console.log(foundService);
         
         // Fetch vendor details using the vendor_id from the service
         if (foundService.provider.id) {
@@ -262,7 +263,7 @@ useEffect(() => {
   };
 
   loadServiceAndVendor();
-}, [id, fetchServices, fetchVendors, isBooked, isFavorite]);
+}, [id, isBooked, isFavorite]);
 
   
     
@@ -840,7 +841,8 @@ useEffect(() => {
         handleClose={handleSnackbarClose} 
         title={'Booking Confirmed Successfully!'} 
         body={"Your booking has been successfully completed. Thank you for choosing us!"} 
-        action={'Booking details'} 
+        action={'Booking details'}
+        url={`/booking/${id}`}
       />
     </Container>
   );

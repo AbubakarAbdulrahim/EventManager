@@ -19,13 +19,9 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AddServiceDialog from './AddServiceDialog';
 import { useAuth } from '../../context/AuthContext';
+import { useServiceContext } from '../../context/ServiceContext';
+import { useVendorContext } from '../../context/VendorContext';
 
-
-const initialServices = [
-    { id: 1, name: 'Web Development', description: 'Custom website development services', price: 1500, isActive: true, customers: 12, income: 18000 },
-    { id: 2, name: 'Logo Design', description: 'Professional logo design service', price: 350, isActive: true, customers: 25, income: 8750 },
-    { id: 3, name: 'SEO Optimization', description: 'Search engine optimization services', price: 750, isActive: false, customers: 8, income: 6000 },
-  ];
 
   const transformedData= (data) => {
     return data.map((service) => ({
@@ -41,8 +37,10 @@ const initialServices = [
   }
 
 export default function Services  () {
-    const { authAxios } = useAuth();
-    const [services, setServices] = useState(initialServices);
+    const { authAxios, user } = useAuth();
+    const {fetchServices} = useServiceContext()
+    const {fetchVendors} = useVendorContext()
+    const [services, setServices] = useState([]);
     const [serviceFormOpen, setServiceFormOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
     const [selectedService, setSelectedService] = useState(null);
@@ -52,6 +50,7 @@ export default function Services  () {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const [loading, setLoading] = useState(false)
     
     const handleClose = () => {
         setServiceFormOpen(false);
@@ -79,17 +78,23 @@ export default function Services  () {
     };
 
     useEffect(() => {
-      const fetchServices = async () => {
+
+      const fetchService = async () => {
         try {
-          const response = await authAxios.get('vendors/services/');
-          const transformedServices = transformedData(response.data);
+          const vendors = await fetchVendors();
+          const vendor =vendors.filter(vendor=>vendor.user.id === user.id)
+          const vendorId = vendor[0].id
+          const response = await fetchServices();
+          const data = response.filter(service=>service.vendor === vendorId)
+          const transformedServices = transformedData(data);
+
           setServices(transformedServices);
         } catch (error) {
           console.error('Error fetching services:', error);
         }
       };
 
-      fetchServices();
+      fetchService();
     }, []);
 
     const handleDelete = async (serviceId) => {

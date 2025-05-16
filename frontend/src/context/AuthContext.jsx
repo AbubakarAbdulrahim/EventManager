@@ -185,28 +185,8 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-
-  const fetchServices = async () => {
-    try { 
-      const response = await authAxios.get('/vendors/services/');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching services:', error);
-    }
-  };
-
-  
-  const fetchVendors = async () => {
-    try {
-      const response = await authAxios.get('/vendors/');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching services:', error);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, accessToken, loading, error, login, logout, authAxios, refreshToken, apply, fetchServices, fetchVendors, addNewService }}>
+    <AuthContext.Provider value={{ user, accessToken, loading, error, login, logout, authAxios, refreshToken, apply, addNewService }}>
       {!loading && children}
     </AuthContext.Provider>
   );

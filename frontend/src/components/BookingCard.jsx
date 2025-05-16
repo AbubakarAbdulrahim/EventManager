@@ -8,14 +8,13 @@ import { useState } from 'react';
 import { useServiceContext } from '../context/ServiceContext';
 import { useNavigate } from 'react-router-dom';
 import { useVendorContext } from '../context/VendorContext';
-import { useSnackbar } from 'notistack';
 import { Alert } from '@mui/material';
 import { Snackbar } from '@mui/material';
 import { AlertTitle } from '@mui/material';
 import { Button } from '@mui/material';
 import { IconButton } from '@mui/material';
 import { Close } from '@mui/icons-material';
-import Table, { TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 
 export default function BookingCard(params) {
@@ -27,7 +26,6 @@ export default function BookingCard(params) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-    const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -88,12 +86,12 @@ export default function BookingCard(params) {
                     {error}
                 </Alert>
             </Snackbar>
-            <Snackbar open={!!enqueueSnackbar} autoHideDuration={6000} onClose={() => enqueueSnackbar(null)}>
+            {/* <Snackbar open={!!enqueueSnackbar} autoHideDuration={6000} onClose={() => enqueueSnackbar(null)}>
                 <Alert onClose={() => enqueueSnackbar(null)} severity="success" sx={{ width: '100%' }}>
                     <AlertTitle>Success</AlertTitle>
                     Booking details fetched successfully!
                 </Alert>
-            </Snackbar>
+            </Snackbar> */}
         </Box>
     );
     

@@ -49,6 +49,7 @@ import {
   Snackbar, Alert
 } from '@mui/material';
 import { useBookingContext } from '../context/BookingsContext';
+import { useServiceContext } from '../context/ServiceContext';
 import { useAuth } from '../context/AuthContext';
 import SuccessDialog from './SuccessDialog';
 const SearchSection = styled(Box)(({ theme }) => ({
@@ -82,7 +83,7 @@ const transformServiceData = (backendData) => {
   
 
 const EventPlanningDashboard = ( props) => {
-  const { fetchServices} = useAuth()
+  const { fetchServices} = useServiceContext()
     const [services, setServices] = useState([]);
     const [bookings, setBookings] = useState([]);
     // const [selectedService, setSelectedService] = useState("");

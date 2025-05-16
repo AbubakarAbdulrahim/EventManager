@@ -95,6 +95,7 @@ import {
   Cell 
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
+import { useServiceContext } from '../../context/ServiceContext';
 
 
 // const services = [
@@ -121,19 +122,20 @@ const transformedData= (data) => {
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [services, setServices] = useState([])
     const {authAxios} =useAuth()
+    const {fetchServices} = useServiceContext()
 
     useEffect(() => {
-      const fetchServices = async () => {
+      const fetchService = async () => {
         try {
-          const response = await authAxios.get('vendors/services/');
-          const transformedServices = transformedData(response.data);
+          const response = await fetchServices();
+          const transformedServices = transformedData(response);
           setServices(transformedServices);
         } catch (error) {
           console.error('Error fetching services:', error);
         }
       };
 
-      fetchServices();
+      fetchService();
     }, []);
 
     const handleAction = async (id, action)=>{
