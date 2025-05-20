@@ -55,7 +55,7 @@ const StepIcon = ({ active, completed, icon }) => {
 };
 
 function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
-  const { user } = useAuth();
+  const { user, authAxios } = useAuth();
 
   console.log(service);
   
@@ -161,59 +161,83 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     fetchAvailableTimeSlots(date, data);
   };
   
-  // Mock function to fetch available time slots for a date
-  const fetchAvailableTimeSlots = (date, availabilityData) => {
+  const fetchAvailableTimeSlots = async (date, availabilityData) => {
   setLoadingTimeSlots(true);
+  const selectedDate = date.format('YYYY-MM-DD');
+  const selectedDay = date.day();
+  let timeRange = null;
 
-  setTimeout(() => {
-    const selectedDate = date.format('YYYY-MM-DD');
-    const selectedDay = date.day(); // 0 (Sun) to 6 (Sat)
-    let timeRange = null;
+  // Find availability for selected day
+  const specific = availabilityData.specificDates?.find(
+    (entry) => entry.date === selectedDate && entry.is_booked
+  );
 
-    console.log('Fetching time slots for:', selectedDate);
-
-    // Check for specific date availability
-    const specific = availabilityData.specificDates?.find(
-      (entry) => entry.date === selectedDate && entry.is_booked
+  if (specific) {
+    timeRange = { start: specific.start_time, end: specific.end_time };
+  } else if (availabilityData.type === 'recurring') {
+    const recurring = availabilityData.recurring?.find(
+      (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
     );
 
-    if (specific) {
-      timeRange = { start: specific.start_time, end: specific.end_time };
-    } else if (availabilityData.type === 'recurring') {
-      // Check for recurring availability
-      const recurring = availabilityData.recurring?.find(
-        (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
-      );
-
-      console.log(recurring);
-
-      if (recurring) {
-        timeRange = { start: recurring.start_time, end: recurring.end_time };
-      }
+    if (recurring) {
+      timeRange = { start: recurring.start_time, end: recurring.end_time };
     }
+  }
 
-    const slots = [];
+  if (!timeRange) {
+    setAvailableTimeSlots([]);
+    setLoadingTimeSlots(false);
+    return;
+  }
 
-    if (timeRange) {
-      const [startHour, startMin] = timeRange.start.split(':').map(Number);
-      const [endHour, endMin] = timeRange.end.split(':').map(Number);
-      
+  try {
+    const res = await authAxios.get(`/bookings/booked-slot/${selectedDate}/`, {
+      params: {
+        service_id: service.id
+      }}
+    );
+
+    console.log(res.data);
+    const bookedSlots = res.data.booked_slots;
+
+    const generateSlots = () => {
+      const slots = [];
       const start = new Date(`1970-01-01T${timeRange.start}`);
       const end = new Date(`1970-01-01T${timeRange.end}`);
-      
-      console.log(start, end);
-      while (start < end) {
-        const hour = String(start.getHours()).padStart(2, '0');
-        const minute = String(start.getMinutes()).padStart(2, '0');
-        slots.push(`${hour}:${minute}`);
-        start.setMinutes(start.getMinutes() + 60); // hourly slots
-      }
-    }
 
-    setAvailableTimeSlots(slots);
+      while (start < end) {
+        const slotTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
+
+        // Check if slot overlaps with any booked slot
+        const slotStart = new Date(start);
+        const slotEnd = new Date(start.getTime() + 60 * 60000); // 1 hour
+
+        const isOverlapping = bookedSlots.some(b => {
+          const bStart = new Date(`1970-01-01T${b.start_time}`);
+          const bEnd = new Date(`1970-01-01T${b.end_time}`);
+          return slotStart < bEnd && slotEnd > bStart;
+        });
+
+        if (!isOverlapping) {
+          slots.push(slotTime);
+        }
+
+        start.setMinutes(start.getMinutes() + 60); // hourly slot
+      }
+
+      return slots;
+    };
+
+    const finalSlots = generateSlots();
+    setAvailableTimeSlots(finalSlots);
+  } catch (error) {
+    console.error('Failed to load booked slots:', error);
+    setAvailableTimeSlots([]);
+  } finally {
     setLoadingTimeSlots(false);
-  }, 800);
+  }
 };
+
   
   // Handle time slot selection
   const handleTimeSelect = (time) => {
@@ -228,6 +252,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   // Handle duration change
   const handleDurationChange = (e) => {
     const duration = e.target.value;
+    console.log(duration);
     setBookingData(prev => ({ ...prev, duration, price: calculatePrice(service?.basePrice, duration) }));
     
     // Only check availability if we have a selected time and valid duration
@@ -240,44 +265,81 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   
   // Mock function to check if the time slot is available for the specified duration
   
-const checkTimeSlotAvailability = (time, duration) => {
+const checkTimeSlotAvailability = async (time, duration) => {
   setCheckingAvailability(true);
   setError('');
 
-  // Simulated booked slots (replace this with actual API data)
-  const bookedSlots = [
-    { start: '10:00', end: '12:00' },
-    { start: '14:00', end: '15:30' },
-  ];
+  try {
+    const formattedDate = dayjs(bookingData.date).format('YYYY-MM-DD');
+    const selectedDay = bookingData.date.day();
+    const availabilityData = service?.availability;
 
-  setTimeout(() => {
-    const [startHour, startMin] = time.split(':').map(Number);
-    const durationMins = parseFloat(duration) * 60;
-    
-    const bookingStart = new Date(`1970-01-01T${time}`);
-    const bookingEnd = new Date(bookingStart.getTime() + durationMins * 60000);
+    // Step 1: Get working time range for this day
+    let timeRange = null;
 
-    let conflict = false;
+    const specific = availabilityData?.specificDates?.find(
+      (entry) => entry.date === formattedDate && entry.is_booked
+    );
 
-    for (let slot of bookedSlots) {
-      const slotStart = new Date(`1970-01-01T${slot.start}`);
-      const slotEnd = new Date(`1970-01-01T${slot.end}`);
-
-      if (bookingStart < slotEnd && bookingEnd > slotStart) {
-        conflict = true;
-        break;
+    if (specific) {
+      timeRange = { start: specific.start_time, end: specific.end_time };
+    } else if (availabilityData?.type === 'recurring') {
+      const recurring = availabilityData?.recurring?.find(
+        (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
+      );
+      if (recurring) {
+        timeRange = { start: recurring.start_time, end: recurring.end_time };
       }
     }
 
-    setIsSlotAvailable(!conflict);
-
-    if (conflict) {
-      setError('This time slot overlaps with an existing booking.');
+    if (!timeRange) {
+      setError('No working hours available for this date.');
+      setIsSlotAvailable(false);
+      setCheckingAvailability(false);
+      return;
     }
 
-    setCheckingAvailability(false);
-  }, 800);
+    // Step 2: Validate that selected time + duration fits within allowed range
+    const bookingStart = new Date(`1970-01-01T${time}`);
+    const durationMinutes = parseFloat(duration) * 60;
+    const bookingEnd = new Date(bookingStart.getTime() + durationMinutes * 60000);
+
+    const rangeStart = new Date(`1970-01-01T${timeRange.start}`);
+    const rangeEnd = new Date(`1970-01-01T${timeRange.end}`);
+
+    if (bookingStart < rangeStart || bookingEnd > rangeEnd) {
+      setError(`Selected time and duration exceed available hours (${timeRange.start} - ${timeRange.end}).`);
+      setIsSlotAvailable(false);
+      setCheckingAvailability(false);
+      return;
+    }
+
+    // Step 3: Call backend to check against existing bookings
+    const res = await authAxios.get(`/bookings/check-availability/`, {
+      params: {
+        date: formattedDate,
+        start_time: time,
+        duration: duration,
+        service_id: service.id
+      }
+    });
+
+    const available = res.data.available;
+    setIsSlotAvailable(available);
+
+    if (!available) {
+      setError('This time slot is already booked or overlaps with an existing booking.');
+    }
+  } catch (error) {
+    console.error('Error checking slot availability:', error);
+    setError('Failed to check availability. Please try again.');
+    setIsSlotAvailable(false);
+  }
+
+  setCheckingAvailability(false);
 };
+
+
 
   
   // Handle submit review
@@ -315,11 +377,12 @@ const checkTimeSlotAvailability = (time, duration) => {
   return flutterwaveScriptLoading;
 };
   const handlePayment = async () => {
+    console.log("hey");
     try {
       await loadFlutterwaveScript();
       setError('')
     window.FlutterwaveCheckout({
-      public_key: "FLWPUBK_TEST-f26186bcd6a1340b7d354280b2605ad2-X",
+      public_key: import.meta.env.VITE_PUBLIC_KEY,
       tx_ref: Date.now(),
       amount: calculatePrice(service?.basePrice, bookingData.duration),
       currency: "NGN",
@@ -336,8 +399,8 @@ const checkTimeSlotAvailability = (time, duration) => {
         response.status === 'completed' && (
           onConfirm({
           ...bookingData,
-          // date: bookingData.date?.format('YYYY-MM-DD'),
-          service: service
+          date: bookingData.date?.format('YYYY-MM-DD'),
+          service: service.name
         }), addBooking(service),
          
         setTimeout(() => {
@@ -356,7 +419,7 @@ const checkTimeSlotAvailability = (time, duration) => {
         setShowCancelMsg(true);
       },
       customizations: {
-        title: "Payment for Booking" ,
+        title: `Payment for Booking ${service.name}` ,
         description: `Booking for ${service.name}`,
         logo: "http://localhost:5173/logo.png",
       },
@@ -380,13 +443,9 @@ console.log(e);
       setActiveStep((prev) => prev + 1);
     } else {
       // Final step - process payment
-      // handlePayment();
-      onConfirm({
-          ...bookingData,
-          date: bookingData.date?.format('YYYY-MM-DD'),
-          service: service.name
-        })
-        addBooking(service)
+      console.log('object');
+      handlePayment();
+      
     }
   };
   

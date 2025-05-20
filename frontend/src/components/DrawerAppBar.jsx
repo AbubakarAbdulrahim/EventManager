@@ -28,7 +28,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
-const navItems = ['Home', 'Favorites', 'History', 'Profile', 'About'];
+const navItems = ['Home', "Bookings", 'Favorites', 'History', 'Profile', 'About'];
 const settings = ['Profile', 'Become a vendor', 'Account', 'Dashboard', 'Logout'];
 
 function DrawerAppBar(props) {

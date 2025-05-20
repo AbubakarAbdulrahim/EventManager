@@ -36,6 +36,7 @@ import {
   AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
 import NotificationModal from './NotificationModal';
+import { useAuth } from '../../context/AuthContext';
 
 export default function NavAppBar({currentPage, setCurrentPage}) {
     const theme = createTheme({
@@ -49,6 +50,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
       },
     });
     const [open, setOpen] = useState(false);
+    const {logout} = useAuth()
     const drawerWidth = open ? 240 : 60;
       
       const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
@@ -181,7 +183,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
                   <Typography variant="body2">Account Settings</Typography>
                 </MenuItem>
                 <Divider />
-                <MenuItem onClick={handleAccountClose}>
+                <MenuItem onClick={()=>{logout()}}>
                   <Typography variant="body2">Logout</Typography>
                 </MenuItem>
               </Menu>

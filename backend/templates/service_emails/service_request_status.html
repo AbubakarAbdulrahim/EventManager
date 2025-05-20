@@ -1,0 +1,40 @@
+<!-- New booking alert -->
+{% extends 'base_email.html' %}
+
+{% block subject %}
+    {{ subject }}
+{% endblock %}
+
+{% block content %}
+
+<table width="100%" style="font-family: Arial, sans-serif; border-collapse: collapse;">
+    <tr>
+      <td style="padding: 20px;">
+        {% if status == "approved" %}
+          <h2 style="color: #4CAF50;">Your Service Has Been Approved!</h2>
+          <p>Hi {{ vendor_username }},</p>
+          <p>We're excited to let you know that your service <strong>{{ service_name }}</strong> has been approved and is now live on the Event Master platform.</p>
+          <p><a href="{{ vendor_dashboard_url }}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Your Service</a></p>
+          <p>Start engaging with potential clients!</p>
+  
+        {% elif status == "suspended" %}
+          <h2 style="color: #F44336;">Your Service Has Been Suspended</h2>
+          <p>Hi {{ vendor_username }},</p>
+          <p>Unfortunately, your service <strong>{{ service_name }}</strong> has been suspended due to:</p>
+          <p><strong>{{ reason }}</strong></p>
+          <p>Please contact support at <a href="mailto:{{ support_email }}">{{ support_email }}</a> if you wish to appeal or get more details.</p>
+  
+        {% elif status == "rejected" %}
+          <h2 style="color: #F44336;">Your Service Was Rejected</h2>
+          <p>Hi {{ vendor_username }},</p>
+          <p>Your submitted service <strong>{{ service_name }}</strong> was not approved.</p>
+          <p><strong>Reason:</strong> {{ reason }}</p>
+          <p>You may revise and resubmit the service listing for re-evaluation.</p>
+        {% endif %}
+  
+        <p>Thank you for being part of Event Master.<br>The Event Master Team</p>
+      </td>
+    </tr>
+  </table>
+
+{% endblock %}

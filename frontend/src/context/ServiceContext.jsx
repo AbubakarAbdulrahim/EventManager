@@ -33,6 +33,7 @@ export const ServiceProvider = ({children}) => {
     const fetchServices = async () => {
     try { 
       const response = await authAxios.get('/vendors/services/');
+      console.log(response);
       return response.data;
     } catch (error) {
       console.error('Error fetching services:', error);

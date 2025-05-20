@@ -205,7 +205,7 @@ const transformedData= (data) => {
                       <TableCell>{service.id}</TableCell>
                       <TableCell>{service.name}</TableCell>
                       <TableCell>{service.vendor}</TableCell>
-                      <TableCell align="right">${service.price}</TableCell>
+                      <TableCell align="right">₦{service.price}</TableCell>
                       <TableCell align="center">{service.bookings}</TableCell>
                       <TableCell align="center">{service.rating}</TableCell>
                       <TableCell>

@@ -23,12 +23,16 @@ import VendorDashboard from "./pages/vendors/vendor";
 import VendorAdmin from "./pages/vendors/vendorAdmin";
 import BookingDetails from "./pages/users/BookingDetails";
 import VendorProvider from "./context/VendorContext";
+import UserProvider from "./context/UserContext";
+import Bookings from "./pages/users/Bookings";
 
 function App() {
   return (
     <AuthProvider>
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <UserProvider>
+
       <VendorProvider>
 
       <BookingsProvider>
@@ -51,7 +55,7 @@ function App() {
         } />
         <Route path="/vendor-applications" element={<VendorApplicationAdminPage/>}></Route>
         <Route path="/service/:id" element={<ServiceDetail />} />
-        <Route path="/booking/:bookingId" element={<BookingDetails />} />
+        <Route path="/bookings" element={<Bookings />} />
         <Route path="/favorites" element={<Favorites/>}></Route>
         <Route path="/admin-dashboard" element={<AdminDashboard/>}></Route>
         <Route path="/admin" element={
@@ -70,6 +74,7 @@ function App() {
       </ServiceProvider>
       </BookingsProvider>
       </VendorProvider>
+      </UserProvider>
     </ThemeProvider>
     </AuthProvider>
   )

@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useEffect } from "react";
+import { useAuth } from "./AuthContext";
 
 const BookingsContext = createContext();
 
@@ -6,7 +7,8 @@ export const useBookingContext = () => useContext(BookingsContext);
 
 export const BookingsProvider = ({children}) => {
     const [bookings, setBookings] = useState([]);
-    console.log(bookings)
+    const {authAxios} = useAuth()
+    
     useEffect(() => {
         const storedBookings = localStorage.getItem("bookings")
         if(storedBookings) {
@@ -35,6 +37,33 @@ export const BookingsProvider = ({children}) => {
     }
 
     const isBooked = (serviceId) => bookings.some(booking => booking.id === serviceId);
+
+    const fetchUserBookings = async() => {
+        try{
+            const res = await authAxios.get('/bookings/user-bookings/')
+            return res.data
+        } catch(err){
+            console.error(err);
+        }
+    }
+    const fetchVendorBookings = async() => {
+        try{
+            const res = await authAxios.get('/bookings/vendor-bookings/')
+            return res.data
+        } catch(err){
+            console.error(err);
+        }
+    }
+
+    const fetchAllBookings = async() =>{
+        try{
+            const res = await authAxios.get('/api-admin/bookings/')
+            return res.data
+        } catch(err){
+            console.error(err);
+        }
+
+    }
     
 
 
@@ -43,6 +72,9 @@ export const BookingsProvider = ({children}) => {
         addBooking,
         cancelBooking,
         isBooked,
+        fetchUserBookings,
+        fetchVendorBookings,
+        fetchAllBookings,
     }
 
     return (

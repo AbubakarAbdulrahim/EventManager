@@ -10,17 +10,33 @@ const authAxios = axios.create({
   withCredentials: true,
 });
 
+// Automatically add access token to headers
+authAxios.interceptors.request.use((config) => {
+  const token = accessTokenRef.current;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+let accessTokenRef = { current: null }; // lifted ref out for global axios access
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [hasTriedRefresh, setHasTriedRefresh] = useState(false);
 
   const navigate = useNavigate();
 
-  const accessTokenRef = useRef(null);
   const initializedRef = useRef(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Sync token to ref
   useEffect(() => {
@@ -28,30 +44,29 @@ export const AuthProvider = ({ children }) => {
   }, [accessToken]);
 
   useEffect(() => {
-  const initAuth = async () => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
+    const initAuth = async () => {
+      if (initializedRef.current) return;
+      initializedRef.current = true;
 
-    try {
-      const token = await refreshToken();
-      if (token) {
-        setAccessToken(token);
-      } else {
+      try {
+        const token = await refreshToken();
+        if (token) {
+          setAccessToken(token);
+          accessTokenRef.current = token;
+        } else {
+          setAccessToken(null);
+          setUser(null);
+        }
+      } catch {
         setAccessToken(null);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setAccessToken(null);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  initAuth();
-}, []);
-
-
+    initAuth();
+  }, []);
 
   // Axios 401 handler
   useEffect(() => {
@@ -59,7 +74,7 @@ export const AuthProvider = ({ children }) => {
       (res) => res,
       async (err) => {
         const original = err.config;
-        if (err.response?.status === 401 && !original._retry && accessTokenRef.current) {
+        if (err.response?.status === 401 && !original._retry) {
           original._retry = true;
           const newToken = await refreshToken();
           if (newToken) {
@@ -67,6 +82,7 @@ export const AuthProvider = ({ children }) => {
             return authAxios(original);
           } else {
             await logout();
+            window.location.href = '/login';
           }
         }
         return Promise.reject(err);
@@ -76,38 +92,42 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
-  try {
-    setLoading(true);
-    const res = await authAxios.post('/user/token/', credentials);
-    const { access } = res.data;
+    try {
+      setLoading(true);
+      const res = await authAxios.post('/user/token/', credentials);
+      const { access } = res.data;
 
-    setAccessToken(access);
-    const decoded = jwtDecode(access);
-    const userId = decoded.user_id;
+      setAccessToken(access);
+      accessTokenRef.current = access;
 
-    const userRes = await authAxios.get(`/user/${userId}/`, {
-      headers: { Authorization: `Bearer ${access}` },
-    });
+      const decoded = jwtDecode(access);
+      const userId = decoded.user_id;
 
-    setUser(userRes.data);
-    setError(null);
-  } catch (err) {
-    console.error("Login failed:", err);
-    setAccessToken(null);
-    setUser(null);
-    setError("Invalid username or password");
-    throw err;
-  } finally {
-    setLoading(false);
-  }
-};
-
+      const userRes = await authAxios.get(`/user/${userId}/`);
+      if (isMounted.current) {
+        setUser(userRes.data);
+        setError(null);
+      }
+    } catch (err) {
+      console.error("Login failed:", err);
+      setAccessToken(null);
+      accessTokenRef.current = null;
+      setUser(null);
+      setError("Invalid username or password");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const logout = async () => {
     try {
       await authAxios.post('/user/logout/');
-    } catch {}
+    } catch (err) {
+      console.warn("Logout failed:", err);
+    }
     setAccessToken(null);
+    accessTokenRef.current = null;
     setUser(null);
     setError(null);
     if (window.location.pathname !== '/login') {
@@ -116,77 +136,76 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshToken = async () => {
-  try {
-    const response = await authAxios.post('/user/token/refresh/');
-    const { access } = response.data;
-
-    if (!access) return null;
-
-    setAccessToken(access);
-
-    // Try decoding and fetching user
     try {
+      const response = await authAxios.post('/user/token/refresh/');
+      const { access } = response.data;
+
+      if (!access) return null;
+
+      setAccessToken(access);
+      accessTokenRef.current = access;
+
       const decoded = jwtDecode(access);
       const userId = decoded.user_id;
 
-      const userResponse = await authAxios.get(`/user/${userId}/`, {
-        headers: { Authorization: `Bearer ${access}` },
-      });
+      const userResponse = await authAxios.get(`/user/${userId}/`);
+      if (isMounted.current) {
+        setUser(userResponse.data);
+      }
 
-      setUser(userResponse.data);
+      return access;
     } catch (err) {
-      console.error("User fetch failed after refresh:", err);
-      // Prevent loop if user doesn't exist
+      console.error("Refresh token invalid:", err);
       return null;
     }
-
-    return access;
-  } catch (err) {
-    console.error("Refresh token invalid:", err);
-    return null;
-  }
-};
-
-
-  
-
+  };
 
   const apply = async (data) => {
     try {
-      // setLoading(true);
       const response = await authAxios.post('/vendors/create/', data);
-      
       setError(null);
-      console.log(response)
       return response.data;
     } catch (err) {
-      console.log(err)
-      const errorMessage = err;
+      const errorMessage = err?.response?.data?.detail || err.message || 'Something went wrong';
+      console.error("Apply failed:", errorMessage);
       setError(errorMessage);
       throw new Error(errorMessage);
     }
-  }
+  };
+
   const addNewService = async (data) => {
     try {
       setLoading(true);
       const response = await authAxios.post('/vendors/services/create/', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
       setError(null);
-      console.log(response)
       return response.data;
     } catch (err) {
-      console.log(err)
-      setError(err.message || 'Something went wrong');
-      throw err;
+      const errorMessage = err?.response?.data?.detail || err.message || 'Something went wrong';
+      console.error("Add service failed:", errorMessage);
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, loading, error, login, logout, authAxios, refreshToken, apply, addNewService }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        accessToken,
+        loading,
+        error,
+        login,
+        logout,
+        authAxios,
+        refreshToken,
+        apply,
+        addNewService,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );

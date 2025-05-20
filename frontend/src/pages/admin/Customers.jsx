@@ -118,13 +118,14 @@ import {
         const [snackbarMessage, setSnackbarMessage] = useState('');
         const [snackbarSeverity, setSnackbarSeverity] = useState('success');
         const [customers, setCustomers] = useState([]);
+        const [loading, setLoading] = useState(false);
         const {authAxios} = useAuth();
       
 
         useEffect(()=>{
           const fetchData= async()=>{
-
             try{
+              setLoading(true)
               const response = await authAxios.get('api-admin/users/')
               console.log(response.data);
               const transformed = response.data.map(user => {
@@ -144,6 +145,7 @@ import {
             } catch(err){
               console.log(err);
             } 
+            setLoading(false)
           }
           fetchData()
         },[])
@@ -183,6 +185,8 @@ import {
         );
       
         return (
+            <>
+
             <Box sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom textAlign={'center'} p={2}>
                 Customer Management
@@ -374,6 +378,7 @@ import {
 
 
         </Box>
+            </>
 
         );
 }

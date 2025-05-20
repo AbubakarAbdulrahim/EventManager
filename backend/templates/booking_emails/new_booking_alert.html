@@ -1,0 +1,32 @@
+<!-- New booking alert -->
+{% extends 'base_email.html' %}
+
+{% block subject %}
+    {{ subject }}
+{% endblock %}
+
+{% block content %}
+
+<table style="width:100%; font-family: Arial, sans-serif; border-collapse: collapse;">
+    <tr>
+        <td style="padding:20px;">
+            <h2 style="color:#3F51B5;">New Booking Alert: You're Part of an Upcoming Event!</h2>
+            <p>Hi {{ vendor_name }},</p>
+            <p>Great news! You've been booked for an event on <strong>{{ event_date }}</strong> by <strong>{{ client_name }}</strong>.</p>
+            <p>Here are the booking details:</p>
+            <ul>
+                <li><strong>Event:</strong> {{ event_type }}</li>
+                <li><strong>Date:</strong> {{ event_date }}</li>
+                <li><strong>Location:</strong> {{ event_location }}</li>
+                <li><strong>Service Booked:</strong> {{ service_name }}</li>
+            </ul>
+            <p>Please log in to your dashboard for full details and to confirm your availability:</p>
+            <p><a href="{{ vendor_dashboard_link }}" style="background-color:#3F51B5; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">View Booking</a></p>
+            <p>If you have any questions or need to reach the client, you can do so via your dashboard.</p>
+            <p>Thanks for being part of Event Master – we’re excited to see you in action!</p>
+            <p>Warm regards,<br>The Event Master Team</p>
+        </td>
+    </tr>
+</table>
+
+{% endblock %}

@@ -94,32 +94,195 @@ import {
   Legend, 
   Cell 
 } from 'recharts';
+import { useBookingContext } from '../../context/BookingsContext';
+import { useVendorContext } from '../../context/VendorContext';
+import { useUserContext } from '../../context/UserContext';
+import { useServiceContext } from '../../context/ServiceContext';
 
-
-
-const bookingTypeData = [
-    { name: 'Weddings', value: 35 },
-    { name: 'Corporate', value: 25 },
-    { name: 'Birthday', value: 20 },
-    { name: 'Anniversary', value: 15 },
-    { name: 'Other', value: 5 },
-  ];
-  
-  const COLORS = ['#0a7273', '#fda521', '#82ca9d', '#ff8042', '#a4de6c'];
-
-  const revenueData = [
-    { month: 'Jan', revenue: 25000, bookings: 125 },
-    { month: 'Feb', revenue: 30000, bookings: 148 },
-    { month: 'Mar', revenue: 28000, bookings: 135 },
-    { month: 'Apr', revenue: 32000, bookings: 162 },
-    { month: 'May', revenue: 40000, bookings: 190 },
-    { month: 'Jun', revenue: 45000, bookings: 210 },
-  ];
+const COLORS = ['#0a7273', '#fda521', '#82ca9d', '#ff8042', '#a4de6c'];
   
 
   export default function Reports() {
     const [reportPeriod, setReportPeriod] = useState('monthly');
-    
+    const { fetchAllBookings } = useBookingContext();
+    const { fetchVendors } = useVendorContext();
+    const { fetchUsers } = useUserContext();
+    const { fetchServices } = useServiceContext();
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [revenueData, setRevenueData] = useState([]);
+    const [bookingTypeData, setBookingTypeData] = useState([]);
+    const [customerGrowthData, setCustomerGrowthData] = useState([]);
+    const [vendorGrowthData, setVendorGrowthData] = useState([]);
+    const [advancedMetrics, setAdvancedMetrics] = useState({
+      avgTimeBetweenBookings: 0,
+      repeatBookingRate: 0,
+      avgSpendPerCustomer: 0,
+      topVendorCategory: '',
+      avgVendorRating: 0,
+      vendorRetentionRate: 0,
+      peakBookingDay: '',
+      peakBookingTime: '',
+      peakBookingMonth: '',
+    });
+
+
+
+    // New helper functions at the top
+    const getMonthlyRevenueData = (bookings) => {
+      const monthlyData = {};
+
+      bookings.forEach(({ created_at, total_price }) => {
+        const date = new Date(created_at);
+        const month = date.toLocaleString('default', { month: 'short' });
+
+        if (!monthlyData[month]) {
+          monthlyData[month] = { month, revenue: 0, bookings: 0 };
+        }
+
+        monthlyData[month].revenue += parseFloat(total_price);
+        monthlyData[month].bookings += 1;
+      });
+
+      // Sort by month (Jan to Dec)
+      const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      return monthOrder
+        .map((m) => monthlyData[m])
+        .filter(Boolean); // removes undefined
+    };
+
+    const getBookingTypeData = (bookings) => {
+      const typeCounts = {};
+      bookings.forEach(({ service }) => {
+        if (!service.service_type) return;
+        typeCounts[service.service_type] = (typeCounts[service.service_type] || 0) + 1;
+      });
+
+      return Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
+    };
+
+    const getMonthlyCount = (items, dateField = 'created_at') => {
+      const monthlyData = {};
+
+      items.forEach((item) => {
+        const date = new Date(item[dateField] ?? item['date_joined']);
+        const month = date.toLocaleString('default', { month: 'short' });
+        const year = date.getFullYear();
+        const key = `${year}-${month}`;
+
+        if (!monthlyData[key]) {
+          monthlyData[key] = { month: key, count: 0 };
+        }
+
+        monthlyData[key].count += 1;
+      });
+
+      // Sort chronologically
+      return Object.values(monthlyData).sort((a, b) => {
+        const [yearA, monthA] = a.month.split('-');
+        const [yearB, monthB] = b.month.split('-');
+
+        const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        if (yearA !== yearB) {
+          return parseInt(yearA) - parseInt(yearB);
+        }
+
+        return monthOrder.indexOf(monthA) - monthOrder.indexOf(monthB);
+      });
+    };
+
+
+
+    const computeAdvancedAnalytics = (bookings, vendors) => {
+      const customerBookings = {};
+      const customerSpend = {};
+      const vendorRatings = vendors.map(v => v.rating).filter(Boolean);
+      const vendorJoinDates = vendors.map(v => new Date(v.date_joined));
+
+      const bookingDates = bookings.map(b => new Date(b.created_at)).sort((a, b) => a - b);
+      const dayCounts = {};
+      const timeCounts = {};
+      const monthCounts = {};
+      const vendorRevenue = {};
+
+      bookings.forEach((b) => {
+        const customerId = b.user?.id;
+        const vendorCategory = b.service?.service_type;
+        const vendorId = b.vendor?.id;
+        const createdAt = new Date(b.created_at);
+
+        // Track repeat bookings
+        if (customerId) {
+          customerBookings[customerId] = (customerBookings[customerId] || 0) + 1;
+          customerSpend[customerId] = (customerSpend[customerId] || 0) + parseFloat(b.total_price);
+        }
+
+        // Track peak day/time/month
+        const weekday = createdAt.toLocaleString('default', { weekday: 'long' });
+        const hour = createdAt.getHours();
+        const month = createdAt.toLocaleString('default', { month: 'long' });
+
+        dayCounts[weekday] = (dayCounts[weekday] || 0) + 1;
+        timeCounts[hour] = (timeCounts[hour] || 0) + 1;
+        monthCounts[month] = (monthCounts[month] || 0) + 1;
+
+        // Vendor revenue
+        if (vendorCategory) {
+          vendorRevenue[vendorCategory] = (vendorRevenue[vendorCategory] || 0) + parseFloat(b.total_price);
+        }
+      });
+
+      const repeatCustomers = Object.values(customerBookings).filter(b => b > 1).length;
+      const avgSpend = Object.values(customerSpend).reduce((a, b) => a + b, 0) / Object.keys(customerSpend).length;
+      const avgTime = (bookingDates.length >= 2)
+        ? (bookingDates[bookingDates.length - 1] - bookingDates[0]) / (bookingDates.length - 1) / (1000 * 60 * 60 * 24)
+        : 0;
+
+      const topCategory = Object.entries(vendorRevenue).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+
+      const topDay = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      const topTime = Object.entries(timeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      const topMonth = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+
+      return {
+        avgTimeBetweenBookings: Math.round(avgTime),
+        repeatBookingRate: Math.round((repeatCustomers / Object.keys(customerBookings).length) * 100),
+        avgSpendPerCustomer: avgSpend.toFixed(2),
+        topVendorCategory: topCategory,
+        avgVendorRating: (vendorRatings.reduce((a, b) => a + b, 0) / vendorRatings.length).toFixed(1),
+        vendorRetentionRate: '92', // For simplicity, hardcoded or add logic
+        peakBookingDay: topDay,
+        peakBookingTime: `${topTime}:00 - ${+topTime + 2}:00`,
+        peakBookingMonth: topMonth
+      };
+    };
+
+
+    useEffect(() => {
+      const fetchReports = async () => {
+          try {
+            setLoading(true)
+            const allBookings = await fetchAllBookings();
+            const vendors = await fetchVendors();
+            const users = await fetchUsers()
+            setBookings(allBookings);
+            setRevenueData(getMonthlyRevenueData(allBookings));
+            setBookingTypeData(getBookingTypeData(allBookings));
+            setCustomerGrowthData(getMonthlyCount(users));
+            setVendorGrowthData(getMonthlyCount(vendors));
+            
+            const analytics = computeAdvancedAnalytics(allBookings, vendors);
+            setAdvancedMetrics(analytics);
+          } catch (err) {
+            console.error(err);
+          }
+          setLoading(false)
+        };
+        fetchReports();
+    }, []);
+
     return (
       <Grid container spacing={3} padding={3}>
         <Grid item xs={12}>
@@ -158,7 +321,7 @@ const bookingTypeData = [
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="revenue" stroke="#033043" name="Revenue ($)" />
+                    <Line type="monotone" dataKey="revenue" stroke="#033043" name="Revenue (₦)" />
                   </LineChart>
                 </ResponsiveContainer>
               </Grid>
@@ -211,38 +374,24 @@ const bookingTypeData = [
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle1" gutterBottom>Customer Growth</Typography>
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={[
-                    { month: 'Jan', customers: 45 },
-                    { month: 'Feb', customers: 52 },
-                    { month: 'Mar', customers: 61 },
-                    { month: 'Apr', customers: 68 },
-                    { month: 'May', customers: 75 },
-                    { month: 'Jun', customers: 85 },
-                  ]}>
+                  <LineChart data={customerGrowthData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="customers" stroke="#033043" />
+                    <Line dataKey="count" stroke="#033043" />
                   </LineChart>
                 </ResponsiveContainer>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle1" gutterBottom>Vendor Growth</Typography>
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={[
-                    { month: 'Jan', vendors: 18 },
-                    { month: 'Feb', vendors: 21 },
-                    { month: 'Mar', vendors: 24 },
-                    { month: 'Apr', vendors: 26 },
-                    { month: 'May', vendors: 29 },
-                    { month: 'Jun', vendors: 32 },
-                  ]}>
+                  <LineChart data={vendorGrowthData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="vendors" stroke="#82ca9d" />
+                    <Line dataKey="count" stroke="#82ca9d" />
                   </LineChart>
                 </ResponsiveContainer>
               </Grid>
@@ -263,17 +412,17 @@ const bookingTypeData = [
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       Average Time Between Bookings
                     </Typography>
-                    <Typography variant="h6">45 days</Typography>
+                    <Typography variant="h6">{advancedMetrics.avgTimeBetweenBookings} days</Typography>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} gutterBottom>
                       Repeat Booking Rate
                     </Typography>
-                    <Typography variant="h6">38%</Typography>
+                    <Typography variant="h6">{advancedMetrics.repeatBookingRate}%</Typography>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} gutterBottom>
                       Average Spend per Customer
                     </Typography>
-                    <Typography variant="h6">$2,458</Typography>
+                    <Typography variant="h6">₦{advancedMetrics.avgSpendPerCustomer}</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -284,17 +433,17 @@ const bookingTypeData = [
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       Top Performing Vendor Category
                     </Typography>
-                    <Typography variant="h6">Photography (32% of Revenue)</Typography>
+                    <Typography variant="h6">{advancedMetrics.topVendorCategory}</Typography>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} gutterBottom>
                       Average Vendor Rating
                     </Typography>
-                    <Typography variant="h6">4.7/5.0</Typography>
+                    <Typography variant="h6">{advancedMetrics.avgVendorRating}/5.0</Typography>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} gutterBottom>
                       Vendor Retention Rate
                     </Typography>
-                    <Typography variant="h6">92%</Typography>
+                    <Typography variant="h6">{advancedMetrics.vendorRetentionRate}%</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -305,17 +454,17 @@ const bookingTypeData = [
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       Peak Booking Day
                     </Typography>
-                    <Typography variant="h6">Saturday (42% of Bookings)</Typography>
+                    <Typography variant="h6">{advancedMetrics.peakBookingDay}</Typography>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} gutterBottom>
                       Peak Booking Time
                     </Typography>
-                    <Typography variant="h6">7:00 PM - 9:00 PM</Typography>
+                    <Typography variant="h6">{advancedMetrics.peakBookingTime}</Typography>
                     
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} gutterBottom>
                       Peak Booking Month
                     </Typography>
-                    <Typography variant="h6">June (18% of Annual Bookings)</Typography>
+                    <Typography variant="h6">{advancedMetrics.peakBookingMonth}</Typography>
                   </CardContent>
                 </Card>
               </Grid>

@@ -1,148 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  CssBaseline, 
-  Drawer, 
-  AppBar, 
-  Toolbar, 
-  List, 
-  Typography, 
-  Divider, 
-  IconButton, 
-  Container, 
-  Grid, 
-  Paper, 
-  ListItem, 
-  ListItemIcon, 
-  ListItemText, 
-  Badge, 
-  Menu, 
-  MenuItem, 
-  ThemeProvider, 
-  createTheme,
-  Card,
-  CardContent,
-  CardHeader,
-  Button,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tab,
-  Tabs,
-  Avatar,
-  LinearProgress,
-  Snackbar,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  InputAdornment,
-  Switch,
-  FormControlLabel,
-  Select,
-  FormControl,
-  InputLabel,
-  Chip
-} from '@mui/material';
-
 import {
-  Menu as MenuIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Notifications as NotificationsIcon,
-  Dashboard as DashboardIcon,
-  Person as PersonIcon,
-  People as PeopleIcon,
-  Settings as SettingsIcon,
-  Payment as PaymentIcon,
-  BarChart as BarChartIcon,
-  EventNote as EventNoteIcon,
-  Store as StoreIcon,
-  SupportAgent as SupportAgentIcon,
-  Search as SearchIcon,
-  Add as AddIcon,
-  Refresh as RefreshIcon,
-  AttachMoney as AttachMoneyIcon,
-  TrendingUp as TrendingUpIcon,
-  AccountCircle as AccountCircleIcon,
-  LocalOffer as LocalOfferIcon,
-  Email as EmailIcon,
-  Stars as StarsIcon,
-  CalendarToday as CalendarTodayIcon,
-  AccountBox as AccountBoxIcon,
-} from '@mui/icons-material';
-import Accordion from '@mui/material/Accordion';
-
-// Chart components
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  ResponsiveContainer, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  Cell 
-} from 'recharts';
-
-
-const recentBookings = [
-  { id: 'BK001', customer: 'Fatima Musa', service: 'Photography', vendor: 'Arewa Lens Studio', date: '2025-04-22', amount: 1200, status: 'Completed' },
-  { id: 'BK002', customer: 'Abubakar Sani', service: 'Catering', vendor: 'Lafiya Kitchen', date: '2025-04-23', amount: 2500, status: 'Upcoming' },
-  { id: 'BK003', customer: 'Zainab Aliyu', service: 'Venue Rental', vendor: 'Kano Royal Hall', date: '2025-04-25', amount: 5000, status: 'Pending' },
-  { id: 'BK004', customer: 'Umar Bello', service: 'DJ Services', vendor: 'Sauti Vibes', date: '2025-04-20', amount: 800, status: 'Completed' },
-  { id: 'BK005', customer: 'Aisha Ibrahim', service: 'Event Decor', vendor: 'Zamani Events', date: '2025-04-24', amount: 1500, status: 'Cancelled' },
-];
-
-  
+  Box, Grid, Paper, Typography, FormControl, InputLabel, Select, MenuItem,
+  Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
+  Button, Chip, TextField, InputAdornment,
+  CircularProgress
+} from '@mui/material';
+import { Search as SearchIcon, Add as AddIcon } from '@mui/icons-material';
+import { useBookingContext } from '../../context/BookingsContext';
 
 export default function Bookings() {
   const [statusFilter, setStatusFilter] = useState('All');
+  const [groupBy, setGroupBy] = useState('None');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const { fetchAllBookings } = useBookingContext();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  };
+
+  const formatTime = (isoString) => {
+    const date = new Date(isoString);
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setLoading(true)
+        const res = await fetchAllBookings();
+        setBookings(res);
+      } catch (err) {
+        console.error(err);
+      }
+      setLoading(false)
+    };
+    fetchBookings();
+  }, []);
+
+  const filteredBookings = bookings.filter((b) => {
+    const matchesStatus = statusFilter === 'All' || b.status === statusFilter;
+    const createdAt = new Date(b.created_at);
+    const matchesFromDate = !fromDate || createdAt >= new Date(fromDate);
+    const matchesToDate = !toDate || createdAt <= new Date(toDate);
+    const search = searchTerm.toLowerCase();
+    const matchesSearch =
+      b.id.toString().includes(search) ||
+      b.user.full_name.toLowerCase().includes(search) ||
+      b.vendor.business_name.toLowerCase().includes(search);
+    return matchesStatus && matchesFromDate && matchesToDate && matchesSearch;
+  });
+
+  const groupBookings = (data) => {
+    if (groupBy === 'None') return { 'All Bookings': data };
+    return data.reduce((groups, booking) => {
+      const key =
+        groupBy === 'User'
+          ? booking.user.full_name
+          : groupBy === 'Vendor'
+          ? booking.vendor.business_name
+          : groupBy === 'Service'
+          ? booking.service.service_name
+          : 'Other';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(booking);
+      return groups;
+    }, {});
+  };
+
+  const grouped = groupBookings(filteredBookings);
+
   return (
-    <Grid container spacing={3} padding={3}>
-      <Grid item xs={12}>
+    <Grid container spacing={3} padding={3} display={'flex'} justifyContent={'center'} alignItems={'center'} height={'100vh'}>
+      {!loading ? <Grid item xs={12}>
         <Paper elevation={3} sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography component="h2" variant="h6" color="primary">
               Booking Management
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="All">All Bookings</MenuItem>
-                  <MenuItem value="Upcoming">Upcoming</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                  <MenuItem value="Cancelled">Cancelled</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                </Select>
-              </FormControl>
-              <Button variant="contained" startIcon={<AddIcon />}>
-                Create Booking
-              </Button>
-            </Box>
+            <Button variant="contained" startIcon={<AddIcon />}>
+              Create Booking
+            </Button>
           </Box>
-          
-          <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+
+          {/* Filters */}
+          <Box sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             <TextField
               label="Search"
               size="small"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by ID, customer, or vendor"
               InputProps={{
                 startAdornment: (
@@ -157,26 +110,48 @@ export default function Bookings() {
               label="From Date"
               type="date"
               size="small"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
             <TextField
               label="To Date"
               type="date"
               size="small"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
             <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Service Type</InputLabel>
-              <Select label="Service Type">
-                <MenuItem value="All">All Services</MenuItem>
-                <MenuItem value="Photography">Photography</MenuItem>
-                <MenuItem value="Catering">Catering</MenuItem>
-                <MenuItem value="Venue">Venue</MenuItem>
-                <MenuItem value="Entertainment">Entertainment</MenuItem>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="All">All Bookings</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="cancelled">Cancelled</MenuItem>
+                <MenuItem value="pending">Pending</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Group By</InputLabel>
+              <Select
+                value={groupBy}
+                label="Group By"
+                onChange={(e) => setGroupBy(e.target.value)}
+              >
+                <MenuItem value="None">None</MenuItem>
+                <MenuItem value="User">Grouped by Users</MenuItem>
+                <MenuItem value="Vendor">Grouped by Vendors</MenuItem>
+                <MenuItem value="Service">Grouped by Services</MenuItem>
               </Select>
             </FormControl>
           </Box>
-          
+
+          {/* Table */}
           <TableContainer>
             <Table>
               <TableHead>
@@ -186,49 +161,74 @@ export default function Bookings() {
                   <TableCell>Service</TableCell>
                   <TableCell>Vendor</TableCell>
                   <TableCell>Date</TableCell>
+                  <TableCell>Time</TableCell>
                   <TableCell align="right">Amount</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {recentBookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell>{booking.id}</TableCell>
-                    <TableCell>{booking.customer}</TableCell>
-                    <TableCell>{booking.service}</TableCell>
-                    <TableCell>{booking.vendor}</TableCell>
-                    <TableCell>{booking.date}</TableCell>
-                    <TableCell align="right">${booking.amount}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={booking.status} 
-                        color={
-                          booking.status === 'Completed' ? 'success' : 
-                          booking.status === 'Upcoming' ? 'primary' :
-                          booking.status === 'Pending' ? 'warning' : 'error'
-                        } 
-                        size="small" 
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                        <Button size="small" variant="outlined">View</Button>
-                        {booking.status === 'Upcoming' && (
-                          <Button size="small" variant="outlined" color="error">Cancel</Button>
-                        )}
-                        {booking.status === 'Completed' && (
-                          <Button size="small" variant="outlined" color="secondary">Invoice</Button>
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
+                {Object.entries(grouped).map(([groupName, groupBookings]) => (
+                  <React.Fragment key={groupName}>
+                    {groupBy !== 'None' && (
+                      <TableRow>
+                        <TableCell colSpan={9}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }}>
+                            {groupBy}: {groupName}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {groupBookings.map((booking) => (
+                      <TableRow key={booking.id}>
+                        <TableCell>{booking.id}</TableCell>
+                        <TableCell>{booking.user.full_name}</TableCell>
+                        <TableCell>{booking.service.service_name}</TableCell>
+                        <TableCell>{booking.vendor.business_name}</TableCell>
+                        <TableCell>{formatDate(booking.created_at)}</TableCell>
+                        <TableCell>{formatTime(booking.created_at)}</TableCell>
+                        <TableCell align="right">₦{booking.total_price}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={booking.status}
+                            color={
+                              booking.status === 'Completed'
+                                ? 'success'
+                                : booking.status === 'Upcoming'
+                                ? 'primary'
+                                : booking.status === 'Pending'
+                                ? 'warning'
+                                : 'error'
+                            }
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                            <Button size="small" variant="outlined">
+                              View
+                            </Button>
+                            {booking.status === 'Upcoming' && (
+                              <Button size="small" variant="outlined" color="error">
+                                Cancel
+                              </Button>
+                            )}
+                            {booking.status === 'Completed' && (
+                              <Button size="small" variant="outlined" color="secondary">
+                                Invoice
+                              </Button>
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
         </Paper>
-      </Grid>
+      </Grid> : <CircularProgress/>}
     </Grid>
   );
 }

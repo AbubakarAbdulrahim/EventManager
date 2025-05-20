@@ -14,23 +14,56 @@ import {
 } from '@mui/icons-material';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import { useBookingContext } from '../../context/BookingsContext';
 
+const transformedData = (customer) =>{
+  return customer.map(data=>{
 
-const services = [
-  { id: 1, name: 'Photography', description: 'Professional event photography services', price: 1200, isActive: true, customers: 10, income: 12000 },
-  { id: 2, name: 'Venue Rental', description: 'Spacious and well-decorated event venues', price: 5000, isActive: true, customers: 4, income: 20000 },
-  { id: 3, name: 'Catering Services', description: 'Delicious traditional and continental meals', price: 3000, isActive: false, customers: 6, income: 18000 },
-];
-
-const initialCustomers = [
-  { id: 1, name: 'Amina Bello', email: 'amina.bello@example.com', company: 'Arewa Events', services: [1, 2], totalSpent: 6200 },
-  { id: 2, name: 'Musa Abdullahi', email: 'musa.abdullahi@example.com', company: 'Northern Touch', services: [1], totalSpent: 1200 },
-  { id: 3, name: 'Hauwa Yusuf', email: 'hauwa.yusuf@example.com', company: 'Zaria Planners', services: [2, 3], totalSpent: 8000 },
-];
-
+    return {
+              id: data.id,
+              name: data.user.full_name,
+              email: data.user.email,
+              phone: data.user.phone_number,
+              services: [1,2,3],
+              totalSpent: data.total_price
+    }
+  })
+}
 
 export default function Customers() {
-    const [customers, setCustomers] = useState(initialCustomers);
+    const [customers, setCustomers] = useState([]);
+    const {fetchVendorBookings} = useBookingContext()
+    
+    useEffect(()=>{
+      fetchBookings()
+    },[])
+
+    const fetchBookings = async () =>{
+      try{
+        const res = await fetchVendorBookings();
+        const grouped = {};
+
+        res.forEach((item) => {
+          const userId = item.user.id;
+          if (!grouped[userId]) {
+            grouped[userId] = {
+              id: userId,
+              user: item.user,
+              services: [],
+              bookings: [],
+              totalSpent: item.total_price
+            };
+          }
+          grouped[userId].services.push(item.service);
+          grouped[userId].bookings.push(item.service);
+        });
+        console.log(Object.values(grouped));
+        const data = transformedData(res)
+        setCustomers(Object.values(grouped))
+      } catch(err){
+        console.error(err)
+      }
+    }
 
     return (
         <>
@@ -47,27 +80,30 @@ export default function Customers() {
                   <TableCell>Email</TableCell>
                   <TableCell>Phone Number</TableCell>
                   <TableCell>Services</TableCell>
+                  <TableCell>Bookings</TableCell>
                   <TableCell>Total Spent</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {customers.map((customer) => (
                   <TableRow key={customer.id}>
-                    <TableCell>{customer.name}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone}</TableCell>
+                    <TableCell>{customer.user.full_name}</TableCell>
+                    <TableCell>{customer.user.email}</TableCell>
+                    <TableCell>{customer.user.phone_number}</TableCell>
                     <TableCell>
-                      {customer.services.map(serviceId => {
-                        const service = services.find(s => s.id === serviceId);
+                      {customer.services.map((service, index) => {
                         return service ? (
                           <Chip 
-                            key={serviceId}
-                            label={service.name}
+                            key={index}
+                            label={service.service_name}
                             size="small"
                             sx={{ mr: 0.5, mb: 0.5 }}
                           />
                         ) : null;
                       })}
+                    </TableCell>
+                    <TableCell>
+                      {customer.bookings.length}
                     </TableCell>
                     <TableCell>₦{customer.totalSpent}</TableCell>
                   </TableRow>

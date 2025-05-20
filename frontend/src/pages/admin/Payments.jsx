@@ -171,9 +171,9 @@ export default function Payments() {
                           <TableCell>{transaction.booking}</TableCell>
                           <TableCell>{transaction.customer}</TableCell>
                           <TableCell>{transaction.vendor}</TableCell>
-                          <TableCell align="right">${transaction.amount}</TableCell>
-                          <TableCell align="right">${transaction.fee}</TableCell>
-                          <TableCell align="right">${transaction.vendorAmount}</TableCell>
+                          <TableCell align="right">₦{transaction.amount}</TableCell>
+                          <TableCell align="right">₦{transaction.fee}</TableCell>
+                          <TableCell align="right">₦{transaction.vendorAmount}</TableCell>
                           <TableCell>{transaction.date}</TableCell>
                           <TableCell>
                             <Chip 
@@ -220,7 +220,7 @@ export default function Payments() {
                     <TableBody>
                       <TableRow>
                         <TableCell>ProShots Inc.</TableCell>
-                        <TableCell align="right">$3,420</TableCell>
+                        <TableCell align="right">₦3,420</TableCell>
                         <TableCell>2025-04-10</TableCell>
                         <TableCell>Bank Transfer</TableCell>
                         <TableCell align="center">
@@ -229,7 +229,7 @@ export default function Payments() {
                       </TableRow>
                       <TableRow>
                         <TableCell>Delicious Foods</TableCell>
-                        <TableCell align="right">$7,125</TableCell>
+                        <TableCell align="right">₦7,125</TableCell>
                         <TableCell>2025-04-05</TableCell>
                         <TableCell>PayPal</TableCell>
                         <TableCell align="center">
@@ -238,7 +238,7 @@ export default function Payments() {
                       </TableRow>
                       <TableRow>
                         <TableCell>Grand Ballroom</TableCell>
-                        <TableCell align="right">$14,250</TableCell>
+                        <TableCell align="right">₦14,250</TableCell>
                         <TableCell>2025-03-28</TableCell>
                         <TableCell>Bank Transfer</TableCell>
                         <TableCell align="center">
@@ -247,7 +247,7 @@ export default function Payments() {
                       </TableRow>
                       <TableRow>
                         <TableCell>Beat Masters</TableCell>
-                        <TableCell align="right">$2,280</TableCell>
+                        <TableCell align="right">₦2,280</TableCell>
                         <TableCell>2025-04-12</TableCell>
                         <TableCell>Bank Transfer</TableCell>
                         <TableCell align="center">
@@ -298,7 +298,7 @@ export default function Payments() {
                         <TableCell>Robert Brown</TableCell>
                         <TableCell>Wedding Decor Package</TableCell>
                         <TableCell>2025-04-24</TableCell>
-                        <TableCell align="right">$1,500</TableCell>
+                        <TableCell align="right">₦1,500</TableCell>
                         <TableCell>Cancellation</TableCell>
                         <TableCell>
                           <Chip label="Completed" color="success" size="small" />
@@ -312,7 +312,7 @@ export default function Payments() {
                         <TableCell>Lisa Miller</TableCell>
                         <TableCell>DJ Services</TableCell>
                         <TableCell>2025-04-22</TableCell>
-                        <TableCell align="right">$800</TableCell>
+                        <TableCell align="right">₦800</TableCell>
                         <TableCell>Service issue</TableCell>
                         <TableCell>
                           <Chip label="Pending" color="warning" size="small" />
@@ -396,7 +396,7 @@ export default function Payments() {
                               type="number"
                               defaultValue="100"
                               InputProps={{
-                                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                                startAdornment: <InputAdornment position="start">₦</InputAdornment>,
                               }}
                             />
                           </FormControl>

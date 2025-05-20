@@ -59,6 +59,7 @@ import { use } from 'react';
 
 // Function to transform backend data to the format our component expects
 const transformServiceData = (backendData) => {
+  console.log(backendData);
   return backendData.map(service => ({
     id: service.id,
     name: service.service_name,
@@ -173,7 +174,8 @@ const ServiceDetail = () => {
   const [bookings, setBookings] = useState([]);
   const [openSuccess, setOpenSuccess] = useState(false);
   const [selectedService, setSelectedService] = useState("");
-   const [coords, setCoords] = useState(null);
+  const [coords, setCoords] = useState(null);
+  const [bookingId, setBookingId] = useState(1)
 
    useEffect(() => {
     geocodePlace(service?.location)
@@ -216,6 +218,7 @@ useEffect(() => {
             if (vendorDetails) {
               // Update the service with actual provider details
               foundService.provider = {
+                id: vendorDetails.id,
                 name: vendorDetails.business_name || "Service Provider",
                 description: vendorDetails.description || "Professional service provider with extensive experience.",
                 logo: vendorDetails.logo_url || "/api/placeholder/100/100",
@@ -263,7 +266,7 @@ useEffect(() => {
   };
 
   loadServiceAndVendor();
-}, [id, isBooked, isFavorite]);
+}, []);
 
   
     
@@ -317,6 +320,11 @@ useEffect(() => {
     setOpenBookingDialog(false);
   };
 
+  const formatHours = (hours) =>{
+    const hh = String(hours).padStart(2, '0');
+    return `${hh}:00:00`
+  }
+
   const handleConfirmBooking = async (item) => {
     const end_time = (parseInt(item.time) + parseInt(item.duration)).toString()
     const newTime =new Date(`1970-01-01T${end_time +':00'}`).toLocaleTimeString('en-US', {
@@ -324,17 +332,23 @@ useEffect(() => {
     minute: '2-digit',
     hour12: false,
   });
+  const duration = formatHours(item.duration)
     const data = {
       event_date: item.date,
+      vendor_id: service?.provider?.id,
       start_time: item.time,
       end_time: newTime,
       total_price: item.price,
-      duration: item.duration,
-      service: service.id
+      duration: duration,
+      service_id: service.id,
     }
+
+    console.log(service);
     try{
-      const response = await authAxios.post('/bookings/', data)
-      console.log(response);
+      const response = await authAxios.post('/bookings/create/', data)
+      const booking = response.data
+      console.log(booking);
+      setBookingId(booking.id)
     } catch(error){
       console.log(error);
     }
@@ -842,7 +856,7 @@ useEffect(() => {
         title={'Booking Confirmed Successfully!'} 
         body={"Your booking has been successfully completed. Thank you for choosing us!"} 
         action={'Booking details'}
-        url={`/booking/${id}`}
+        url={`/booking/${bookingId}`}
       />
     </Container>
   );

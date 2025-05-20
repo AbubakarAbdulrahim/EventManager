@@ -94,18 +94,11 @@ import {
   Legend, 
   Cell 
 } from 'recharts';
+import { useAuth } from '../../context/AuthContext';
+import { useServiceContext } from '../../context/ServiceContext';
+import { useVendorContext } from '../../context/VendorContext';
+import { useBookingContext } from '../../context/BookingsContext';
 
-const initialServices = [
-  { id: 1, name: 'Photography', description: 'Professional event photography services', price: 1200, isActive: true, customers: 10, income: 12000 },
-  { id: 2, name: 'Venue Rental', description: 'Spacious and well-decorated event venues', price: 5000, isActive: true, customers: 4, income: 20000 },
-  { id: 3, name: 'Catering Services', description: 'Delicious traditional and continental meals', price: 3000, isActive: false, customers: 6, income: 18000 },
-];
-
-const initialCustomers = [
-  { id: 1, name: 'Amina Bello', email: 'amina.bello@example.com', company: 'Arewa Events', services: [1, 2], totalSpent: 6200 },
-  { id: 2, name: 'Musa Abdullahi', email: 'musa.abdullahi@example.com', company: 'Northern Touch', services: [1], totalSpent: 1200 },
-  { id: 3, name: 'Hauwa Yusuf', email: 'hauwa.yusuf@example.com', company: 'Zaria Planners', services: [2, 3], totalSpent: 8000 },
-];
 
 
   const initialFeedback = [
@@ -113,16 +106,87 @@ const initialCustomers = [
     { id: 2, customerId: 2, feedback: 'Very satisfied with the product.', response: '' },
     { id: 3, customerId: 3, feedback: 'Could be better.', response: '' },
   ];
+const COLORS = ['#033043', '#0a7273', '#FFBB28', '#FF8042'];
+const transformedData = (servicesData, bookings) => {
+  const bookingCounts = {};
+
+  bookings.forEach(booking => {
+    const serviceId = booking.service.id;
+    if (!bookingCounts[serviceId]) {
+      bookingCounts[serviceId] = 0;
+    }
+    bookingCounts[serviceId]++;
+  });
+
+  return servicesData.map(service => {
+    const price = service.pricing[0].base_price;
+    const customerCount = bookingCounts[service.id] || 0;
+    return {
+      id: service.id,
+      name: service.service_name,
+      description: service.description,
+      price,
+      isActive: service.status,
+      customers: customerCount,
+      income: price * customerCount,
+      service_images: service.service_images,
+    };
+  });
+};
 
 export default function Dashboard (){
-    const [services, setServices] = useState(initialServices);
-    const [customers, setCustomers] = useState(initialCustomers);
+    const [services, setServices] = useState([]);
+    const [customers, setCustomers] = useState([]);
     const [feedback, setFeedback] = useState(initialFeedback);
     const [openFeedbackDialog, setOpenFeedbackDialog] = useState(false);
     const [selectedFeedback, setSelectedFeedback] = useState(null);
     const [responseText, setResponseText] = useState('');
+    const {user} = useAuth()
+    const {fetchServices} = useServiceContext()
+    const {fetchVendors} = useVendorContext()
+    const {fetchVendorBookings} = useBookingContext()
+ 
+    useEffect(()=>{
+          fetchBookings()
+        },[])
+    
+        const fetchBookings = async () =>{
+          try{
+            
+            const vendors = await fetchVendors();
+            const vendor = vendors.find(v => v.user.id === user.id);
+            const vendorId = vendor?.id;
+
+            const allBookings = await fetchVendorBookings();
 
 
+            const allServices = await fetchServices();
+            const vendorServices = allServices.filter(s => s.vendor === vendorId);
+
+            const transformedServices = transformedData(vendorServices, allBookings);
+
+            const grouped = {};
+    
+            allBookings.forEach((item) => {
+              const userId = item.user.id;
+              if (!grouped[userId]) {
+                grouped[userId] = {
+                  id: userId,
+                  user: item.user,
+                  services: [],
+                  bookings: [],
+                  totalSpent: item.total_price
+                };
+              }
+              grouped[userId].services.push(item.service);
+              grouped[userId].bookings.push(item.service);
+            });
+            setServices(transformedServices)
+            setCustomers(Object.values(grouped))
+          } catch(err){
+            console.error(err)
+          }
+        }
 
     const handleRespond = (feedbackId) => {
         const feedbackItem = feedback.find(item => item.id === feedbackId);
@@ -162,8 +226,7 @@ export default function Dashboard (){
 
     const handleRefresh = () => {
         // Simulate a refresh action (e.g., fetching new data)
-        setServices(initialServices);
-        setCustomers(initialCustomers);
+        
         setFeedback(initialFeedback);
         setOpenFeedbackDialog(false);
         setSelectedFeedback(null);
@@ -172,8 +235,8 @@ export default function Dashboard (){
 
     const handleSearch = (event) => {
         const query = event.target.value.toLowerCase();
-        const filteredServices = initialServices.filter(service => service.name.toLowerCase().includes(query));
-        const filteredCustomers = initialCustomers.filter(customer => customer.name.toLowerCase().includes(query));
+        const filteredServices = services.filter(service => service.name.toLowerCase().includes(query));
+        const filteredCustomers = customers.filter(customer => customer.name.toLowerCase().includes(query));
         setServices(filteredServices);
         setCustomers(filteredCustomers);
     };
@@ -181,14 +244,14 @@ export default function Dashboard (){
     const handleFilter = (event) => {
         const filterValue = event.target.value;
         if (filterValue === 'active') {
-            const filteredServices = initialServices.filter(service => service.isActive);
+            const filteredServices = services.filter(service => service.isActive);
             setServices(filteredServices);
         } else if (filterValue === 'inactive') {
-            const filteredServices = initialServices.filter(service => !service.isActive);
+            const filteredServices = services.filter(service => !service.isActive);
             setServices(filteredServices);
         }
         else {
-            setServices(initialServices);
+            setServices(services);
         }
     };
 
@@ -201,6 +264,9 @@ export default function Dashboard (){
       const getActiveServices = () => {
         return services.filter(service => service.isActive).length;
       };
+
+
+      
 
   return  (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -350,9 +416,9 @@ export default function Dashboard (){
                 </TableHead>
                 <TableBody>
                   {customers.slice(0, 5).map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell>{customer.name}</TableCell>
-                      <TableCell>{customer.company}</TableCell>
+                    <TableRow key={customer.user.id}>
+                      <TableCell>{customer.user.full_name}</TableCell>
+                      <TableCell>{customer.user.full_name}</TableCell>
                       <TableCell>₦{customer.totalSpent}</TableCell>
                     </TableRow>
                   ))}
@@ -374,8 +440,7 @@ export default function Dashboard (){
                     Income Chart
                     </Typography>
                     <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={services} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <XAxis dataKey="name" />
+                    <LineChart data={[...services].sort((a, b) => a.income - b.income)} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>                        <XAxis dataKey="name" />
                         <YAxis />
                         <Tooltip />
                         <Legend />
@@ -393,11 +458,27 @@ export default function Dashboard (){
                     </Typography>
                     <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                        <Pie data={customers} dataKey="totalSpent" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#033043" label>
-                        {customers.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={`#${Math.floor(Math.random() * 16777215).toString(16)}`} />
+                        <Pie
+                        data={customers.map(c => ({
+                          name: c.user.full_name,
+                          value: parseFloat(c.totalSpent)
+                        }))}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#033043"
+                        label
+                      >
+                        {customers.map((_, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
                         ))}
-                        </Pie>
+                      </Pie>
+
                         <Tooltip />
                     </PieChart>
                     </ResponsiveContainer>
@@ -422,7 +503,7 @@ export default function Dashboard (){
                     <TableBody>
                         {customers.map((customer) => (
                         <TableRow key={customer.id}>
-                            <TableCell>{customer.name}</TableCell>
+                            <TableCell>{customer.user.full_name}</TableCell>
                             <TableCell>{feedback.find(item => item.customerId === customer.id)?.feedback || 'No feedback'}</TableCell>
                             <TableCell >
                             <Button variant="contained" color="primary" size="small" onClick={() => handleRespond(customer.id)}>
