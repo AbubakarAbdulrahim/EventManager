@@ -6,8 +6,7 @@ User = get_user_model()
 
 STATUS_CHOICES = (
         ('pending', 'Pending'),
-        ('accepted', 'Accepted'),
-        ('declined', 'Declined'),
+        ('cancelled', 'Cancelled'),
         ('completed', 'Completed'),
     )
 

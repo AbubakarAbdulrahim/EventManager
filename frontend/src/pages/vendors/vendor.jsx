@@ -15,7 +15,7 @@ export default function VendorDashboard() {
     const renderContent = () => {
         switch (currentPage.toLocaleLowerCase()) {
             case 'dashboard':
-                return <Dashboard />;
+                return <Dashboard setCurrentPage={setCurrentPage} />;
             case 'services':
                 return <Services />;
             case 'customers':

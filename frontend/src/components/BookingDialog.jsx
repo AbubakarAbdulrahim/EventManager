@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,17 +15,20 @@ import {
   CircularProgress,
   Paper,
   Avatar,
-  Rating
+  Rating,
+  InputAdornment
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
+import {FormControl, InputLabel, Select, MenuItem, FormHelperText} from '@mui/material';
 import {
   CalendarMonth,
   Schedule,
   Checklist,
   Check,
-  Send
+  Send,
+  AttachMoney
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAuth } from '../context/AuthContext';
@@ -36,7 +39,8 @@ const StepIcon = ({ active, completed, icon }) => {
   const icons = {
     1: <CalendarMonth />,
     2: <Schedule />,
-    3: <Checklist />,
+    3: <AttachMoney />,
+    4: <Checklist />,
   };
 
   return (
@@ -54,16 +58,43 @@ const StepIcon = ({ active, completed, icon }) => {
   );
 };
 
+// Helper function to calculate end time
+  const calculateEndTime = (startTime, duration) => {
+    if (!startTime || !duration) return '';
+    
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const durationHours = parseFloat(duration);
+    
+    let endHours = hours + Math.floor(durationHours);
+    const endMinutes = minutes + Math.round((durationHours % 1) * 60);
+    
+    if (endMinutes >= 60) {
+      endHours += 1;
+    }
+    
+    // Format to 24-hour time
+    return `${(endHours % 24).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
+  };
+
 function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const { user, authAxios } = useAuth();
-
-  console.log(service);
+  // State variables for pricing options
+  const [selectedPricingModel, setSelectedPricingModel] = useState('');
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [selectedPackage, setSelectedPackage] = useState('');
+  const [selectedPackageName, setSelectedPackageName] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [duration, setDuration] = useState(1);
+  const [days, setDays] = useState(1);
+  const [formErrors, setFormErrors] = useState({});
+  const [totalPrice, setTotalPrice] = useState(0);
   
   // Define steps for booking process
   const steps = [
     { label: 'Date', icon: 1 },
     { label: 'Time & Duration', icon: 2 },
-    { label: 'Review Details', icon: 3 },
+    { label: 'Pricing', icon: 3 },
+    { label: 'Review Details', icon: 4 },
   ];
   
   // State variables
@@ -79,10 +110,10 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     date: null,
     time: '',
     duration: '',
-    price:'',
+    price: '',
     name: user?.full_name || '',
     email: user?.email || '',
-    phone: user.phone_number
+    phone: user?.phone_number || ''
   });
   
   // Available dates and time slots
@@ -100,7 +131,11 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   
     try {
       const data = service?.availability;
-      console.log(data.recurring);
+      if (!data) {
+        setLoadingDates(false);
+        return;
+      }
+      
       const datesSet = new Set();
   
       if (data.type === 'specific_date') {
@@ -139,105 +174,146 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     }
   };
   
+  // Calculate total price based on selected options - returns the value, doesn't set state
+  const calculateTotalPrice = useMemo(() => {
+  if (!selectedPricingModel || !selectedModel) return 0;
+  
+  switch (selectedPricingModel) {
+    case 'hourly':
+      return selectedModel.basePrice * duration;
+    case 'itemBased':
+      return selectedModel.basePrice
+    case 'perDay':
+      return selectedModel.basePrice * days;
+    case 'perPlate':
+    case 'perUnit':
+    case 'perClip':
+      return selectedModel.basePrice * quantity;
+    case 'package':
+      if (selectedPackage && selectedModel.packages) {
+        console.log(selectedModel.packages);
+        const packageDetails = selectedModel.packages.find(pkg => pkg.name === selectedPackage);
+        return packageDetails?.price * quantity || 0;
+      }
+      return 0;
+    case 'fixed':
+      return selectedModel.basePrice;
+    default:
+      return 0;
+  }
+}, [selectedPricingModel, selectedModel, duration, days, quantity, selectedPackage]);
+  
+  // Update total price when relevant values change
+  useEffect(() => {
+    if (service && service.availability) {
+      fetchAvailableDates();
+    }
+  }, [service]);
   
   useEffect(() => {
-    fetchAvailableDates();
-  }, [service]);
+  if (selectedPricingModel && selectedModel) {
+    const price = calculateTotalPrice;
+    setTotalPrice(price);
+    setBookingData(prev => ({ ...prev, price })); // Use calculated price directly
+  }
+}, [selectedPricingModel, selectedPackage, quantity, duration, days, selectedModel]);
+
+  
   // Handle date selection
-  const handleDateChange = (date) => {
-    if (!date) return;
-    
-    // Clear previous time selection and availability status
-    setBookingData(prev => ({ 
-      ...prev, 
-      date: date,
-      time: '',
-      duration: '' 
-    }));
-    setIsSlotAvailable(null);
-    const data =service?.availability
-    console.log(data);
+  const handleDateChange = useCallback((date) => {
+  if (!date) return;
+  
+  // Clear previous time selection and availability status
+  setBookingData(prev => ({ 
+    ...prev, 
+    date: date,
+    time: '',
+    duration: '' 
+  }));
+  setIsSlotAvailable(null);
+  const data = service?.availability;
+  
+  if (data) {
     // Fetch available time slots for selected date
     fetchAvailableTimeSlots(date, data);
-  };
+  }
+}, [service?.availability]);
   
   const fetchAvailableTimeSlots = async (date, availabilityData) => {
-  setLoadingTimeSlots(true);
-  const selectedDate = date.format('YYYY-MM-DD');
-  const selectedDay = date.day();
-  let timeRange = null;
-
-  // Find availability for selected day
-  const specific = availabilityData.specificDates?.find(
-    (entry) => entry.date === selectedDate && entry.is_booked
-  );
-
-  if (specific) {
-    timeRange = { start: specific.start_time, end: specific.end_time };
-  } else if (availabilityData.type === 'recurring') {
-    const recurring = availabilityData.recurring?.find(
-      (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
+    setLoadingTimeSlots(true);
+    const selectedDate = date.format('YYYY-MM-DD');
+    const selectedDay = date.day();
+    let timeRange = null;
+  
+    // Find availability for selected day
+    const specific = availabilityData.specificDates?.find(
+      (entry) => entry.date === selectedDate && entry.is_booked
     );
-
-    if (recurring) {
-      timeRange = { start: recurring.start_time, end: recurring.end_time };
-    }
-  }
-
-  if (!timeRange) {
-    setAvailableTimeSlots([]);
-    setLoadingTimeSlots(false);
-    return;
-  }
-
-  try {
-    const res = await authAxios.get(`/bookings/booked-slot/${selectedDate}/`, {
-      params: {
-        service_id: service.id
-      }}
-    );
-
-    console.log(res.data);
-    const bookedSlots = res.data.booked_slots;
-
-    const generateSlots = () => {
-      const slots = [];
-      const start = new Date(`1970-01-01T${timeRange.start}`);
-      const end = new Date(`1970-01-01T${timeRange.end}`);
-
-      while (start < end) {
-        const slotTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
-
-        // Check if slot overlaps with any booked slot
-        const slotStart = new Date(start);
-        const slotEnd = new Date(start.getTime() + 60 * 60000); // 1 hour
-
-        const isOverlapping = bookedSlots.some(b => {
-          const bStart = new Date(`1970-01-01T${b.start_time}`);
-          const bEnd = new Date(`1970-01-01T${b.end_time}`);
-          return slotStart < bEnd && slotEnd > bStart;
-        });
-
-        if (!isOverlapping) {
-          slots.push(slotTime);
-        }
-
-        start.setMinutes(start.getMinutes() + 60); // hourly slot
+  
+    if (specific) {
+      timeRange = { start: specific.start_time, end: specific.end_time };
+    } else if (availabilityData.type === 'recurring') {
+      const recurring = availabilityData.recurring?.find(
+        (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
+      );
+  
+      if (recurring) {
+        timeRange = { start: recurring.start_time, end: recurring.end_time };
       }
-
-      return slots;
-    };
-
-    const finalSlots = generateSlots();
-    setAvailableTimeSlots(finalSlots);
-  } catch (error) {
-    console.error('Failed to load booked slots:', error);
-    setAvailableTimeSlots([]);
-  } finally {
-    setLoadingTimeSlots(false);
-  }
-};
-
+    }
+  
+    if (!timeRange) {
+      setAvailableTimeSlots([]);
+      setLoadingTimeSlots(false);
+      return;
+    }
+  
+    try {
+      const res = await authAxios.get(`/bookings/booked-slot/${selectedDate}/`, {
+        params: {
+          service_id: service.id
+        }}
+      );
+  
+      const bookedSlots = res.data.booked_slots;
+  
+      const generateSlots = () => {
+        const slots = [];
+        const start = new Date(`1970-01-01T${timeRange.start}`);
+        const end = new Date(`1970-01-01T${timeRange.end}`);
+  
+        while (start < end) {
+          const slotTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
+  
+          // Check if slot overlaps with any booked slot
+          const slotStart = new Date(start);
+          const slotEnd = new Date(start.getTime() + 60 * 60000); // 1 hour
+  
+          const isOverlapping = bookedSlots.some(b => {
+            const bStart = new Date(`1970-01-01T${b.start_time}`);
+            const bEnd = new Date(`1970-01-01T${b.end_time}`);
+            return slotStart < bEnd && slotEnd > bStart;
+          });
+  
+          if (!isOverlapping) {
+            slots.push(slotTime);
+          }
+  
+          start.setMinutes(start.getMinutes() + 60); // hourly slot
+        }
+  
+        return slots;
+      };
+  
+      const finalSlots = generateSlots();
+      setAvailableTimeSlots(finalSlots);
+    } catch (error) {
+      console.error('Failed to load booked slots:', error);
+      setAvailableTimeSlots([]);
+    } finally {
+      setLoadingTimeSlots(false);
+    }
+  };
   
   // Handle time slot selection
   const handleTimeSelect = (time) => {
@@ -252,8 +328,8 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   // Handle duration change
   const handleDurationChange = (e) => {
     const duration = e.target.value;
-    console.log(duration);
-    setBookingData(prev => ({ ...prev, duration, price: calculatePrice(service?.basePrice, duration) }));
+    setBookingData(prev => ({ ...prev, duration }));
+    setDuration(duration)
     
     // Only check availability if we have a selected time and valid duration
     if (bookingData.time && duration) {
@@ -263,85 +339,212 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
     }
   };
   
-  // Mock function to check if the time slot is available for the specified duration
+  const checkTimeSlotAvailability = async (time, duration) => {
+    setCheckingAvailability(true);
+    setError('');
   
-const checkTimeSlotAvailability = async (time, duration) => {
-  setCheckingAvailability(true);
-  setError('');
-
-  try {
-    const formattedDate = dayjs(bookingData.date).format('YYYY-MM-DD');
-    const selectedDay = bookingData.date.day();
-    const availabilityData = service?.availability;
-
-    // Step 1: Get working time range for this day
-    let timeRange = null;
-
-    const specific = availabilityData?.specificDates?.find(
-      (entry) => entry.date === formattedDate && entry.is_booked
-    );
-
-    if (specific) {
-      timeRange = { start: specific.start_time, end: specific.end_time };
-    } else if (availabilityData?.type === 'recurring') {
-      const recurring = availabilityData?.recurring?.find(
-        (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
+    try {
+      const formattedDate = dayjs(bookingData.date).format('YYYY-MM-DD');
+      const selectedDay = bookingData.date.day();
+      const availabilityData = service?.availability;
+  
+      // Step 1: Get working time range for this day
+      let timeRange = null;
+  
+      const specific = availabilityData?.specificDates?.find(
+        (entry) => entry.date === formattedDate && entry.is_booked
       );
-      if (recurring) {
-        timeRange = { start: recurring.start_time, end: recurring.end_time };
-      }
-    }
-
-    if (!timeRange) {
-      setError('No working hours available for this date.');
-      setIsSlotAvailable(false);
-      setCheckingAvailability(false);
-      return;
-    }
-
-    // Step 2: Validate that selected time + duration fits within allowed range
-    const bookingStart = new Date(`1970-01-01T${time}`);
-    const durationMinutes = parseFloat(duration) * 60;
-    const bookingEnd = new Date(bookingStart.getTime() + durationMinutes * 60000);
-
-    const rangeStart = new Date(`1970-01-01T${timeRange.start}`);
-    const rangeEnd = new Date(`1970-01-01T${timeRange.end}`);
-
-    if (bookingStart < rangeStart || bookingEnd > rangeEnd) {
-      setError(`Selected time and duration exceed available hours (${timeRange.start} - ${timeRange.end}).`);
-      setIsSlotAvailable(false);
-      setCheckingAvailability(false);
-      return;
-    }
-
-    // Step 3: Call backend to check against existing bookings
-    const res = await authAxios.get(`/bookings/check-availability/`, {
-      params: {
-        date: formattedDate,
-        start_time: time,
-        duration: duration,
-        service_id: service.id
-      }
-    });
-
-    const available = res.data.available;
-    setIsSlotAvailable(available);
-
-    if (!available) {
-      setError('This time slot is already booked or overlaps with an existing booking.');
-    }
-  } catch (error) {
-    console.error('Error checking slot availability:', error);
-    setError('Failed to check availability. Please try again.');
-    setIsSlotAvailable(false);
-  }
-
-  setCheckingAvailability(false);
-};
-
-
-
   
+      if (specific) {
+        timeRange = { start: specific.start_time, end: specific.end_time };
+      } else if (availabilityData?.type === 'recurring') {
+        const recurring = availabilityData?.recurring?.find(
+          (entry) => entry.day_of_the_week === selectedDay && entry.is_booked
+        );
+        if (recurring) {
+          timeRange = { start: recurring.start_time, end: recurring.end_time };
+        }
+      }
+  
+      if (!timeRange) {
+        setError('No working hours available for this date.');
+        setIsSlotAvailable(false);
+        setCheckingAvailability(false);
+        return;
+      }
+  
+      // Step 2: Validate that selected time + duration fits within allowed range
+      const bookingStart = new Date(`1970-01-01T${time}`);
+      const durationMinutes = parseFloat(duration) * 60;
+      const bookingEnd = new Date(bookingStart.getTime() + durationMinutes * 60000);
+  
+      const rangeStart = new Date(`1970-01-01T${timeRange.start}`);
+      const rangeEnd = new Date(`1970-01-01T${timeRange.end}`);
+  
+      if (bookingStart < rangeStart || bookingEnd > rangeEnd) {
+        setError(`Selected time and duration exceed available hours (${timeRange.start} - ${timeRange.end}).`);
+        setIsSlotAvailable(false);
+        setCheckingAvailability(false);
+        return;
+      }
+  
+      // Step 3: Call backend to check against existing bookings
+      const res = await authAxios.get(`/bookings/check-availability/`, {
+        params: {
+          date: formattedDate,
+          start_time: time,
+          duration: duration,
+          service_id: service.id
+        }
+      });
+  
+      const available = res.data.available;
+      setIsSlotAvailable(available);
+  
+      if (!available) {
+        setError('This time slot is already booked or overlaps with an existing booking.');
+      }
+    } catch (error) {
+      console.error('Error checking slot availability:', error);
+      setError('Failed to check availability. Please try again.');
+      setIsSlotAvailable(false);
+    }
+  
+    setCheckingAvailability(false);
+  };
+  
+  // Handler for pricing model selection
+  const handlePricingModelChange = (event) => {
+    const modelName = event.target.value;
+    setSelectedPricingModel(modelName);
+    
+    // Find the selected model details
+    const modelDetails = service?.priceModels?.find(model => model.model === modelName);
+    setSelectedModel(modelDetails)
+    
+    // Reset other fields when model changes
+    setSelectedPackage('');
+    setSelectedPackageName('');
+    
+    // Validate the selection
+    isPricingValid
+  };
+  
+  // Handler for package selection
+  const handlePackageChange = (event) => {
+    const packageData = event.target.value;
+    console.log(packageData);
+    setSelectedPackage(packageData);
+    
+    // Find package name
+    if (selectedModel?.packages) {
+      const packageDetails = selectedModel.packages.find(pkg => pkg.name === packageData);
+      setSelectedPackageName(packageDetails?.name || '');
+    }
+    
+    isPricingValid
+  };
+  
+  // Handler for quantity changes (plates, units, clips)
+  const handleQuantityChange = (event) => {
+    const value = parseInt(event.target.value) || 0;
+    setQuantity(value > 0 ? value : 1);
+    isPricingValid
+  };
+  
+  console.log(selectedPricingModel,
+selectedModel,
+selectedPackage,
+selectedPackageName,
+quantity, 
+duration, 
+days,
+totalPrice,);
+  
+  
+  // Handler for days changes
+  const handleDaysChange = (event) => {
+    const value = parseInt(event.target.value) || 0;
+    setDays(value > 0 ? value : 1);
+    isPricingValid
+  };
+  
+  // Function to validate pricing fields
+  const validatePricingFields = () => {
+    const errors = {};
+    
+    if (!selectedPricingModel) {
+      errors.pricingModel = 'Please select a pricing option';
+    }
+    
+    if (selectedPricingModel === 'package' && !selectedPackage) {
+      errors.package = 'Please select a package';
+    }
+    
+    if (['perPlate', 'perUnit', 'perClip'].includes(selectedPricingModel) && (!quantity || quantity < 1)) {
+      errors.quantity = 'Please enter a valid quantity';
+    }
+    
+    if (selectedPricingModel === 'hourly' && (!duration || duration < 1)) {
+      errors.duration = 'Please enter a valid duration';
+    }
+    
+    if (selectedPricingModel === 'perDay' && (!days || days < 1)) {
+      errors.days = 'Please enter a valid number of days';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const isPricingValid = useMemo(() => {
+  const errors = {};
+    
+    if (!selectedPricingModel) {
+      errors.pricingModel = 'Please select a pricing option';
+    }
+    
+    if (selectedPricingModel === 'package' && !selectedPackage) {
+      errors.package = 'Please select a package';
+    }
+    
+    if (['perPlate', 'perUnit', 'perClip'].includes(selectedPricingModel) && (!quantity || quantity < 1)) {
+      errors.quantity = 'Please enter a valid quantity';
+    }
+    
+    if (selectedPricingModel === 'hourly' && (!duration || duration < 1)) {
+      errors.duration = 'Please enter a valid duration';
+    }
+    
+    if (selectedPricingModel === 'perDay' && (!days || days < 1)) {
+      errors.days = 'Please enter a valid number of days';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+}, [selectedPricingModel, selectedPackage, quantity, duration, days]);
+  
+  // Helper function to get friendly names for pricing models
+  const getPricingModelName = (modelName) => {
+    const modelNames = {
+      'hourly': 'Hourly Rate',
+      'perDay': 'Daily Rate',
+      'perPlate': 'Per Plate',
+      'perUnit': 'Per Unit',
+      'perClip': 'Per Clip',
+      'package': 'Package',
+      'fixed': 'Fixed Price'
+    };
+    return modelNames[modelName] || modelName;
+  };
+  
+  // Helper function to format prices
+  const formatPrice = (price) => {
+    if (price === undefined || price === null) return '₦0';
+    return `₦${price.toLocaleString()}`;
+  };
+  
+  console.log(selectedPricingModel);
   // Handle submit review
   const handleSubmitReview = () => {
     console.log("Submitted review:", { rating: userRating, comment: reviewText });
@@ -350,91 +553,82 @@ const checkTimeSlotAvailability = async (time, duration) => {
     setReviewText('');
   };
   
-  // Mock payment function
+  // Flutterwave payment script loading
   let flutterwaveScriptLoading = null;
   const loadFlutterwaveScript = () => {
-  if (window.FlutterwaveCheckout) return Promise.resolve();
-
-  // If it's already loading, return the same promise
-  if (flutterwaveScriptLoading) return flutterwaveScriptLoading;
-
-  // Otherwise, start loading and store the promise
-  flutterwaveScriptLoading = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.flutterwave.com/v3.js";
-    script.async = true;
-    script.onload = () => {
-      resolve();
-      flutterwaveScriptLoading = null; // optional: clear after load
-    };
-    script.onerror = (err) => {
-      reject(err);
-      flutterwaveScriptLoading = null; // reset if it fails
-    };
-    document.body.appendChild(script);
-  });
-
-  return flutterwaveScriptLoading;
-};
+    if (window.FlutterwaveCheckout) return Promise.resolve();
+  
+    // If it's already loading, return the same promise
+    if (flutterwaveScriptLoading) return flutterwaveScriptLoading;
+  
+    // Otherwise, start loading and store the promise
+    flutterwaveScriptLoading = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.flutterwave.com/v3.js";
+      script.async = true;
+      script.onload = () => {
+        resolve();
+        flutterwaveScriptLoading = null; // optional: clear after load
+      };
+      script.onerror = (err) => {
+        reject(err);
+        flutterwaveScriptLoading = null; // reset if it fails
+      };
+      document.body.appendChild(script);
+    });
+  
+    return flutterwaveScriptLoading;
+  };
+  
   const handlePayment = async () => {
-    console.log("hey");
     try {
       await loadFlutterwaveScript();
-      setError('')
-    window.FlutterwaveCheckout({
-      public_key: import.meta.env.VITE_PUBLIC_KEY,
-      tx_ref: Date.now(),
-      amount: calculatePrice(service?.basePrice, bookingData.duration),
-      currency: "NGN",
-      payment_options: "card,ussd",
-      customer: {
-        email: bookingData.email,
-        phone_number: bookingData.phone,
-        name: bookingData.name,
-      },
-      callback: function (response) {
-        console.log("Payment Response:", response);
-        // alert("Payment successful: " + response.tx_ref);
-        setShowCancelMsg(false);
-        response.status === 'completed' && (
-          onConfirm({
-          ...bookingData,
-          date: bookingData.date?.format('YYYY-MM-DD'),
-          service: service.name
-        }), addBooking(service),
-         
-        setTimeout(() => {
-          console.log('hey im closing')
-          closePaymentModal();
-          setOpenReview(true)
-        }
-        , 500)
-      );
-        // You can do something with the response here
-
-        
-      },
-      onclose: function () {
-        console.log("User closed the payment modal.");
-        setShowCancelMsg(true);
-      },
-      customizations: {
-        title: `Payment for Booking ${service.name}` ,
-        description: `Booking for ${service.name}`,
-        logo: "http://localhost:5173/logo.png",
-      },
-    });
-  // } else {
-  //   setError("Payment gateway failed to load. Please check your internet connection and try again.");
-  //   console.error("FlutterwaveCheckout not loaded");
-  // }
-  // };
-} catch (e) {
-console.log(e);
-  setError("Unable to load payment system. Please check your internet and try again.");
-}
-};
- 
+      setError('');
+      window.FlutterwaveCheckout({
+        public_key: import.meta.env.VITE_PUBLIC_KEY,
+        tx_ref: Date.now(),
+        amount: bookingData.price || totalPrice,
+        currency: "NGN",
+        payment_options: "card,ussd",
+        customer: {
+          email: bookingData.email,
+          phone_number: bookingData.phone,
+          name: bookingData.name,
+        },
+        callback: function (response) {
+          console.log("Payment Response:", response);
+          setShowCancelMsg(false);
+          if (response.status === 'completed') {
+            onConfirm({
+              ...bookingData,
+              date: bookingData.date?.format('YYYY-MM-DD'),
+              service: service.name
+            });
+            addBooking(service);
+            
+            setTimeout(() => {
+              console.log('hey im closing');
+              closePaymentModal();
+              // setOpenReview(true);
+            }, 500);
+          }
+        },
+        onclose: function () {
+          console.log("User closed the payment modal.");
+          setShowCancelMsg(true);
+        },
+        customizations: {
+          title: `Payment for Booking ${service.name}`,
+          description: `Booking for ${service.name}`,
+          logo: "http://localhost:5173/logo.png",
+        },
+      });
+    } catch (e) {
+      console.log(e);
+      setError("Unable to load payment system. Please check your internet and try again.");
+    }
+  };
+  
   // Handle next step button
   const handleNext = (e) => {
     if (e) e.preventDefault();
@@ -443,9 +637,7 @@ console.log(e);
       setActiveStep((prev) => prev + 1);
     } else {
       // Final step - process payment
-      console.log('object');
       handlePayment();
-      
     }
   };
   
@@ -455,22 +647,35 @@ console.log(e);
   };
   
   // Check if current step is valid to enable Next button
-  const isStepValid = () => {
-    switch (activeStep) {
-      case 0: // Date selection
-        return bookingData.date !== null;
-      case 1: // Time and duration
-        return bookingData.time && 
-               bookingData.duration && 
-               isSlotAvailable === true; // Must be explicitly true, not just truthy
-      case 2: // Review details
-        return bookingData.name && 
-               bookingData.email && 
-               bookingData.phone;
-      default:
-        return false;
-    }
-  };
+  const isStepValid = useMemo(() => {
+  switch (activeStep) {
+    case 0:
+      return bookingData.date !== null;
+    case 1:
+      return bookingData.time && 
+             bookingData.duration && 
+             isSlotAvailable === true;
+    case 2:
+      return selectedPricingModel && isPricingValid; // Use memoized result
+    case 3:
+      return bookingData.name && 
+             bookingData.email && 
+             bookingData.phone;
+    default:
+      return false;
+  }
+}, [
+  activeStep, 
+  bookingData.date, 
+  bookingData.time, 
+  bookingData.duration, 
+  isSlotAvailable, 
+  selectedPricingModel, 
+  isPricingValid, // Memoized validation result
+  bookingData.name, 
+  bookingData.email, 
+  bookingData.phone
+]);
   
   // Render the content for the current step
   const renderStepContent = (step) => {
@@ -638,7 +843,176 @@ console.log(e);
           </Box>
         );
 
-      case 2: // Review details
+      case 2: // Pricing options
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Select Pricing Options for <strong>{serviceTitle}</strong>
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Choose your preferred pricing model and specify any additional details.
+            </Typography>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <FormControl fullWidth error={!!formErrors?.pricingModel}>
+                  <InputLabel>Pricing Option</InputLabel>
+                  <Select
+                    value={selectedPricingModel}
+                    onChange={handlePricingModelChange}
+                    label="Pricing Option"
+                  >
+                    {service?.priceModels?.map((model, index) => (
+                      <MenuItem value={model.model} key={index}>
+                        {getPricingModelName(model.model)} - {formatPrice(model.basePrice)}
+                        {model.model === 'hourly' && ' per hour'}
+                        {model.model === 'perDay' && ' per day'}
+                        {model.model === 'perPlate' && ' per plate'}
+                        {model.model === 'perUnit' && ' per unit'}
+                        {model.model === 'perClip' && ' per clip'}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {formErrors?.pricingModel && (
+                    <FormHelperText>{formErrors.pricingModel}</FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+              
+              {/* Package Selection (if applicable) */}
+              {selectedPricingModel === 'package' && selectedModel?.packages && selectedModel.packages.length > 0 && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth error={!!formErrors?.package}>
+                    <InputLabel>Select Package</InputLabel>
+                    <Select
+                      value={selectedPackage}
+                      onChange={handlePackageChange}
+                      label="Select Package"
+                    >
+                      {selectedModel.packages.map((pkg, index) => {
+                        console.log(pkg)
+                        return(
+                        <MenuItem value={pkg.name} key={index}>
+                          {pkg.name} - {pkg.quantity_description} pieces for {formatPrice(pkg.price)}
+                        </MenuItem>
+                      )})}
+                    </Select>
+                    {formErrors?.package && (
+                      <FormHelperText>{formErrors.package}</FormHelperText>
+                    )}
+                  </FormControl>
+                </Grid>
+              )}
+              
+              {/* Quantity Input (for per-unit pricing) */}
+              {['perPlate', 'perUnit', 'perClip', 'package'].includes(selectedPricingModel) && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label={selectedPricingModel === 'perPlate' ? 'Number of Plates' : 
+                           selectedPricingModel === 'perClip' ? 'Number of Clips' : 'Quantity'}
+                    value={quantity}
+                    onChange={handleQuantityChange}
+                    inputProps={{ min: 1 }}
+                    error={!!formErrors?.quantity}
+                    helperText={formErrors?.quantity}
+                  />
+                </Grid>
+              )}
+              
+              {/* Duration Input (for hourly pricing) */}
+              {/* {selectedPricingModel === 'hourly' && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Duration (Hours)"
+                    value={duration}
+                    onChange={handleDuration}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">Hours</InputAdornment>,
+                      inputProps: { min: 1 }
+                    }}
+                    error={!!formErrors?.duration}
+                    helperText={formErrors?.duration}
+                  />
+                </Grid>
+              )} */}
+              
+              {/* Days Input (for daily pricing) */}
+              {selectedPricingModel === 'perDay' && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Number of Days"
+                    value={days}
+                    onChange={handleDaysChange}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">Days</InputAdornment>,
+                      inputProps: { min: 1 }
+                    }}
+                    error={!!formErrors?.days}
+                    helperText={formErrors?.days}
+                  />
+                </Grid>
+              )}
+              
+              {/* Pricing Summary */}
+              {selectedPricingModel && (
+                <Grid item xs={12}>
+                  <Paper 
+                    elevation={2} 
+                    sx={{ 
+                      p: 2, 
+                      mt: 1, 
+                      backgroundColor: '#e6f2f5', 
+                      borderLeft: '4px solid #033043' 
+                    }}
+                  >
+                    <Typography variant="subtitle2" gutterBottom>
+                      Pricing Summary
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                      <Typography variant="body1">
+                        {selectedPackageName ? 
+                          `Package: ${selectedPackageName}` :
+                          `${getPricingModelName(selectedPricingModel)}`}
+                      </Typography>
+                      <Typography variant="body1" fontWeight="medium">
+                        {formatPrice(calculateTotalPrice)}
+                      </Typography>
+                    </Box>
+                    
+                    {selectedPricingModel === 'hourly' && duration && (
+                      <Typography variant="body2" color="text.secondary">
+                        {formatPrice(selectedModel?.basePrice)} × {duration} hours
+                      </Typography>
+                    )}
+                    
+                    {selectedPricingModel === 'perDay' && days && (
+                      <Typography variant="body2" color="text.secondary">
+                        {formatPrice(selectedModel?.basePrice)} × {days} days
+                      </Typography>
+                    )}
+                    
+                    {['perPlate', 'perUnit', 'perClip'].includes(selectedPricingModel) && quantity && (
+                      <Typography variant="body2" color="text.secondary">
+                        {formatPrice(selectedModel?.basePrice)} × {quantity} {selectedPricingModel === 'perPlate' ? 'plates' : 
+                                                                 selectedPricingModel === 'perClip' ? 'clips' : 'units'}
+                      </Typography>
+                    )}
+                  </Paper>
+                </Grid>
+              )}
+            </Grid>
+          </Box>
+        );
+
+      case 3: // Review details
         return (
           <Box>
             <Typography variant="subtitle1" gutterBottom>
@@ -665,9 +1039,15 @@ console.log(e);
                     {bookingData.duration} hours
                   </Typography>
                   
+                  <Typography variant="body2" color="text.secondary">Pricing Option:</Typography>
+                  <Typography variant="body1" gutterBottom fontWeight="medium">
+                    {getPricingModelName(selectedPricingModel)}
+                    {selectedPricingModel === 'package' && selectedPackageName ? `: ${selectedPackageName}` : ''}
+                  </Typography>
+                  
                   <Typography variant="body2" color="text.secondary">Price:</Typography>
                   <Typography variant="body1" gutterBottom fontWeight="medium">
-                    ₦{calculatePrice(service?.basePrice, bookingData.duration)}
+                    {formatPrice(bookingData.price || calculateTotalPrice)}
                   </Typography>
                 </Grid>
               </Grid>
@@ -734,23 +1114,7 @@ console.log(e);
     }
   };
   
-  // Helper function to calculate end time
-  const calculateEndTime = (startTime, duration) => {
-    if (!startTime || !duration) return '';
-    
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const durationHours = parseFloat(duration);
-    
-    let endHours = hours + Math.floor(durationHours);
-    const endMinutes = minutes + Math.round((durationHours % 1) * 60);
-    
-    if (endMinutes >= 60) {
-      endHours += 1;
-    }
-    
-    // Format to 24-hour time
-    return `${(endHours % 24).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`;
-  };
+  
   
   // Helper function to calculate price based on duration
   const calculatePrice = (basePrice, duration) => {
@@ -812,7 +1176,7 @@ console.log(e);
               backgroundColor: '#033043',
               '&:hover': { backgroundColor: '#022030' }
             }}
-            disabled={!isStepValid()}
+            disabled={!isStepValid}
           >
             {activeStep === steps.length - 1 ? 'Confirm & Pay' : 'Next'}
           </Button>

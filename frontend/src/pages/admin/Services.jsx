@@ -50,6 +50,7 @@ import {
   InputLabel,
   Chip
 } from '@mui/material';
+import SnackBarNotification from '../../components/SnackBarNotification';
 
 import {
   Menu as MenuIcon,
@@ -97,16 +98,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useServiceContext } from '../../context/ServiceContext';
 
-
-// const services = [
-//     { id: 1, name: 'Wedding Photography', vendor: 'ProShots Inc.', price: 1200, bookings: 28, rating: 4.8, status: 'Active' },
-//     { id: 2, name: 'Corporate Event Catering', vendor: 'Delicious Foods', price: 2500, bookings: 15, rating: 4.6, status: 'Active' },
-//     { id: 3, name: 'Grand Hall Rental', vendor: 'Grand Ballroom', price: 5000, bookings: 10, rating: 4.9, status: 'Active' },
-//     { id: 4, name: 'DJ Services', vendor: 'Beat Masters', price: 800, bookings: 22, rating: 4.3, status: 'Active' },
-//     { id: 5, name: 'Wedding Decor Package', vendor: 'Elegant Designs', price: 1500, bookings: 18, rating: 4.7, status: 'Pending Approval' },
-//   ];
 const transformedData= (data) => {
-  console.log(data);
     return data.map((service) => ({
       id: service.id,
       name: service.service_name,
@@ -123,6 +115,9 @@ const transformedData= (data) => {
     const [services, setServices] = useState([])
     const {authAxios} =useAuth()
     const {fetchServices} = useServiceContext()
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
     useEffect(() => {
       const fetchService = async () => {
@@ -136,12 +131,14 @@ const transformedData= (data) => {
       };
 
       fetchService();
-    }, []);
+    }, [snackbarOpen]);
 
     const handleAction = async (id, action)=>{
       try{
         const res = await authAxios.post(`api-admin/service/${id}/suspend-activate/`, {action: action})
-        console.log(res);
+        setSnackbarOpen(true)
+        setSnackbarSeverity('success')
+        setSnackbarMessage(res.data.detail)
       } catch (error){
         console.error(error)
       }
@@ -210,8 +207,8 @@ const transformedData= (data) => {
                       <TableCell align="center">{service.rating}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={service.status} 
-                          color={service.status === 'Active' ? 'success' : 'warning'} 
+                          label={(service.status).charAt(0).toUpperCase() + (service.status).slice(1)} 
+                          color={service.status === 'approved' ? 'success' : 'warning'} 
                           size="small" 
                         />
                       </TableCell>
@@ -221,11 +218,11 @@ const transformedData= (data) => {
                           {service.status === 'pending' ? (
                             <>
                               <Button size="small" variant="outlined" color="success" onClick={()=>{handleAction(service.id,'approve')}} >Approve</Button>
-                              <Button size="small" variant="outlined" color="error">Reject</Button>
+                              <Button size="small" variant="outlined" color="error" onClick={()=>{handleAction(service.id,'reject')}} >Reject</Button>
                             </>
                           ) : (
-                            <Button size="small" variant="outlined" color="secondary">
-                              {service.status === 'Active' ? 'Deactivate' : 'Activate'}
+                            <Button size="small" variant="outlined" color={service.status === 'approved' ? 'error' : 'succes'} onClick={()=>{handleAction(service.id, service.status === 'approved' ? 'suspend' : 'approve' )}} >
+                              {service.status === 'approved' ? 'Suspend' : 'Activate'}
                             </Button>
                           )}
                         </Box>
@@ -382,6 +379,7 @@ const transformedData= (data) => {
             </Grid>
           </Paper>
         </Grid>
+      <SnackBarNotification snackbarOpen={snackbarOpen} snackbarSeverity={snackbarSeverity} snackbarMessage={snackbarMessage} handleCloseSnackbar={()=>{setSnackbarOpen(false)}} />
       </Grid>
     );
   }

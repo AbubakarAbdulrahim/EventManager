@@ -55,6 +55,7 @@ function App() {
         } />
         <Route path="/vendor-applications" element={<VendorApplicationAdminPage/>}></Route>
         <Route path="/service/:id" element={<ServiceDetail />} />
+        <Route path="/booking/:bookingId" element={<BookingDetails />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/favorites" element={<Favorites/>}></Route>
         <Route path="/admin-dashboard" element={<AdminDashboard/>}></Route>

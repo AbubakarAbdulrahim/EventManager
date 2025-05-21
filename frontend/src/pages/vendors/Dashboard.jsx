@@ -134,7 +134,7 @@ const transformedData = (servicesData, bookings) => {
   });
 };
 
-export default function Dashboard (){
+export default function Dashboard ({setCurrentPage}){
     const [services, setServices] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [feedback, setFeedback] = useState(initialFeedback);

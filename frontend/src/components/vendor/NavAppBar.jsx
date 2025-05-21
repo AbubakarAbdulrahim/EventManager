@@ -241,7 +241,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
                   <Typography variant="body2">Account Settings</Typography>
                 </MenuItem>
                 <Divider />
-                <MenuItem onClick={handleAccountClose}>
+                <MenuItem onClick={()=>{logout()}}>
                   <Typography variant="body2">Logout</Typography>
                 </MenuItem>
               </Menu>

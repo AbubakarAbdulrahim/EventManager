@@ -17,22 +17,29 @@ import * as Yup from 'yup';
 import DrawerAppBar from '../../components/DrawerAppBar';
 import { useAuth } from '../../context/AuthContext';
 import { useBookingContext } from '../../context/BookingsContext';
+import BookingCard from '../../components/BookingCard';
 
 
 export default function Bookings() {
     const [bookings, setBookings] = useState([]);
     const {user, authAxios} = useAuth()
     const {fetchUserBookings} = useBookingContext()
+    const [loading, setLoading] = useState()
+    const [open, setOpen] = useState()
+    const [selectedBooking, setSelectedBooking] = useState()
 
     useEffect(()=>{
         const fetchBookings = async()=>{
-
+            setLoading(true)
             const res = await fetchUserBookings()
             setBookings(res)
             console.log(res);
         }
         fetchBookings()
+        setLoading(false)
     },[])
+
+    console.log(selectedBooking);
 
 
 
@@ -62,8 +69,8 @@ export default function Bookings() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {bookings.map((booking) => (
-                  <TableRow key={booking.id}>
+                {bookings.length >0 ? bookings.map((booking) => (
+                  !loading ? <TableRow key={booking.id}>
                     <TableCell>{booking.id}</TableCell>
                     <TableCell>{booking.service.service_name}</TableCell>
                     <TableCell>{booking.vendor.business_name}</TableCell>
@@ -86,17 +93,60 @@ export default function Bookings() {
                         variant="outlined"
                         color="primary"
                         size='small'
+                        onClick={()=>{
+                          setSelectedBooking(booking)
+                          setOpen(true)
+                        }}
                         >
                         View
                         </Button>
                     </TableCell>
 
+                  </TableRow> : 
+                  <TableRow>
+                        <TableCell><CircularProgress/></TableCell>
                   </TableRow>
-                ))}
+                )) : <TableRow><TableCell colSpan={11} align='center'>No bookings to show</TableCell></TableRow>}
               </TableBody>
             </Table>
           </TableContainer>
         </Container>
+        {selectedBooking && 
+        <Dialog
+        open={open}
+        onClose={()=>{setOpen(false)}}
+        maxWidth='xs'
+        fullWidth
+        >
+          <DialogTitle>
+
+            <Typography variant="h4" gutterBottom align="center">
+                Booking Details
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            {/* <Box sx={{ padding: 2, maxWidth: 500, margin: '0 auto', boxShadow: 3, borderRadius: 2, background: '#fff' }}> */}
+            {/* <Box sx={{ mt: 3 }}> */}
+                <Typography variant="subtitle1"><b>Service Name:</b> {selectedBooking.service.service_name}</Typography>
+                <Typography variant="subtitle1"><b>Vendor Name:</b> {selectedBooking.vendor.business_name}</Typography>
+                <Typography variant="subtitle1"><b>Date:</b> {selectedBooking.event_date}</Typography>
+                <Typography variant="subtitle1"><b>Start Time:</b> {selectedBooking.start_time}</Typography>
+                <Typography variant="subtitle1"><b>End Time:</b> {selectedBooking.end_time}</Typography>
+                <Typography variant="subtitle1"><b>Duration:</b> {selectedBooking.duration}</Typography>
+                <Typography variant="subtitle1"><b>Price:</b> ₦{selectedBooking.total_price}</Typography>
+                {/* <Typography variant="subtitle1"><b>Created At:</b> {selectedBooking.createdAt}</Typography> */}
+                <Typography variant="subtitle1"><b>Status:</b> {selectedBooking.status}</Typography>
+            {/* </Box> */}
+        {/* </Box> */}
+
+          </DialogContent>
+          <DialogActions>
+              <Button variant='outlined' onClick={()=>{setOpen(false)}} >
+                  Close
+              </Button>
+
+          </DialogActions>
+        </Dialog>}
         </>
       );
         

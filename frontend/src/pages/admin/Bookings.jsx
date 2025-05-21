@@ -45,6 +45,7 @@ export default function Bookings() {
   }, []);
 
   const filteredBookings = bookings.filter((b) => {
+    console.log(statusFilter, b);
     const matchesStatus = statusFilter === 'All' || b.status === statusFilter;
     const createdAt = new Date(b.created_at);
     const matchesFromDate = !fromDate || createdAt >= new Date(fromDate);
@@ -192,12 +193,10 @@ export default function Bookings() {
                           <Chip
                             label={booking.status}
                             color={
-                              booking.status === 'Completed'
+                              booking.status === 'completed'
                                 ? 'success'
-                                : booking.status === 'Upcoming'
-                                ? 'primary'
-                                : booking.status === 'Pending'
-                                ? 'warning'
+                                : booking.status === 'pending'
+                                ? 'pending'
                                 : 'error'
                             }
                             size="small"

@@ -30,7 +30,13 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle
+  DialogTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import {
   LocationOn,
@@ -45,7 +51,8 @@ import {
   Share,
   Favorite,
   FavoriteBorder,
-  Send
+  Send,
+  AttachMoney
 } from '@mui/icons-material';
 import { mockServices } from '../../services/mockServices';
 import { useServiceContext } from '../../context/ServiceContext';
@@ -81,9 +88,14 @@ const transformServiceData = (backendData) => {
     updatedAt: service.updated_at,
     images: service.service_images.map(img => img.image_url),
     mainImage: service.service_images[0]?.image_url || '/placeholder.jpg',
-    priceModel: service.pricing[0]?.model_type || 'unknown',
-    basePrice: parseFloat(service.pricing[0]?.base_price || 0),
-    pricePackages: service.pricing[0]?.price_packages || [],
+    priceModels: service.pricing.map(p => ({
+      model: p.model_type,
+      basePrice: parseFloat(p.base_price || 0),
+      packages: p.price_packages || []
+    })),
+    mainPricingModel: service.pricing.find(p => p.model_type === 'perPlate')
+    || service.pricing[0]
+    || { model_type: 'unknown', base_price: 0, price_packages: [] },
     rating: 4.5, // Default rating since backend doesn't provide it
     reviewCount: 150, // Default review count
     provider: {
@@ -108,6 +120,34 @@ const formatTime = (timeStr) =>
     minute: '2-digit',
     hour12: true,
   });
+
+// Format price to currency
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price);
+}
+
+// Get pricing model display name
+const getPricingModelName = (modelType) => {
+  console.log(modelType);
+  const modelNames = {
+    'perPlate': 'Per Plate',
+    'hourly': 'Per Hour',
+    'perDay': 'Per Day',
+    'perUnit': 'Per Unit',
+    'perClip': 'Per Clip',
+    'flat': 'Flat Rate',
+    'base': 'Base Rate',
+    'tiered': 'Tiered Pricing',
+    'package': 'Package'
+  };
+  
+  return modelNames[modelType] || 'Base Price';
+};
 
 // Generate sample reviews since backend doesn't provide them
 const generateSampleReviews = () => [
@@ -175,9 +215,9 @@ const ServiceDetail = () => {
   const [openSuccess, setOpenSuccess] = useState(false);
   const [selectedService, setSelectedService] = useState("");
   const [coords, setCoords] = useState(null);
-  const [bookingId, setBookingId] = useState(1)
+  const [bookingId, setBookingId] = useState(1);
 
-   useEffect(() => {
+  useEffect(() => {
     geocodePlace(service?.location)
       .then(setCoords)
       .catch(console.error)
@@ -185,91 +225,88 @@ const ServiceDetail = () => {
   }, [service?.location]);
 
   // First, let's update the useEffect to fetch both services and vendor details
-useEffect(() => {
-  const loadServiceAndVendor = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch services
-      const servicesResponse = await fetchServices();
-      const transformedServices = transformServiceData(servicesResponse);
-      setServices(transformedServices);
-      
-      // Find the requested service by ID
-      const foundService = transformedServices.find(s => s.id.toString() === id);
-      
-      if (foundService) {
-        // Add sample reviews and availability dates
-        foundService.reviews = generateSampleReviews();
-        // foundService.availability = generateAvailabilityDates(
-        //   foundService.availability.startDate,
-        //   foundService.availability.endDate
-        // );
+  useEffect(() => {
+    const loadServiceAndVendor = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch services
+        const servicesResponse = await fetchServices();
+        const transformedServices = transformServiceData(servicesResponse);
+        setServices(transformedServices);
         
-        // Store the service
-        setService(foundService);
+        // Find the requested service by ID
+        const foundService = transformedServices.find(s => s.id.toString() === id);
+        
+        if (foundService) {
+          // Add sample reviews and availability dates
+          foundService.reviews = generateSampleReviews();
+          // foundService.availability = generateAvailabilityDates(
+          //   foundService.availability.startDate,
+          //   foundService.availability.endDate
+          // );
+          
+          // Store the service
+          setService(foundService);
 
-        
-        // Fetch vendor details using the vendor_id from the service
-        if (foundService.provider.id) {
-          try {
-            const vendorsResponse = await fetchVendors();
-            const vendorDetails = vendorsResponse.find(v => v.id === foundService.provider.id);
-            
-            if (vendorDetails) {
-              // Update the service with actual provider details
-              foundService.provider = {
-                id: vendorDetails.id,
-                name: vendorDetails.business_name || "Service Provider",
-                description: vendorDetails.description || "Professional service provider with extensive experience.",
-                logo: vendorDetails.logo_url || "/api/placeholder/100/100",
-                contactInfo: {
-                  phone: vendorDetails.user.phone_number || "+234-XXX-XXX-XXXX",
-                  email: vendorDetails.user.email || "contact@serviceprovider.com",
-                  website: vendorDetails.website || "www.serviceprovider.com"
-                },
-                established: vendorDetails.established_year || 2020,
-                otherServices: vendorDetails.services.map(service=>{const arr =[]; arr.push(service.service_type); return arr}) || ["Catering", "Decoration", "Event Planning"]
-              };
+          
+          // Fetch vendor details using the vendor_id from the service
+          if (foundService.provider.id) {
+            try {
+              const vendorsResponse = await fetchVendors();
+              const vendorDetails = vendorsResponse.find(v => v.id === foundService.provider.id);
               
-              // Update the service state with vendor details
-              setService({...foundService});
+              if (vendorDetails) {
+                // Update the service with actual provider details
+                foundService.provider = {
+                  id: vendorDetails.id,
+                  name: vendorDetails.business_name || "Service Provider",
+                  description: vendorDetails.description || "Professional service provider with extensive experience.",
+                  logo: vendorDetails.logo_url || "/api/placeholder/100/100",
+                  contactInfo: {
+                    phone: vendorDetails.user.phone_number || "+234-XXX-XXX-XXXX",
+                    email: vendorDetails.user.email || "contact@serviceprovider.com",
+                    website: vendorDetails.website || "www.serviceprovider.com"
+                  },
+                  established: vendorDetails.established_year || 2020,
+                  otherServices: vendorDetails.services.map(service=>{const arr =[]; arr.push(service.service_type); return arr}) || ["Catering", "Decoration", "Event Planning"]
+                };
+                
+                // Update the service state with vendor details
+                setService({...foundService});
+              }
+            } catch (vendorError) {
+              console.error("Error fetching vendor details:", vendorError);
             }
-          } catch (vendorError) {
-            console.error("Error fetching vendor details:", vendorError);
+          }
+          
+          // Check if service is booked/favorited
+          if (isBooked) setBooked(isBooked(foundService.id));
+          if (isFavorite) setFavorite(isFavorite(foundService.id));
+        } else {
+          // Fallback to mock service if not found
+          const mockService = mockServices.find((s) => s.id.toString() === id);
+          if (mockService) {
+            setService(mockService);
+            if (isBooked) setBooked(isBooked(mockService.id));
+            if (isFavorite) setFavorite(isFavorite(mockService.id));
           }
         }
-        
-        // Check if service is booked/favorited
-        if (isBooked) setBooked(isBooked(foundService.id));
-        if (isFavorite) setFavorite(isFavorite(foundService.id));
-      } else {
-        // Fallback to mock service if not found
+      } catch (error) {
+        console.error("Error fetching services:", error);
+        // Fallback to mock data on error
         const mockService = mockServices.find((s) => s.id.toString() === id);
         if (mockService) {
           setService(mockService);
           if (isBooked) setBooked(isBooked(mockService.id));
           if (isFavorite) setFavorite(isFavorite(mockService.id));
         }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching services:", error);
-      // Fallback to mock data on error
-      const mockService = mockServices.find((s) => s.id.toString() === id);
-      if (mockService) {
-        setService(mockService);
-        if (isBooked) setBooked(isBooked(mockService.id));
-        if (isFavorite) setFavorite(isFavorite(mockService.id));
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  loadServiceAndVendor();
-}, []);
-
-  
-    
+    loadServiceAndVendor();
+  }, []);
 
   // Handle tab changes
   const handleTabChange = (event, newValue) => {
@@ -399,8 +436,21 @@ useEffect(() => {
     `Type: ${service.type}`,
     `Mode: ${service.mode || 'Standard'}`,
     `Amenities: ${service.amenities.map(item=> item.name)}`,
-
   ];
+
+  // Get primary pricing model for header display
+  const getHeaderPriceDisplay = () => {
+    if (!service.priceModels || service.priceModels.length === 0) {
+      return "Price on request";
+    }
+    
+    const primaryModel = service.priceModels[0];
+    const modelName = getPricingModelName(primaryModel.model);
+    
+    return `${formatPrice(primaryModel.basePrice)} ${primaryModel.model !== 'flat' ? modelName : ''}`;
+  };
+
+  console.log(service);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -496,7 +546,7 @@ useEffect(() => {
           {/* Price and Booking Button */}
           <Card sx={{ mt: 2, p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              ₦{service.basePrice || "Price on request"}
+              {getHeaderPriceDisplay()}
             </Typography>
             <Button 
               variant="contained" 
@@ -516,10 +566,11 @@ useEffect(() => {
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="service details tabs">
           <Tab label="Description" id="tab-0" />
           <Tab label="Features" id="tab-1" />
-          <Tab label="Availability" id="tab-2" />
-          <Tab label="Reviews" id="tab-3" />
-          <Tab label="Location" id="tab-4" />
-          <Tab label="Provider" id="tab-5" />
+          <Tab label="Pricing" id="tab-2" />
+          <Tab label="Availability" id="tab-3" />
+          <Tab label="Reviews" id="tab-4" />
+          <Tab label="Location" id="tab-5" />
+          <Tab label="Provider" id="tab-6" />
         </Tabs>
       </Box>
 
@@ -558,9 +609,115 @@ useEffect(() => {
           )}
         </Box>
 
+        {/* Pricing Tab */}
+        <Box role="tabpanel" hidden={tabValue !== 2}>
+          {tabValue === 2 && (
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                <AttachMoney sx={{ mr: 1 }} />
+                Pricing Options
+              </Typography>
+              
+              {service.priceModels && service.priceModels.length > 0 ? (
+                service.priceModels.map((priceModel, index) => (
+                  <Card key={index} sx={{ mb: 3 }}>
+                    <CardContent>
+                      <Typography variant="h6" sx={{ mb: 2 }}>
+                        {getPricingModelName(priceModel.model)}
+                      </Typography>
+                      
+                      {/* Base Price */}
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle1">Base Price</Typography>
+                        <Typography variant="h5" color="primary">
+                          {formatPrice(priceModel.basePrice)}
+                          {priceModel.model === 'perHour' && ' per hour'}
+                          {priceModel.model === 'perDay' && ' per day'}
+                          {priceModel.model === 'perPlate' && ' per plate'}
+                          {priceModel.model === 'perUnit' && ' per unit'}
+                        </Typography>
+                      </Box>
+                      
+                      {/* Price Packages if they exist */}
+                      {priceModel.packages && priceModel.packages.length > 0 && (
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ mb: 1 }}>Available Packages</Typography>
+                          <TableContainer component={Paper}>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Package</TableCell>
+                                  <TableCell>Description</TableCell>
+                                  <TableCell align="right">Price</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {priceModel.packages.map((pkg, pkgIndex) => (
+                                  <TableRow key={pkgIndex}>
+                                    <TableCell component="th" scope="row">
+                                      {pkg.name || `Package ${pkgIndex + 1}`}
+                                    </TableCell>
+                                    <TableCell>
+                                      {pkg.description || `${pkg.quantity || ''} ${pkg.unit || ''}`}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      {formatPrice(pkg.price)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </Box>
+                      )}
+
+                      {/* If this is a tiered pricing model, render tiers */}
+                      {priceModel.model === 'tiered' && priceModel.tiers && priceModel.tiers.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle1" sx={{ mb: 1 }}>Tiered Pricing</Typography>
+                          <TableContainer component={Paper}>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Tier</TableCell>
+                                  <TableCell>Quantity</TableCell>
+                                  <TableCell align="right">Price</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {priceModel.tiers.map((tier, tierIndex) => (
+                                  <TableRow key={tierIndex}>
+                                    <TableCell component="th" scope="row">
+                                      {tier.name || `Tier ${tierIndex + 1}`}
+                                    </TableCell>
+                                    <TableCell>
+                                      {tier.min && tier.max ? `${tier.min} - ${tier.max}` : 'Standard'}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      {formatPrice(tier.price)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Typography variant="body1">
+                  Price information is not available for this service. Please contact the provider for pricing details.
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+
         {/* Availability Tab */}
-        <Box role="tabpanel" hidden={tabValue !== 2}>    
-          {tabValue === 2 && (      
+        <Box role="tabpanel" hidden={tabValue !== 3}>    
+          {tabValue === 3 && (      
             <Grid container spacing={2}>
               {/* Header showing overall availability dates */}
               <Grid item xs={12}>
@@ -624,7 +781,7 @@ useEffect(() => {
                             Closing Time: {formatTime(recurAvail.end_time)}
                           </Typography>                  
                         </Box>                
-                      </Box>              
+                      </Box>
                     </Paper>            
                   </Grid>          
                 ))       
@@ -640,8 +797,8 @@ useEffect(() => {
         </Box>
 
         {/* Reviews Tab */}
-        <Box role="tabpanel" hidden={tabValue !== 3}>
-          {tabValue === 3 && (
+        <Box role="tabpanel" hidden={tabValue !== 4}>
+          {tabValue === 4 && (
             <>
               {/* Reviews Summary */}
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -703,8 +860,8 @@ useEffect(() => {
         </Box>
 
         {/* Location Tab */}
-        <Box role="tabpanel" hidden={tabValue !== 4}>
-          {tabValue === 4 && (
+        <Box role="tabpanel" hidden={tabValue !== 5}>
+          {tabValue === 5 && (
             <>
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
@@ -737,8 +894,8 @@ useEffect(() => {
         </Box>
 
         {/* Provider Tab */}
-        <Box role="tabpanel" hidden={tabValue !== 5}>
-          {tabValue === 5 && (
+        <Box role="tabpanel" hidden={tabValue !== 6}>
+          {tabValue === 6 && (
             <Grid container spacing={4}>
               <Grid item xs={12} md={4}>
                 <Card>
@@ -856,7 +1013,7 @@ useEffect(() => {
         title={'Booking Confirmed Successfully!'} 
         body={"Your booking has been successfully completed. Thank you for choosing us!"} 
         action={'Booking details'}
-        url={`/booking/${bookingId}`}
+        url={`/bookings`}
       />
     </Container>
   );

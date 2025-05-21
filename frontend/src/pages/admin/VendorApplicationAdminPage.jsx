@@ -40,6 +40,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import DrawerAppBar from '../../components/DrawerAppBar';
 import LabelBottomNavigation from '../../components/LabelBottomNavigation';
+import SnackBarNotification from '../../components/SnackBarNotification';
 
 
 // Vendor roles options
@@ -529,21 +530,7 @@ const VendorApplicationAdminPage = () => {
       </Modal>
 
       {/* Snackbar notifications */}
-      <Snackbar 
-        open={snackbarOpen} 
-        autoHideDuration={6000} 
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal:'center' }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbarSeverity} 
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      <SnackBarNotification snackbarOpen={snackbarOpen} snackbarSeverity={snackbarSeverity} snackbarMessage={snackbarMessage} handleCloseSnackbar={handleCloseSnackbar} />
     </Box>
     </>
   );
