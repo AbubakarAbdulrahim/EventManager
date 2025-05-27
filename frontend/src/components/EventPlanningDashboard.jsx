@@ -26,7 +26,9 @@ import {
   IconButton,
   Badge,
   Box,
-  styled
+  styled,
+  Menu,
+  Tooltip
 } from '@mui/material';
 import {
   Search,
@@ -38,8 +40,9 @@ import {
   LocationOn,
   Group,
   AttachMoney,
-  FavoriteBorder
+  FavoriteBorder,
 } from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
 import BookingDialog from './BookingDialog';
 import StarIcon from '@mui/icons-material/Star';
 import { Favorite } from '@mui/icons-material';
@@ -48,6 +51,7 @@ import ServicesCard from './ServicesCard';
 import {
   Snackbar, Alert
 } from '@mui/material';
+import InputBase from '@mui/material/InputBase';
 import { useBookingContext } from '../context/BookingsContext';
 import { useServiceContext } from '../context/ServiceContext';
 import { useAuth } from '../context/AuthContext';
@@ -59,6 +63,8 @@ const SearchSection = styled(Box)(({ theme }) => ({
 }));
 
 import { useEffect } from 'react';
+import { useNotifications } from '../context/NotificationContext';
+import { settings } from './DrawerAppBar';
 
 // import { mockServices } from '../services/mockServices';
 
@@ -86,6 +92,7 @@ const EventPlanningDashboard = ( props) => {
   const { fetchServices} = useServiceContext()
     const [services, setServices] = useState([]);
     const [bookings, setBookings] = useState([]);
+    const {NotificationToasts} = useNotifications()
     // const [selectedService, setSelectedService] = useState("");
     // const [bookingOpen, setBookingOpen] = useState(false);
     const [openSuccess, setOpenSuccess] = useState(false);
@@ -117,6 +124,16 @@ const EventPlanningDashboard = ( props) => {
   
   // console.log(selectedService)
 
+  const SearchIconWrapper = styled('div')(({ theme }) => ({
+      padding: 0,
+      height: '100%',
+      position: 'absolute',
+      pointerEvents: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }));
+  const [searchTerm, setSearchTerm] = useState('');
   useEffect(() => {
     async function fetchService () {
       try {
@@ -164,7 +181,37 @@ const EventPlanningDashboard = ( props) => {
         {/* Search & Filters */}
         <SearchSection>
           <Grid container spacing={3}>
-            <Grid item xs={6} md={3}>
+            <Grid item xs={6} md={2}>
+              <TextField
+                fullWidth
+                label="Search"
+                placeholder='Venue, Photo...'
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#033043' }} />
+                    </InputAdornment>
+                  ),
+                  }}
+                onChange={(e) => setSearchFilters({...searchFilters, location: e.target.value})}
+                sx={{
+                  '& label.Mui-focused': {
+                    color: '#033043',
+                  },
+                  '& label': {
+                      color: '#033043',
+                  },
+                  
+                  '& .MuiOutlinedInput-root': {
+                    color:"#033043",
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#033043',
+                    },
+                  },
+                }}
+              
+              />
+            </Grid><Grid item xs={6} md={2}>
               <TextField
                 fullWidth
                 label="Location"
@@ -195,7 +242,7 @@ const EventPlanningDashboard = ( props) => {
               
               />
             </Grid>
-            <Grid item xs={6} md={3}>
+            <Grid item xs={6} md={2}>
               <TextField
                 fullWidth
                 label="Min Capacity"
@@ -221,7 +268,7 @@ const EventPlanningDashboard = ( props) => {
             </Grid>
         
                 
-            <Grid item xs={6} md={3}>
+            <Grid item xs={6} md={2}>
               <Select
                 fullWidth
                 value={searchFilters.priceRange}
@@ -241,7 +288,7 @@ const EventPlanningDashboard = ( props) => {
                 <MenuItem value={10000}>Under ₦10,000</MenuItem>
               </Select>
             </Grid>
-            <Grid item xs={6} md={3}>
+            <Grid item xs={6} md={2}>
               <Select
                 fullWidth
                 value={searchFilters.category}
@@ -261,6 +308,27 @@ const EventPlanningDashboard = ( props) => {
                 <MenuItem value={"Caterer"}>Caterers</MenuItem>
               </Select>
             </Grid>
+            <Grid item xs={6} md={2}>
+              <Select
+                fullWidth
+                value={searchFilters.category}
+                onChange={(e) => setSearchFilters({...searchFilters, category: e.target.value})}
+                displayEmpty
+                sx={{ 
+                  color:'#033043',
+                  '&.MuiOutlinedInput-root': {
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#033043',
+                    },}
+                  }}
+              >
+                <MenuItem value="">All Category</MenuItem>
+                <MenuItem value={"venue"}>Venue</MenuItem>
+                <MenuItem value={"music"}>Music</MenuItem>
+                <MenuItem value={"Caterer"}>Caterers</MenuItem>
+              </Select>
+            </Grid>
+          
             
           </Grid>
         </SearchSection>
@@ -306,7 +374,7 @@ const EventPlanningDashboard = ( props) => {
         )} 
         <SuccessDialog open={openSuccess} handleClose={handleSnackbarClose} title={'Booking Confirmed Successfully!'} body={"Your booking has been successfully completed. Thank you for choosing us!"} action={'Booking details'} /> */}
 
-        
+        <NotificationToasts/>
       </div>
   );
 };

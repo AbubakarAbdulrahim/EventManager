@@ -41,6 +41,7 @@ import { useAuth } from '../../context/AuthContext';
 import DrawerAppBar from '../../components/DrawerAppBar';
 import LabelBottomNavigation from '../../components/LabelBottomNavigation';
 import SnackBarNotification from '../../components/SnackBarNotification';
+import { useNotifications } from '../../context/NotificationContext';
 
 
 // Vendor roles options
@@ -65,6 +66,7 @@ const VendorApplicationAdminPage = () => {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState('');
   const {authAxios} = useAuth();
+  const {addNotification} = useNotifications()
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -79,6 +81,7 @@ const VendorApplicationAdminPage = () => {
     // Fetch data from backend
     const fetchData = async ()=>{
         try{
+        
           const response = await authAxios.get('/vendors/')
           console.log(response);
           const transformed = response.data.map(app => {
@@ -159,9 +162,11 @@ const VendorApplicationAdminPage = () => {
           setSelectedApplication({ ...app, status });
         }
   
-        setSnackbarMessage(`${app.fullName} has been ${message}`);
-        setSnackbarSeverity(severity);
-        setSnackbarOpen(true);
+        addNotification({
+          title: "Vendor Applications",
+          message: `${app.fullName} has been ${message}`,
+          type: severity
+        })
       }
     } catch (error) {
       console.error('Error performing action:', error);

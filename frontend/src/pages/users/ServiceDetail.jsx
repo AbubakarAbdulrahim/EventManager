@@ -63,6 +63,7 @@ import SuccessDialog from '../../components/SuccessDialog';
 import {useAuth} from '../../context/AuthContext';
 import {useVendorContext} from '../../context/VendorContext';
 import { use } from 'react';
+import DrawerAppBar from '../../components/DrawerAppBar';
 
 // Function to transform backend data to the format our component expects
 const transformServiceData = (backendData) => {
@@ -453,6 +454,8 @@ const ServiceDetail = () => {
   console.log(service);
 
   return (
+    <>
+    <DrawerAppBar/>
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Back Button */}
       <Button 
@@ -1016,6 +1019,7 @@ const ServiceDetail = () => {
         url={`/bookings`}
       />
     </Container>
+    </>
   );
 };
 

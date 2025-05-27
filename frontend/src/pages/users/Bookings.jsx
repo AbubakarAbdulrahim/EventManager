@@ -18,6 +18,8 @@ import DrawerAppBar from '../../components/DrawerAppBar';
 import { useAuth } from '../../context/AuthContext';
 import { useBookingContext } from '../../context/BookingsContext';
 import BookingCard from '../../components/BookingCard';
+import LabelBottomNavigation from '../../components/LabelBottomNavigation';
+import Footer from '../../components/Footer';
 
 
 export default function Bookings() {
@@ -46,7 +48,7 @@ export default function Bookings() {
     return (
         <>
         <DrawerAppBar/>
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }} >
           <Typography variant="h4" component="h1" gutterBottom>
             Bookings
           </Typography>
@@ -147,6 +149,8 @@ export default function Bookings() {
 
           </DialogActions>
         </Dialog>}
+        <Footer sx={'#033043'} color='#fff' />
+        <LabelBottomNavigation/>
         </>
       );
         

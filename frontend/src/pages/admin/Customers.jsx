@@ -95,17 +95,7 @@ import {
   Legend, 
   Cell 
 } from 'recharts';
-
-
-// const customers = [
-//     { id: 1, name: 'John Doe', email: 'john@example.com', phone: '555-123-4567', bookings: 5, joinDate: '2024-01-15', status: 'Active' },
-//     { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '555-987-6543', bookings: 3, joinDate: '2024-02-10', status: 'Active' },
-//     { id: 3, name: 'Mike Johnson', email: 'mike@example.com', phone: '555-555-5555', bookings: 2, joinDate: '2024-03-05', status: 'Active' },
-//     { id: 4, name: 'Sarah Williams', email: 'sarah@example.com', phone: '555-444-3333', bookings: 7, joinDate: '2023-11-20', status: 'Active' },
-//     { id: 5, name: 'Robert Brown', email: 'robert@example.com', phone: '555-222-1111', bookings: 0, joinDate: '2024-04-02', status: 'Suspended' },
-//   ];
-
-
+import { useNotifications } from '../../context/NotificationContext';
 
   export default function Customers(params) {
     
@@ -120,6 +110,7 @@ import {
         const [customers, setCustomers] = useState([]);
         const [loading, setLoading] = useState(false);
         const {authAxios} = useAuth();
+        const {addNotification} = useNotifications()
       
 
         useEffect(()=>{
@@ -165,10 +156,11 @@ import {
                 setSelectedApplication({ ...customer, status : customer.status? false : true });
               }
             
-              
-              setSnackbarMessage(`Customer ${customer.status ? 'suspended' : 'activated'} successfully!`);
-              setSnackbarSeverity(customer.status ? 'error' : 'success');
-              setSnackbarOpen(true);
+              addNotification({
+                title: "Customer Management",
+                message: `${customer.name}'s account is ${customer.status ? 'suspended' : 'activated'} successfully!`,
+                type: customer.status ? 'error' : 'success',
+              })
             }
           } catch (error) {
             console.error('Error performing action:', error);

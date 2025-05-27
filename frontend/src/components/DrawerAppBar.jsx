@@ -26,10 +26,12 @@ import { TextField } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
+import { display, flex } from '@mui/system';
 
 const drawerWidth = 240;
 const navItems = ['Home', "Bookings", 'Favorites', 'History', 'Profile', 'About'];
-const settings = ['Profile', 'Become a vendor', 'Account', 'Dashboard', 'Logout'];
+export const settings = ['Profile', 'Become a vendor', 'Account', 'Dashboard', 'Logout'];
 
 function DrawerAppBar(props) {
   const { window } = props;
@@ -38,6 +40,7 @@ function DrawerAppBar(props) {
   const [profileOpen, setProfileOpen] = useState(false);
   const {logout} = useAuth()
   const navigate = useNavigate();
+  const { addNotification,NotificationBell, NotificationToasts } = useNotifications();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
@@ -53,6 +56,8 @@ function DrawerAppBar(props) {
         break;
       case 'Become a vendor':
         navigate('/apply')
+      case 'Profile':
+        navigate('/profile')
         break;
       default:
         console.log('Navigating to:', setting);
@@ -95,13 +100,15 @@ function DrawerAppBar(props) {
       </Typography>
       <Divider />
       <List>
-        {navItems.map((item) => (
-          <ListItem key={item} disablePadding>
+        {navItems.map((item) => {
+          return item !== 'Profile' &&
+          <ListItem key={item} component={Link} to={(item ==='Home' ? "/dashboard" : "/" + item.toLowerCase())} sx={{ fontSize:'1em', color: '#fff', textTransform:'none'}} disablePadding>
             <ListItemButton sx={{ textAlign: 'center', textTransform:'none' }}>
               <ListItemText primary={item} />
             </ListItemButton>
           </ListItem>
-        ))}
+        }
+        )}
       </List>
       <Box sx={{display: { xs: 'flex', md: 'none' },
         position: 'relative',
@@ -141,61 +148,30 @@ function DrawerAppBar(props) {
     <>
       <CssBaseline />
       <AppBar sx={{backgroundColor: "#033043"}} position="sticky">
-        <Toolbar>
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, mr: 1,}}>
+        <Toolbar sx={{display:'flex',  justifyContent:'space-between'}}>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, mr: 1, gap:'10px', alignItems:'center'}}>
             <img src="/EventMaster.png" height={30} width={30}/>
           {/* <img src="/logo.png" height={30} width={30}/> */}
-          </Box>
-            <Typography
-              variant="h6"
-              noWrap
-              component="a"
-              href="#app-bar-with-responsive-menu"
-              sx={{
-                mr: 2,
-                display: { xs: 'none', md: 'flex' },
-                flexGrow: 1,
-                fontFamily: 'monospace',
-                fontWeight: 700,
-                letterSpacing: '.3rem',
-                color: '#fff',
-                textDecoration: 'none',
-              }}
-            >
+            <Typography variant='h6' sx={{fontWeight: 700, fontFamily:'cursive'}}>
               EventMaster
-          </Typography>
+            </Typography>
+            </Box>
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' }, flexGrow: 1, justifyContent: 'start' }}
+            sx={{ mr: 2, display: { md: 'none' }, justifyContent: 'start' }}
           >
             <MenuIcon />
           </IconButton>
-          <Box sx={{ display: { xs: 'flex', md: 'none' }, mr: 1,}}>
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, gap:'10px', alignItems:'center'}}>
           {/* <img src="/EventMaster.png" height={30} width={30}/> */}
             <img src="/EventMaster.png" height={30} width={30}/>
+            <Typography variant='h6' sx={{fontWeight: 700, fontFamily:'cursive'}}>
+              EventMaster
+            </Typography>
           </Box>
-          <Typography
-            variant="h5"
-            noWrap
-            component="a"
-            href="#app-bar-with-responsive-menu"
-            sx={{
-              
-              display: { xs: 'flex', md: 'none' },
-              flexGrow: 1,
-              // justifyContent: 'center',
-              fontFamily: 'monospace',
-              fontWeight: 700,
-              letterSpacing: '.3rem',
-              color: '#fff',
-              textDecoration: 'none',
-            }}
-          >
-            EventMaster
-          </Typography>
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             {navItems.map((item) => (
               <Button 
@@ -206,40 +182,13 @@ function DrawerAppBar(props) {
               </Button>
             ))}
           </Box>
-          <Box sx={{display: { xs: 'none', md: 'flex' },
-              position: 'relative',
-              borderRadius: "4px",
-              px:'5px',
-              color:'#fff',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.25)',
-              },
-              marginLeft: 0,
-              maxWidth: '100%',
-           }}>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <InputBase
-            sx={{marginLeft:2,
-            color: 'inherit',
-            '& .MuiInputBase-input': {
-              padding: 1,
-              transition: "width .2s ease",
-              width: '12ch',
-              '&:focus': {
-                  width: '20ch',
-                },
-              },
-            }}
-              placeholder="Search…"
-              inputProps={{ 'aria-label': 'search' }}
-              onChange={(e) => {props.setSearchTerm(e.target.value); setSearchTerm(e.target.value)}}
-              value={searchTerm}
-            />
+          <Box sx={{display:{xs:'none', md:'flex'}, }}>
+
+          <NotificationBell userRole={'customer'} />
           </Box>
-          <Box sx={{display: {xs:'flex', sm:'none'} }}>
+
+          <Box sx={{display: {xs:'flex', md:'none'} }}>
+          <NotificationBell userRole={'customer'} />
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar alt="Remy Sharp" src="/image1.jpg" />
@@ -266,6 +215,7 @@ function DrawerAppBar(props) {
                   <Typography sx={{ textAlign: 'center' }}>{setting}</Typography>
                 </MenuItem>
               ))}
+              {/* <MenuItem><NotificationBell/></MenuItem> */}
             </Menu>
           </Box>
         </Toolbar>

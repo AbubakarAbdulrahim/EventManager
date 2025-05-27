@@ -18,6 +18,7 @@ import {
   MenuItem, 
   ThemeProvider, 
   createTheme,
+  Tooltip
 } from '@mui/material';
 import { ListItemButton } from '@mui/material';
 import {
@@ -37,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import NotificationModal from './NotificationModal';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 export default function NavAppBar({currentPage, setCurrentPage}) {
     const theme = createTheme({
@@ -56,6 +58,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
       const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
       const [accountAnchorEl, setAccountAnchorEl] = useState(null);
       const [tabValue, setTabValue] = useState(0);
+      const {NotificationBell, NotificationToasts, addNotification} = useNotifications()
     
       const handleNotificationsClick = (event) => {
         setNotificationsAnchorEl(event.currentTarget);
@@ -140,6 +143,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
                 </Badge>
               </IconButton>
               <NotificationModal notificationsAnchorEl={notificationsAnchorEl} handleNotificationsClose={handleNotificationsClose} />
+              <NotificationBell userRole='admin' />
               <IconButton color="inherit" onClick={handleAccountClick}>
                 <AccountCircleIcon />
               </IconButton>
@@ -234,87 +238,106 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
           <List>
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Dashboard')} selected={currentPage === 'Dashboard'}>
-      <ListItemIcon>
-        <DashboardIcon color={currentPage === 'Dashboard' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Dashboard' >
+        <ListItemIcon>
+          <DashboardIcon color={currentPage === 'Dashboard' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Dashboard" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Customers')} selected={currentPage === 'Customers'}>
-      <ListItemIcon>
-        <PersonIcon color={currentPage === 'Customers' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Customers' >
+        <ListItemIcon>
+          <PersonIcon color={currentPage === 'Customers' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Customers" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Vendors')} selected={currentPage === 'Vendors'}>
-      <ListItemIcon>
-        <PeopleIcon color={currentPage === 'Vendors' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Vendors' >
+        <ListItemIcon>
+          <PeopleIcon color={currentPage === 'Vendors' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Vendors" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Bookings')} selected={currentPage === 'Bookings'}>
-      <ListItemIcon>
-        <EventNoteIcon color={currentPage === 'Bookings' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Bookings' >
+        <ListItemIcon>
+          <EventNoteIcon color={currentPage === 'Bookings' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Bookings" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Services')} selected={currentPage === 'Services'}>
-      <ListItemIcon>
-        <StoreIcon color={currentPage === 'Services' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Services' >
+        <ListItemIcon>
+          <StoreIcon color={currentPage === 'Services' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Services" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Payments')} selected={currentPage === 'Payments'}>
-      <ListItemIcon>
-        <PaymentIcon color={currentPage === 'Payments' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Payments' >
+        <ListItemIcon>
+          <PaymentIcon color={currentPage === 'Payments' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Payments" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Reports')} selected={currentPage === 'Reports'}>
-      <ListItemIcon>
-        <BarChartIcon color={currentPage === 'Reports' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Reports' >
+        <ListItemIcon>
+          <BarChartIcon color={currentPage === 'Reports' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Reports" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Support')} selected={currentPage === 'Support'}>
-      <ListItemIcon>
-        <SupportAgentIcon color={currentPage === 'Support' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Support' >
+        <ListItemIcon>
+          <SupportAgentIcon color={currentPage === 'Support' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Support" />
     </ListItemButton>
   </ListItem>
 
   <ListItem disablePadding>
     <ListItemButton onClick={() => handlePageChange('Settings')} selected={currentPage === 'Settings'}>
-      <ListItemIcon>
-        <SettingsIcon color={currentPage === 'Settings' ? 'primary' : 'inherit'} />
-      </ListItemIcon>
+      <Tooltip title='Settings' >
+        <ListItemIcon>
+          <SettingsIcon color={currentPage === 'Settings' ? 'primary' : 'inherit'} />
+        </ListItemIcon>
+      </Tooltip>
       <ListItemText primary="Settings" />
     </ListItemButton>
   </ListItem>
 </List>
         </Drawer>
       </Box>
+      <NotificationToasts/>
     </ThemeProvider>
 
     )

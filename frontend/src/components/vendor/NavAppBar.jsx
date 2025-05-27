@@ -18,6 +18,7 @@ import {
   MenuItem, 
   ThemeProvider, 
   createTheme,
+  Tooltip
 } from '@mui/material';
 import { ListItemButton } from '@mui/material';
 import {
@@ -116,9 +117,11 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
                   // setMobileOpen(false);
                 }}
               >
-                <ListItemIcon>
-                  {item.icon}
-                </ListItemIcon>
+                <Tooltip title={item.text}>              
+                  <ListItemIcon>
+                    {item.icon}
+                  </ListItemIcon>
+                </Tooltip>
                 <ListItemText primary={item.text} />
               </ListItemButton>
             ))}
@@ -126,9 +129,11 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
           <Divider />
           <List>
             <ListItemButton onClick={()=>{logout()}} >
-              <ListItemIcon>
-                <Logout />
-              </ListItemIcon>
+              <Tooltip title='Logout'>
+                <ListItemIcon>
+                  <Logout />
+                </ListItemIcon>
+              </Tooltip>
               <ListItemText primary="Logout" />
             </ListItemButton>
           </List>

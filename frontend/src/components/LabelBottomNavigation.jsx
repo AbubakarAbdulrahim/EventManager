@@ -5,7 +5,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import RestoreIcon from '@mui/icons-material/Restore';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { Home } from '@mui/icons-material';
+import { Book, Home, Receipt } from '@mui/icons-material';
 import { Dashboard } from '@mui/icons-material';
 
 export default function LabelBottomNavigation() {
@@ -27,19 +27,22 @@ export default function LabelBottomNavigation() {
       <BottomNavigationAction
         label="Favorites"
         value="favorites"
+        href='/favorites'
         icon={<FavoriteIcon sx={{color:'#fff'}} />}
         sx={{'&.Mui-selected': {color:'#fff'}}}
       />
       <BottomNavigationAction
-        label="Nearby"
-        value="nearby"
-        icon={<LocationOnIcon sx={{color:'#fff'}} />}
+        label="Bookings"
+        value="bookings"
+        href='/bookings'
+        icon={<Book sx={{color:'#fff'}} />}
         sx={{'&.Mui-selected': {color:'#fff'}}}
       />
       <BottomNavigationAction 
-      label="Folder" 
-      value="folder" 
-      icon={<FolderIcon sx={{color:'#fff'}} />} 
+      label="Transactions"
+      value="transactions"
+      href='/transactions'
+      icon={<Receipt   sx={{color:'#fff'}} />} 
       sx={{'&.Mui-selected': {color:'#fff'}}}
       />
     </BottomNavigation>

@@ -23,8 +23,13 @@ import VendorDashboard from "./pages/vendors/vendor";
 import VendorAdmin from "./pages/vendors/vendorAdmin";
 import BookingDetails from "./pages/users/BookingDetails";
 import VendorProvider from "./context/VendorContext";
+import NotificationProvider from "./context/NotificationContext";
 import UserProvider from "./context/UserContext";
 import Bookings from "./pages/users/Bookings";
+import UserProfile from "./pages/users/UserProfile";
+import Notification from "./components/Notifications";
+import CookieConsent from "./components/CookieConsent";
+import SystemAlert from "./pages/admin/SystemAlert";
 
 function App() {
   return (
@@ -37,11 +42,15 @@ function App() {
 
       <BookingsProvider>
       <ServiceProvider>
+      <NotificationProvider>
 
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/system" element={<SystemAlert />} />
+        <Route path="/notification" element={<Notification />} />
         <Route path="/dashboard" element={
           <ProtectedRoute roles={['vendor', 'admin', 'customer']}>
             <Dashboard />
@@ -72,6 +81,8 @@ function App() {
         <Route path="/vendor-admin" element={<VendorAdmin/>}></Route>
         <Route path="/unauthorized" element={<Unauthorized/>} />
       </Routes>
+      <CookieConsent/>
+      </NotificationProvider>
       </ServiceProvider>
       </BookingsProvider>
       </VendorProvider>

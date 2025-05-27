@@ -21,25 +21,16 @@ import AddServiceDialog from './AddServiceDialog';
 import { useAuth } from '../../context/AuthContext';
 import { useServiceContext } from '../../context/ServiceContext';
 import { useVendorContext } from '../../context/VendorContext';
+import { useBookingContext } from '../../context/BookingsContext';
 
 
-  const transformedData= (data) => {
-    return data.map((service) => ({
-      id: service.id,
-      name: service.service_name,
-      description: service.description,
-      price: service.pricing[0].base_price,
-      isActive: service.status,
-      customers: service.customers || 10,
-      income: service.pricing[0].base_price * (service.customers || 10),
-      service_images: service.service_images
-    }));
-  }
+  
 
 export default function Services  () {
     const { authAxios, user } = useAuth();
     const {fetchServices} = useServiceContext()
     const {fetchVendors} = useVendorContext()
+    const {fetchVendorBookings} = useBookingContext()
     const [services, setServices] = useState([]);
     const [serviceFormOpen, setServiceFormOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
@@ -51,6 +42,7 @@ export default function Services  () {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
     const [loading, setLoading] = useState(false)
+    // const [bookings, setBookings] = useState([])
     
     const handleClose = () => {
         setServiceFormOpen(false);
@@ -77,6 +69,23 @@ export default function Services  () {
       setSelectedImage('');
     };
 
+    const transformedData= (data, bookings) => {
+    console.log(data, bookings);
+    
+    return data.map((service) => {
+      const customers =bookings.filter((booking)=>(booking.service.id === service.id))
+      return ({
+      id: service.id,
+      name: service.service_name,
+      description: service.description,
+      price: service.pricing[0].base_price,
+      isActive: service.status,
+      customers: customers.length,
+      income: service.pricing[0].base_price * customers.length,
+      service_images: service.service_images
+    })});
+  }
+
     useEffect(() => {
 
       const fetchService = async () => {
@@ -86,8 +95,10 @@ export default function Services  () {
           const vendorId = vendor[0].id
           const response = await fetchServices();
           const data = response.filter(service=>service.vendor === vendorId)
-          const transformedServices = transformedData(data);
-
+          const bookings = await fetchVendorBookings();
+          const transformedServices = transformedData(data, bookings);
+          
+          
           setServices(transformedServices);
         } catch (error) {
           console.error('Error fetching services:', error);
@@ -185,7 +196,7 @@ export default function Services  () {
                     color="primary"
                     size='small'
                     onClick={() => {
-                      setEditingService(service.id);
+                      setEditingService(service);
                       setServiceFormOpen(true);
                     }}
                   >

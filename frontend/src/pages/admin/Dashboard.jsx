@@ -76,6 +76,14 @@ import {
   CalendarToday as CalendarTodayIcon,
   AccountBox as AccountBoxIcon,
 } from '@mui/icons-material';
+import {
+  Build as BuildIcon,
+  Assignment as AssignmentIcon,
+  Support as SupportIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon
+} from '@mui/icons-material';
 import Accordion from '@mui/material/Accordion';
 
 // Chart components
@@ -98,11 +106,55 @@ import { useBookingContext } from '../../context/BookingsContext';
 import { useVendorContext } from '../../context/VendorContext';
 import { useServiceContext } from '../../context/ServiceContext';
 import { useUserContext } from '../../context/UserContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 
   const COLORS = ['#0a7273', '#fda521', '#82ca9d', '#ff8042', '#a4de6c'];
-
-export default function Dashboard() {
+  const systemAlerts = [
+  {
+    id: 'vendor-apps',
+    type: 'error',
+    priority: 'high',
+    category: 'Applications',
+    title: '5 vendor applications require review',
+    message: 'New vendor applications are waiting for admin approval',
+    subtitle: 'Last application received 2 hours ago',
+    count: 5,
+    icon: <AssignmentIcon />,
+    action: 'Review',
+    actionType: 'contained',
+    badgeColor: 'error'
+  },
+  {
+    id: 'support-tickets',
+    type: 'warning',
+    priority: 'medium',
+    category: 'Support',
+    title: '3 customer support tickets awaiting response',
+    message: 'Customer support tickets need immediate attention',
+    subtitle: 'Oldest ticket was created 5 hours ago',
+    count: 3,
+    icon: <SupportIcon />,
+    action: 'View',
+    actionType: 'contained',
+    badgeColor: 'warning'
+  },
+  {
+    id: 'maintenance',
+    type: 'info',
+    priority: 'low',
+    category: 'System',
+    title: 'System maintenance scheduled',
+    message: 'Scheduled maintenance will affect system availability',
+    subtitle: 'Scheduled for April 25, 2025 at 02:00 AM',
+    count: null,
+    icon: <BuildIcon />,
+    action: 'Details',
+    actionType: 'outlined',
+    badgeColor: 'info'
+  }
+];
+export default function Dashboard({setCurrentPage}) {
 
   const { fetchAllBookings } = useBookingContext();
   const [bookings, setBookings] = useState([]);
@@ -113,6 +165,48 @@ export default function Dashboard() {
   const [vendors, setVendors] = useState([]);
   const [services, setServices] = useState([]);
   const [users, setUsers] = useState([]);
+  const {addNotification} =useNotifications()
+
+  // useEffect(() => {
+  //     systemAlerts.forEach(alert => {
+  //       addNotification({
+  //         type: alert.type,
+  //         priority: alert.priority,
+  //         category: alert.category,
+  //         title: alert.title,
+  //         message: alert.message,
+  //         showToast: false, // Don't show as toast, only in bell
+  //         autoHide: true
+  //       });
+  //     });
+  //   }, []);
+  
+  
+    const handleAlertAction = (alert) => {
+      // Add a new notification when action is clicked
+      addNotification({
+        type: 'success',
+        title: `${alert.action} Action Triggered`,
+        message: `You clicked ${alert.action} for: ${alert.title}`,
+        priority: 'medium',
+        category: 'Action',
+        showToast: true,
+        duration: 3000
+      });
+    };
+  
+    const getAlertIcon = (alert) => {
+      switch (alert.type) {
+        case 'error':
+          return <ErrorIcon color="error" />;
+        case 'warning':
+          return <WarningIcon color="warning" />;
+        case 'info':
+          return <InfoIcon color="info" />;
+        default:
+          return alert.icon;
+      }
+    };
 
 
   const getMonthlyData = () => {
@@ -174,7 +268,6 @@ export default function Dashboard() {
   };
 
   const getPercentageChange = (current, previous) => {
-    console.log(current, previous);
     if (previous === 0) return current === 0 ? 0 : 100;
     return ((current - previous) / previous) * 100;
   };
@@ -203,7 +296,7 @@ export default function Dashboard() {
   };
 
   const getPendingVendors = () => {
-    return vendors.filter(v => v.status === 'pending').length;
+    return vendors.filter(v => v.status !== 'approved').length;
   };
 
 
@@ -271,7 +364,7 @@ export default function Dashboard() {
               Active Customers
             </Typography>
             <Typography component="p" variant="h4">
-              {users.length}
+              {users.filter((user)=>(user.is_active === true)).length}
             </Typography>
             <Typography variant="body2" sx={{ flex: 1 }}>
               {getNewUsersThisWeek()} new this week
@@ -284,7 +377,7 @@ export default function Dashboard() {
               Active Vendors
             </Typography>
             <Typography component="p" variant="h4">
-              {vendors.length}
+              {vendors.filter((vendor)=>(vendor.status === 'approved')).length}
             </Typography>
             <Typography variant="body2" sx={{ flex: 1 }}>
               {getPendingVendors()} pending approvals
@@ -382,17 +475,17 @@ export default function Dashboard() {
                       <TableCell align="right">₦{parseFloat(booking.total_price)}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={booking.status} 
+                          label={(booking.status).charAt(0).toUpperCase() + (booking.status).slice(1)} 
                           color={
-                            booking.status === 'accepted' ? 'success' : 
-                            booking.status === 'upcoming' ? 'primary' :
-                            booking.status === 'pending' ? 'warning' : 'error'
+                            booking.status === 'completed' ? 'success' : 
+                            booking.status === 'cancelled' ? 'error' :
+                            booking.status === 'pending' ? 'default' : 'error'
                           } 
                           size="small" 
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Button size="small">View</Button>
+                        <Button size="small" >View</Button>
                       </TableCell>
                     </TableRow>
                   )})}
@@ -400,57 +493,126 @@ export default function Dashboard() {
               </Table>
             </TableContainer>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-              <Button color="primary">View All Bookings</Button>
+              <Button color="primary" onClick={()=>{setCurrentPage('Bookings')}} >View All Bookings</Button>
             </Box>
           </Paper>
         </Grid>
         
-        {/* System alerts */}
         <Grid item xs={12}>
           <Paper elevation={3} sx={{ p: 2 }}>
-            <Typography component="h2" variant="h6" color="primary" gutterBottom>
-              System Alerts & Notifications
-            </Typography>
-            <List>
-              <ListItem>
-                <ListItemIcon>
-                  <Badge color="error" variant="dot">
-                    <NotificationsIcon />
-                  </Badge>
-                </ListItemIcon>
-                <ListItemText 
-                  primary="5 vendor applications require review" 
-                  secondary="Last application received 2 hours ago" 
-                />
-                <Button size="small" variant="contained">Review</Button>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemIcon>
-                  <Badge color="warning" variant="dot">
-                    <NotificationsIcon />
-                  </Badge>
-                </ListItemIcon>
-                <ListItemText 
-                  primary="3 customer support tickets awaiting response" 
-                  secondary="Oldest ticket was created 5 hours ago" 
-                />
-                <Button size="small" variant="contained">View</Button>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemIcon>
-                  <Badge color="info" variant="dot">
-                    <NotificationsIcon />
-                  </Badge>
-                </ListItemIcon>
-                <ListItemText 
-                  primary="System maintenance scheduled" 
-                  secondary="Scheduled for April 25, 2025 at 02:00 AM" 
-                />
-                <Button size="small" variant="outlined">Details</Button>
-              </ListItem>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography component="h2" variant="h6" color="primary" gutterBottom>
+                System Alerts & Notifications
+              </Typography>
+              <Chip 
+                label={`${systemAlerts.filter(a => a.count).reduce((sum, a) => sum + a.count, 0)} Active`}
+                color="primary"
+                size="small"
+              />
+            </Box>
+            
+            <List sx={{ p: 0 }}>
+              {systemAlerts.map((alert, index) => (
+                <React.Fragment key={alert.id}>
+                  <ListItem
+                    sx={{
+                      px: 0,
+                      py: 2,
+                      '&:hover': {
+                        backgroundColor: 'rgba(0,0,0,0.02)',
+                        borderRadius: 1
+                      }
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 48 }}>
+                      <Badge 
+                        color={alert.badgeColor} 
+                        variant={alert.count ? "standard" : "dot"}
+                        badgeContent={alert.count}
+                      >
+                        {getAlertIcon(alert)}
+                      </Badge>
+                    </ListItemIcon>
+                    
+                    <ListItemText 
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                            {alert.title}
+                          </Typography>
+                          {alert.priority === 'high' && (
+                            <Chip 
+                              label="Urgent" 
+                              color="error" 
+                              size="small" 
+                              sx={{ height: 20, fontSize: '0.75rem' }}
+                            />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            {alert.subtitle}
+                          </Typography>
+                          <Chip 
+                            label={alert.category}
+                            variant="outlined"
+                            size="small"
+                            sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
+                          />
+                        </Box>
+                      }
+                      secondaryTypographyProps={{ component: 'div' }}
+                    />
+
+                    
+                    <Button 
+                      size="small" 
+                      variant={alert.actionType}
+                      color={alert.type === 'error' ? 'error' : 'primary'}
+                      // onClick={() => handleAlertAction(alert)}
+                      sx={{ ml: 2 }}
+                    >
+                      {alert.action}
+                    </Button>
+                  </ListItem>
+                  
+                  {index < systemAlerts.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
             </List>
+    
+            {/* Summary Footer */}
+            <Box sx={{ 
+              mt: 2, 
+              pt: 2, 
+              borderTop: '1px solid #e0e0e0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <Typography variant="body2" color="text.secondary">
+                Total: {systemAlerts.length} system alerts
+              </Typography>
+              <Button 
+                size="small" 
+                variant="text"
+                onClick={() => {
+                  addNotification({
+                    type: 'info',
+                    title: 'View All Notifications',
+                    message: 'Opening comprehensive notification center...',
+                    priority: 'low',
+                    category: 'Navigation',
+                    showToast: true,
+                    duration: 2000
+                  });
+                }}
+              >
+                View All
+              </Button>
+            </Box>
           </Paper>
         </Grid>
       </Grid>

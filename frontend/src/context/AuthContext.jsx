@@ -49,6 +49,8 @@ export const AuthProvider = ({ children }) => {
       initializedRef.current = true;
 
       try {
+        console.log('im init');
+        
         const token = await refreshToken();
         if (token) {
           setAccessToken(token);
@@ -76,13 +78,15 @@ export const AuthProvider = ({ children }) => {
         const original = err.config;
         if (err.response?.status === 401 && !original._retry) {
           original._retry = true;
+          console.log('im inteceptor');
+          
           const newToken = await refreshToken();
           if (newToken) {
             original.headers.Authorization = `Bearer ${newToken}`;
             return authAxios(original);
           } else {
             await logout();
-            window.location.href = '/login';
+            // window.location.href = '/login';
           }
         }
         return Promise.reject(err);
@@ -139,6 +143,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAxios.post('/user/token/refresh/');
       const { access } = response.data;
+      console.log(response.data);
+      
 
       if (!access) return null;
 

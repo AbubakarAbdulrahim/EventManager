@@ -33,7 +33,7 @@ import {
 import dayjs from 'dayjs';
 import { useAuth } from '../context/AuthContext';
 import {closePaymentModal } from 'flutterwave-react-v3';
-import { useBookingContext } from '../context/BookingsContext';
+import { useNotifications } from '../context/NotificationContext';
 
 const StepIcon = ({ active, completed, icon }) => {
   const icons = {
@@ -88,6 +88,7 @@ function BookingDialog({ open, handleClose, service, onConfirm, addBooking }) {
   const [days, setDays] = useState(1);
   const [formErrors, setFormErrors] = useState({});
   const [totalPrice, setTotalPrice] = useState(0);
+  const { addNotification } = useNotifications();
   
   // Define steps for booking process
   const steps = [
@@ -581,53 +582,65 @@ totalPrice,);
   };
   
   const handlePayment = async () => {
-    try {
-      await loadFlutterwaveScript();
-      setError('');
-      window.FlutterwaveCheckout({
-        public_key: import.meta.env.VITE_PUBLIC_KEY,
-        tx_ref: Date.now(),
-        amount: bookingData.price || totalPrice,
-        currency: "NGN",
-        payment_options: "card,ussd",
-        customer: {
-          email: bookingData.email,
-          phone_number: bookingData.phone,
-          name: bookingData.name,
-        },
-        callback: function (response) {
-          console.log("Payment Response:", response);
-          setShowCancelMsg(false);
-          if (response.status === 'completed') {
-            onConfirm({
-              ...bookingData,
-              date: bookingData.date?.format('YYYY-MM-DD'),
-              service: service.name
-            });
-            addBooking(service);
-            
-            setTimeout(() => {
-              console.log('hey im closing');
-              closePaymentModal();
-              // setOpenReview(true);
-            }, 500);
-          }
-        },
-        onclose: function () {
-          console.log("User closed the payment modal.");
-          setShowCancelMsg(true);
-        },
-        customizations: {
-          title: `Payment for Booking ${service.name}`,
-          description: `Booking for ${service.name}`,
-          logo: "http://localhost:5173/logo.png",
-        },
-      });
-    } catch (e) {
-      console.log(e);
-      setError("Unable to load payment system. Please check your internet and try again.");
-    }
-  };
+  try {
+    await loadFlutterwaveScript();
+    setError('');
+    window.FlutterwaveCheckout({
+      public_key: import.meta.env.VITE_PUBLIC_KEY,
+      tx_ref: Date.now(),
+      amount: bookingData.price || totalPrice,
+      currency: "NGN",
+      payment_options: "card,ussd",
+      customer: {
+        email: bookingData.email,
+        phone_number: bookingData.phone,
+        name: bookingData.name,
+      },
+      callback: function (response) {
+        console.log("Payment Response:", response);
+        setShowCancelMsg(false);
+        if (response.status === 'completed') {
+          addNotification({
+            type: 'success',
+            message: 'Payment successful! Your booking has been confirmed.'
+          });
+          onConfirm({
+            ...bookingData,
+            date: bookingData.date?.format('YYYY-MM-DD'),
+            service: service.name
+          });
+          addBooking(service);
+
+          setTimeout(() => {
+            console.log('hey im closing');
+            closePaymentModal();
+            // setOpenReview(true);
+          }, 500);
+        }
+      },
+      onclose: function () {
+        console.log("User closed the payment modal.");
+        setShowCancelMsg(true);
+        addNotification({
+          type: 'info',
+          message: 'Payment was cancelled. Please try again to complete your booking.'
+        });
+      },
+      customizations: {
+        title: `Payment for Booking ${service.name}`,
+        description: `Booking for ${service.name}`,
+        logo: "http://localhost:5173/logo.png",
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    setError("Unable to load payment system. Please check your internet and try again.");
+    addNotification({
+      type: 'error',
+      message: 'Unable to load payment system. Please check your internet and try again.'
+    });
+  }
+};
   
   // Handle next step button
   const handleNext = (e) => {

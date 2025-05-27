@@ -57,6 +57,8 @@ const transformedData = (servicesData, bookings) => {
     if (!bookingCounts[serviceId]) {
       bookingCounts[serviceId] = 0;
     }
+    console.log('Booking Service ID:', serviceId, 'Count:', bookingCounts[serviceId], 'Booking:', booking);
+    
     bookingCounts[serviceId]++;
   });
 

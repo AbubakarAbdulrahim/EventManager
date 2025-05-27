@@ -31,6 +31,7 @@ import {
   styled,
   CardActionArea
 } from '@mui/material';
+import { trackEvent } from '../utils/tracker';
 import {
   Search,
   FilterList,
@@ -50,10 +51,11 @@ import { FavoriteBorderRounded } from '@mui/icons-material';
 import { useState } from "react";
 import ServiceDetail from "./ServiceDetail";
 import { Link } from "react-router-dom";
+import { useNotifications } from "../context/NotificationContext";
 
 
 export default function ServicesCard({service}) {
-  
+  const {addNotification} = useNotifications()
   const [openDetail, setOpenDetail] = useState(false)
   const ServiceCard = styled(Card)(({ theme }) => ({
     transition: 'transform 0.2s',
@@ -82,6 +84,13 @@ export default function ServicesCard({service}) {
     const favorite = isFavorite(service.id);
 
     function addFavorite(e){
+      addNotification({
+      title: favorite? "Removed from favorite" : "Added to favorites",
+      message: favorite ? `${service.name} was removed from favorites` : `${service.name} was added to favorites`,
+      type: favorite? 'warning' : "success",
+      category: "Favorite",
+      priority: "low"
+    })
       e.preventDefault();
       if(favorite) removeFromFavorites(service.id)
       else addToFavorites(service)
@@ -99,6 +108,11 @@ export default function ServicesCard({service}) {
   }
   // console.log(service.image);
 
+const handleTrack = (serviceId, userId) => {
+  trackEvent('view_service', { service_id: serviceId });
+};
+
+
   
     return (
       <Grid item xs={12} sm={6} md={4}>
@@ -107,8 +121,8 @@ export default function ServicesCard({service}) {
                {bookedService && (<BookingTag label="Booked" />)}
 
               <CardMedia
+                onClick={()=>{handleTrack(service.id)}}
                 component="img"
-                
                 height="200"
                 image={service.image || service.mainImage}
                 alt={service.name}

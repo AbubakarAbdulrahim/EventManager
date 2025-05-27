@@ -97,6 +97,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useServiceContext } from '../../context/ServiceContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const transformedData= (data) => {
     return data.map((service) => ({
@@ -118,6 +119,7 @@ const transformedData= (data) => {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const {addNotification} = useNotifications()
 
     useEffect(() => {
       const fetchService = async () => {
@@ -136,9 +138,11 @@ const transformedData= (data) => {
     const handleAction = async (id, action)=>{
       try{
         const res = await authAxios.post(`api-admin/service/${id}/suspend-activate/`, {action: action})
-        setSnackbarOpen(true)
-        setSnackbarSeverity('success')
-        setSnackbarMessage(res.data.detail)
+        addNotification({
+          title: "Services Management",
+          message: res.data.detail,
+          type: action === 'approve' ? 'success' : action === 'reject' ? 'error' : 'warning'
+        })
       } catch (error){
         console.error(error)
       }
