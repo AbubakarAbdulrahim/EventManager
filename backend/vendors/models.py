@@ -34,7 +34,7 @@ AVAILABILITY_CHOICES = (
 
 # vendor table
 class Vendor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
+    user = models.OneToOneField('users.User', on_delete=models.CASCADE, related_name="vendor_profile")
     business_name = models.CharField(max_length=200)
     address = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
