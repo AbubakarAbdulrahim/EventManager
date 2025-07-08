@@ -38,7 +38,9 @@ import {
 } from '@mui/icons-material';
 import NotificationModal from './NotificationModal';
 import { useAuth } from '../../context/AuthContext';
-import { useNotifications } from '../../context/NotificationContext';
+import { NotificationBell, NotificationToasts } from '../../context/NotificationContext';
+import { useNavigate } from 'react-router-dom';
+
 
 export default function NavAppBar({currentPage, setCurrentPage}) {
     const theme = createTheme({
@@ -53,12 +55,13 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
     });
     const [open, setOpen] = useState(false);
     const {logout} = useAuth()
+    const navigate = useNavigate()
     const drawerWidth = open ? 240 : 60;
       
       const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
       const [accountAnchorEl, setAccountAnchorEl] = useState(null);
       const [tabValue, setTabValue] = useState(0);
-      const {NotificationBell, NotificationToasts, addNotification} = useNotifications()
+      
     
       const handleNotificationsClick = (event) => {
         setNotificationsAnchorEl(event.currentTarget);
@@ -137,12 +140,6 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
               >
                 {currentPage} - Event Master Admin
               </Typography>
-              <IconButton color="inherit" onClick={handleNotificationsClick}>
-                <Badge badgeContent={4} color="secondary">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <NotificationModal notificationsAnchorEl={notificationsAnchorEl} handleNotificationsClose={handleNotificationsClose} />
               <NotificationBell userRole='admin' />
               <IconButton color="inherit" onClick={handleAccountClick}>
                 <AccountCircleIcon />
@@ -180,7 +177,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
-                <MenuItem onClick={handleAccountClose}>
+                <MenuItem onClick={()=>{navigate('/profile')}}>
                   <Typography variant="body2">Profile</Typography>
                 </MenuItem>
                 <MenuItem onClick={handleAccountClose}>

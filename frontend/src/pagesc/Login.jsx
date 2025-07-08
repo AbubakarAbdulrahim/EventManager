@@ -21,7 +21,7 @@ import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../components/CustomIcon
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { useState, useEffect } from 'react';
+import { useState,useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Alert, CircularProgress } from '@mui/material';
 import Snackbar from '@mui/material/Snackbar';
@@ -71,9 +71,9 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 const validationSchema = yup.object({
   username: yup
     .string('Enter your username')
-    .required('Username is required'),
-  password: yup
-    .string('Enter your password')
+    .required('username is required'),
+  password: yup.string()
+    // .string('Enter your password')
     .min(8, 'Password should be of minimum 8 characters length')
     .required('Password is required')
     .matches(/[A-Z]/, "Must contain at least one uppercase letter")
@@ -83,14 +83,19 @@ const validationSchema = yup.object({
 });
 
 export default function Login(props) {
-  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({
+      username: "",
+      password: "",
+    });
+    const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
-  const { user, loading, login, error, clearError } = useAuth();
-  const [logLoading, setLogLoading] = useState(false);
-  
-  useEffect(() => {
-    if (!loading && user) {
-      // Redirect based on role
+    const { user, loading, login, error } = useAuth();
+    // const [error, setError] = useState(null);
+    const [logLoading, setLogLoading] = useState(false)
+    
+    useEffect(() => {
+      if (!loading && user) {
+          // Redirect based on role
       if (user.role === 'admin') {
         navigate('/admin');
       } else if (user.role === 'vendor') {
@@ -98,9 +103,8 @@ export default function Login(props) {
       } else {
         navigate('/dashboard');
       }
-    }
-  }, [user, loading, navigate]);
-
+      }
+    }, [user,loading, navigate]);
   const formik = useFormik({
     initialValues: {
       username: '',
@@ -108,27 +112,41 @@ export default function Login(props) {
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
-      console.log('Submitting:', values);
+      console.log(values);
       try {
-        setLogLoading(true);
+        setLogLoading(true)
         await login(values);
-        // Navigation will be handled by useEffect when user state updates
-      } catch (err) {
-        console.error('Login failed:', err);
-        // Error will be handled by the error state from useAuth
+        // If login is successful, redirect to dashboard
+        // navigate('/dashboard');
+        // Optionally, you can also show a success message or perform other actions here
+        
+      } catch (error) {
+        console.error('Login failed:', error);
+        const message = error.response.data || '';
+        console.log(message);
+      
+        // if (message.includes('Invalid') || message.includes('Login')) {
+          // setError(message);
+        // } else {
+        //   setError('An unexpected error occurred.');
+        // }
       } finally {
-        setLogLoading(false);
+        setLogLoading(false)
       }
+      console.log(error);
+      // alert(JSON.stringify(values, null, 2));
+      // navigate("/dashboard")
     },
-  });
+  })
 
-  const { password } = formik.values;
+  const {password} = formik.values
   const checks = {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     alphanumeric: /[a-zA-Z]/.test(password) && /\d/.test(password),
     specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
   };
+  
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -138,28 +156,18 @@ export default function Login(props) {
     setOpen(false);
   };
 
-  const handleSnackbarClose = () => {
-    if (clearError) {
-      clearError();
-    }
-  };
-
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="space-between">
         <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
-        <Card variant="outlined" sx={{ alignItems: 'center', overflow: 'visible' }}>
-          <img src="/logo.png" height={50} width={50} alt="Logo" />
+        <Card variant="outlined" sx={{alignItems:'center', overflow:'visible'}}>
+          {/* <SitemarkIcon /> */}
+          <img src="/logo.png" height={50} width={50}/>
           <Typography
             component="h1"
             variant="h4"
-            sx={{ 
-              width: '100%', 
-              fontSize: 'clamp(2rem, 10vw, 2.15rem)', 
-              textAlign: 'center', 
-              color: '#033043' 
-            }}
+            sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)', textAlign: 'center', color:'#033043' }}
           >
             Welcome Back!
           </Typography>
@@ -175,10 +183,10 @@ export default function Login(props) {
             }}
           >
             <FormControl>
-              <FormLabel sx={{ color: '#033043' }} htmlFor="username">
-                Username
-              </FormLabel>
+              <FormLabel sx={{color:'#033043'}} htmlFor="username">Username</FormLabel>
               <TextField
+                // error={emailError}
+                // helperText={emailErrorMessage}
                 id="username"
                 type="text"
                 name="username"
@@ -188,6 +196,8 @@ export default function Login(props) {
                 required
                 fullWidth
                 variant="outlined"
+                // color={emailError ? 'error' : 'primary'}
+                // onChange={validateInputs}
                 value={formik.values.username}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -195,44 +205,44 @@ export default function Login(props) {
                 helperText={formik.touched.username && formik.errors.username}
               />
             </FormControl>
-            
             <FormControl>
-              <FormLabel sx={{ color: '#033043' }} htmlFor="password">
-                Password
-              </FormLabel>
+              <FormLabel sx={{color:'#033043'}} htmlFor="password">Password</FormLabel>
               <TextField
                 name="password"
                 placeholder="••••••••"
                 type="password"
                 id="password"
                 autoComplete="current-password"
+                autoFocus
                 required
                 fullWidth
                 variant="outlined"
-                value={formik.values.password}
+                // onChange={validateInputs}
+                value={password}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 error={formik.touched.password && Boolean(formik.errors.password)}
-                helperText={formik.touched.password && formik.errors.password}
+                helperText={formik.touched.password && "Password is required"}
               />
+              {/* <Box ml={1} mt={1}>
+              <Typography variant="body2" color={checks.length ? "success.main" : "error"}>
+                • Minimum 8 characters
+              </Typography>
+              <Typography variant="body2" color={checks.uppercase ? "success.main" : "error"}>
+                • At least one uppercase letter
+              </Typography>
+              <Typography variant="body2" color={checks.alphanumeric ? "success.main" : "error"}>
+                • Must contain alphanumeric (letter and number)
+              </Typography>
+              <Typography variant="body2" color={checks.specialChar ? "success.main" : "error"}>
+                • At least one special character
+              </Typography>
+            </Box> */}
             </FormControl>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{display:'flex', justifyContent:'space-between'}}>
               <FormControlLabel
-                sx={{ color: "#033043" }}
-                control={
-                  <Checkbox 
-                    value="remember" 
-                    sx={{
-                      '&.Mui-checked': { 
-                        color: '#033043' 
-                      }, 
-                      '&.Mui-checked:hover': { 
-                        backgroundColor: 'rgba(3, 48, 67, 0.1)' 
-                      }
-                    }} 
-                  />
-                }
+                sx={{color:"#033043"}}
+                control={<Checkbox value="remember" sx={{'&.Mui-checked': { backgroundColor: '#033043' }, '&.Mui-checked:hover': { backgroundColor: 'rgba(10, 114, 115, 0.8)' },}} />}
                 label="Remember me"
               />
               <Link
@@ -240,96 +250,88 @@ export default function Login(props) {
                 type="button"
                 onClick={handleClickOpen}
                 variant="body2"
-                sx={{ color: '#033043' }}
+                color='#033043'
               >
                 Forgot your password?
               </Link>
             </Box>
-            
             <ForgotPassword open={open} handleClose={handleClose} />
-            
-            {logLoading ? (
-              <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <CircularProgress sx={{ color: '#033043' }} size={30} />
-              </Box>
-            ) : (
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={!formik.isValid || logLoading}
-                sx={{
-                  backgroundColor: '#033043',
-                  color: '#fff',
-                  backgroundImage: 'none',
-                  boxShadow: '1px 1px 2px 0 #033043',
-                  border: 'none',
-                  '&:hover': { 
-                    backgroundColor: '#013d56' 
-                  },
-                  '&:disabled': {
-                    backgroundColor: 'rgba(3, 48, 67, 0.5)'
-                  }
+            {
+            logLoading ? 
+            <Box sx={{width:'100%', display: 'flex', justifyContent:'center'}}>
+                  <CircularProgress sx={{ color: '#033043'}} size={30} />
+            </Box> :
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{
+                backgroundColor: '#033043',
+                color: '#fff',
+                backgroundImage: 'none',
+                boxShadow: '1px 1px 2px 0  #033043',
+                border:'none',
+                '&:hover': { backgroundColor: '#013d56' }
                 }}
-              >
-                Sign in
-              </Button>
-            )}
+              
+              // color='#000'
+            >
+              Sign in
+            </Button>
+            }
           </Box>
-          
-          <Divider>or</Divider>
-          
+          <Divider >or</Divider>
           <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
             <Button
               fullWidth
               variant="outlined"
               onClick={() => alert('Sign in with Google')}
-              sx={{ borderRadius: '22px', width: '100%' }}
+              sx={{borderRadius:'22px', width:'100%'}}
             >
               <GoogleIcon />
             </Button>
             <Button
-              sx={{ borderRadius: '22px' }}
+              sx={{borderRadius:'22px'}}
               fullWidth
               variant="outlined"
               onClick={() => alert('Sign in with Facebook')}
             >
               <FacebookIcon />
+              
             </Button>
             <Button
-              sx={{ borderRadius: '22px' }}
+              sx={{borderRadius:'22px'}}
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign in with Apple')}
+              onClick={() => alert('Sign in with Facebook')}
             >
-              <AppleIcon />
+              <AppleIcon/>
+              
             </Button>
           </Box>
-          
-          <Typography sx={{ textAlign: 'center', color: '#033043' }}>
-            Don&apos;t have an account?{' '}
-            <Link
-              href="/register"
-              variant="body2"
-              sx={{ alignSelf: 'center', color: '#033043' }}
-            >
-              Sign up
-            </Link>
-          </Typography>
+            <Typography sx={{ textAlign: 'center', color:'#033043' }}>
+              Don&apos;t have an account?{' '}
+              <Link
+                href="/register"
+                variant="body2"
+                sx={{ alignSelf: 'center', color:'#033043' }}
+              >
+                Sign up
+              </Link>
+            </Typography>
         </Card>
       </SignInContainer>
-      
       {error && (
         <Snackbar
-          open={Boolean(error)}
-          autoHideDuration={6000}
-          onClose={handleSnackbarClose}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert severity="error" sx={{ width: '100%' }} onClose={handleSnackbarClose}>
-            {error}
-          </Alert>
-        </Snackbar>
+        open={Boolean(error)}
+        autoHideDuration={500}
+        // onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert   severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
       )}
     </AppTheme>
   );

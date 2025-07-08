@@ -12,7 +12,7 @@ import {
   CalendarToday, Search, People, ArrowForward, Menu, Close 
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import Footer from './Footer';
+import BottomFooter from './BottomFooter';
 
 // Main colors: primary #033043, secondary #0a7273
 const primaryColor = '#033043';
@@ -801,7 +801,7 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      <Footer/>
+      <BottomFooter />
     </Box>
   );
 }

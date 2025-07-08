@@ -26,7 +26,7 @@ import { TextField } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '../context/NotificationContext';
+import { NotificationBell } from '../context/NotificationContext';
 import { display, flex } from '@mui/system';
 
 const drawerWidth = 240;
@@ -40,13 +40,14 @@ function DrawerAppBar(props) {
   const [profileOpen, setProfileOpen] = useState(false);
   const {logout} = useAuth()
   const navigate = useNavigate();
-  const { addNotification,NotificationBell, NotificationToasts } = useNotifications();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
   };
 
   const handleProfile = (setting) => {
+    console.log(setting);
+    
     switch(setting){
       case 'Account':
         setProfileOpen(true)
@@ -56,6 +57,7 @@ function DrawerAppBar(props) {
         break;
       case 'Become a vendor':
         navigate('/apply')
+        break;
       case 'Profile':
         navigate('/profile')
         break;

@@ -63,15 +63,18 @@ const SearchSection = styled(Box)(({ theme }) => ({
 }));
 
 import { useEffect } from 'react';
-import { useNotifications } from '../context/NotificationContext';
+import { NotificationToasts } from '../context/NotificationContext';
 import { settings } from './DrawerAppBar';
+import BottomFooter from './BottomFooter';
 
 // import { mockServices } from '../services/mockServices';
 
 
 const transformServiceData = (backendData) => {
   // console.log(backendData);
-  return backendData.map(service => ({
+  return backendData.map(service => {
+    const rating = (service.reviews)?.map((review)=>{return review.rating})?.map(r =>parseFloat(r))
+    return ({
     id: service.id,
     type: service.service_type,
     name: service.service_name,
@@ -80,8 +83,8 @@ const transformServiceData = (backendData) => {
     capacity: parseInt(service.service_quantity, 10),
     price: service.pricing[0]?.base_price || 0, // fallback to 0 if pricing is empty
     image: service.service_images[0]?.image_url || '/placeholder.jpg',
-    rating: 0 // Set default rating or fetch if available elsewhere
-  }));
+    rating: rating.length !== 0 ? rating.reduce((prev, cur)=>prev+cur)/rating.length : 0,
+  })});
 };
 
 
@@ -92,7 +95,6 @@ const EventPlanningDashboard = ( props) => {
   const { fetchServices} = useServiceContext()
     const [services, setServices] = useState([]);
     const [bookings, setBookings] = useState([]);
-    const {NotificationToasts} = useNotifications()
     // const [selectedService, setSelectedService] = useState("");
     // const [bookingOpen, setBookingOpen] = useState(false);
     const [openSuccess, setOpenSuccess] = useState(false);
@@ -152,7 +154,7 @@ const EventPlanningDashboard = ( props) => {
 
 
 
-  console.log(bookings)
+
   const filteredServices = services.filter(service => {
     return (
       service.location.toLowerCase().includes(searchFilters.location.toLowerCase()) &&
@@ -375,6 +377,7 @@ const EventPlanningDashboard = ( props) => {
         <SuccessDialog open={openSuccess} handleClose={handleSnackbarClose} title={'Booking Confirmed Successfully!'} body={"Your booking has been successfully completed. Thank you for choosing us!"} action={'Booking details'} /> */}
 
         <NotificationToasts/>
+        <BottomFooter />
       </div>
   );
 };

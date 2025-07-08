@@ -68,7 +68,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import DrawerAppBar from '../../components/DrawerAppBar';
-import { useNotifications, NotificationToasts } from '../../context/NotificationContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -84,7 +84,7 @@ function TabPanel({ children, value, index, ...other }) {
   );
 }
 
-export default function UserProfile() {
+export default function UserProfileComponent() {
   const [activeTab, setActiveTab] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -92,7 +92,7 @@ export default function UserProfile() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const {user, authAxios} = useAuth()
-  const {addNotification} = useNotifications()
+  const {addNotification, NotificationToasts} = useNotifications()
   
   // User Profile State
   const [profile, setProfile] = useState({
@@ -101,12 +101,10 @@ export default function UserProfile() {
     email: user.email,
     phone_number: user.phone_number,
     role: user.role,
-    // avatar: user.avatar,
+    avatar: 'https://via.placeholder.com/150/2196F3/FFFFFF?text=JD',
     dateJoined: (user.date_joined).split('T',1),
     lastActive: '2024-12-20'
   });
-
-  const [avatar, setAvatar] = useState(user.avatar)
 
   // Settings State
   const [settings, setSettings] = useState({
@@ -158,21 +156,13 @@ export default function UserProfile() {
     setEditMode(false);
   };
 
-  const handleAvatarUpload = async(event) => {
+  const handleAvatarUpload = (event) => {
     const file = event.target.files[0];
-    const formData = new FormData()
-    formData.append('avatar', file)
-    try{
-      await authAxios.put(`/user/${user.id}/update/`, formData)
-    }catch(err){
-      console.error(err);
-    }
-
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setAvatar(e.target.result);
-        addNotification({ title: 'Profile Update', message: 'Avatar updated successfully!', type: 'success' });
+        setProfile(prev => ({ ...prev, avatar: e.target.result }));
+        setSnackbar({ open: true, message: 'Avatar updated successfully!', severity: 'success' });
       };
       reader.readAsDataURL(file);
     }
@@ -214,7 +204,7 @@ export default function UserProfile() {
                 }
               >
                 <Avatar
-                  src={avatar}
+                  src={profile.avatar}
                   sx={{ width: 120, height: 120, border: 4, borderColor: 'white' }}
                 />
               </Badge>

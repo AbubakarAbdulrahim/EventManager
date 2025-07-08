@@ -67,10 +67,8 @@ import DrawerAppBar from '../../components/DrawerAppBar';
 
 // Function to transform backend data to the format our component expects
 const transformServiceData = (backendData) => {
-  
-  return backendData.map(service => {
-    const rating = (service.reviews)?.map((review)=>{return review.rating})?.map(r =>parseFloat(r))
-    return({
+  console.log(backendData);
+  return backendData.map(service => ({
     id: service.id,
     name: service.service_name,
     type: service.service_type,
@@ -99,8 +97,8 @@ const transformServiceData = (backendData) => {
     mainPricingModel: service.pricing.find(p => p.model_type === 'perPlate')
     || service.pricing[0]
     || { model_type: 'unknown', base_price: 0, price_packages: [] },
-    rating: rating.length !== 0 ? rating.reduce((prev, cur)=>prev+cur)/rating.length : 0,
-    reviewCount: rating.length, // Default review count
+    rating: 4.5, // Default rating since backend doesn't provide it
+    reviewCount: 150, // Default review count
     provider: {
       id: service.vendor,
       name: "Service Provider", // Fallback if not returned by backend
@@ -114,7 +112,7 @@ const transformServiceData = (backendData) => {
       established: 2020,
       otherServices: ["Catering", "Decoration", "Event Planning"]
     }
-  })});
+  }));
 };
 
 const formatTime = (timeStr) =>
@@ -489,7 +487,7 @@ const ServiceDetail = () => {
               sx={{ mr: 1 }} 
             />
             <Typography variant="body2" color="text.secondary">
-               {service.reviewCount} reviews
+              (189 reviews)
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -811,7 +809,7 @@ const ServiceDetail = () => {
                   <Typography variant="h3" component="div">{service.rating.toFixed(1)}</Typography>
                   <Rating value={service.rating} precision={0.1} readOnly />
                   <Typography variant="body2" color="text.secondary">
-                    {service.reviewCount} reviews
+                    {service.reviewCount || 189} reviews
                   </Typography>
                 </Box>
                 <Divider orientation="vertical" flexItem sx={{ mx: 2 }} />

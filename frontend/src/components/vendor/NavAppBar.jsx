@@ -43,6 +43,8 @@ import {
   Logout, Menu as MenuIcon, Search, CheckCircle, Cancel, Star
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationBell, NotificationToasts } from '../../context/NotificationContext';
+import { useNavigate } from 'react-router-dom';
 
 const drawerItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, page: 'dashboard' },
@@ -62,6 +64,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
       const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
       const [accountAnchorEl, setAccountAnchorEl] = useState(null);
       const [tabValue, setTabValue] = useState(0);
+      const navigate = useNavigate()
     
       const handleNotificationsClick = (event) => {
         setNotificationsAnchorEl(event.currentTarget);
@@ -197,12 +200,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
               >
                 {drawerItems.map((page)=> (page.text).toLocaleLowerCase() === currentPage ? page.text : '')} - Event Master Vendor
               </Typography>
-              <IconButton color="inherit" onClick={handleNotificationsClick}>
-                <Badge badgeContent={4} color="secondary">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <NotificationModal notificationsAnchorEl={notificationsAnchorEl} handleNotificationsClose={handleNotificationsClose} />
+              <NotificationBell userRole='vendor' />
               <IconButton color="inherit" onClick={handleAccountClick}>
                 <AccountCircleIcon />
               </IconButton>
@@ -239,8 +237,8 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
-                <MenuItem onClick={handleAccountClose}>
-                  <Typography variant="body2">Profile</Typography>
+                <MenuItem onClick={()=>{navigate('/profile')}}>
+                  <Typography variant="body2" >Profile</Typography>
                 </MenuItem>
                 <MenuItem onClick={handleAccountClose}>
                   <Typography variant="body2">Account Settings</Typography>
@@ -281,6 +279,7 @@ export default function NavAppBar({currentPage, setCurrentPage}) {
          {drawer}
         </Drawer>
       </Box>
+      <NotificationToasts/>
     </ThemeProvider>
 
     )

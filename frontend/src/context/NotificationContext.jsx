@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import {
   Alert,
   AlertTitle,
@@ -16,7 +16,8 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  CircularProgress
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -28,9 +29,11 @@ import {
   Settings as SettingsIcon,
   Delete as DeleteIcon,
   MarkEmailRead as MarkReadIcon,
-  Circle as CircleIcon
+  Circle as CircleIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 // Notification Context
 const NotificationContext = createContext();
@@ -44,82 +47,287 @@ export const useNotifications = () => {
 };
 
 // Notification Provider
-export default function NotificationProvider ({ children }) {
+export default function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [toastNotifications, setToastNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { authAxios, user } = useAuth();
+  
+  const isMounted = useRef(true);
+  const toastTimers = useRef(new Map());
 
+  // Cleanup on unmount
   useEffect(() => {
-        const storedNotifications = localStorage.getItem("notifications")
-        if(storedNotifications) {
-            setNotifications(JSON.parse(storedNotifications))
-        }
-    
-    },[]);
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      // Clear all toast timers
+      toastTimers.current.forEach(timer => clearTimeout(timer));
+      toastTimers.current.clear();
+    };
+  }, []);
 
-    useEffect(()=>{
-        localStorage.setItem('notifications', JSON.stringify(notifications))
-    },[notifications]);
+  // Fetch notifications from server
+  const fetchNotifications = useCallback(async () => {
+    if (!authAxios) return;
 
-  const addNotification = (notification) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const res = await authAxios.get('/user/notification/');
+      const data = res.data;
+      console.log(data);
+      
+      
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid notification data format');
+      }
+
+      if (isMounted.current) {
+        // Ensure each notification has required fields
+        const validatedNotifications = data.map(notification => ({
+          id: notification.id || Date.now() + Math.random(),
+          title: notification.title || 'Notification',
+          message: notification.message || '',
+          type: notification.type || 'info',
+          priority: notification.priority || 'low',
+          read: Boolean(notification.read),
+          timestamp: notification.created_at ? new Date(notification.created_at) : new Date(),
+          category: notification.category || null,
+          avatar: notification.avatar || null,
+          icon: notification.icon || null,
+          ...notification
+        }));
+
+        setNotifications(validatedNotifications);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      if (isMounted.current) {
+        setError('Failed to load notifications');
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
+  }, [authAxios]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Add notification (local and server)
+  const addNotification = useCallback(async (notification) => {
+    if (!notification || !notification.title) {
+      console.error('Invalid notification data');
+      return;
+    }
+
     const id = Date.now() + Math.random();
     const newNotification = {
       id,
       timestamp: new Date(),
       read: false,
+      type: 'info',
+      priority: 'low',
+      showToast: true,
+      autoHide: true,
+      duration: 4000,
       ...notification
     };
-    
-    setNotifications(prev => [newNotification, ...prev]);
-    
-    // Show toast for high priority notifications
-    if (notification.priority === 'high' || notification.showToast !== false) {
-      setToastNotifications(prev => [...prev, newNotification]);
+
+    // Add to local state immediately for better UX
+    if (isMounted.current) {
+      setNotifications(prev => [newNotification, ...prev]);
+      
+      // Show toast for high priority notifications or when explicitly requested
+      if (newNotification.priority === 'high' || newNotification.showToast !== false) {
+        setToastNotifications(prev => [...prev, newNotification]);
+        
+        // Set auto-hide timer
+        if (newNotification.autoHide !== false) {
+          const timer = setTimeout(() => {
+            removeToast(newNotification.id);
+          }, newNotification.duration);
+          
+          toastTimers.current.set(newNotification.id, timer);
+        }
+      }
     }
-  };
 
-  const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+    // Try to save to server (don't fail if server is down)
+    if (authAxios) {
+      try {
+        await authAxios.post('/user/notification/', newNotification);
+      } catch (error) {
+        console.warn('Failed to save notification to server:', error);
+        // Don't remove from local state - it's still valid
+      }
+    }
 
-  const markAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
+    return newNotification;
+  }, [authAxios]);
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  // Remove notification
+  const removeNotification = useCallback(async (id) => {
+    if (!id) return;
 
-  const clearAll = () => {
-    setNotifications([]);
-  };
+    // Remove from local state immediately
+    if (isMounted.current) {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      
+      // Also remove from toasts if present
+      setToastNotifications(prev => prev.filter(n => n.id !== id));
+      
+      // Clear timer if exists
+      const timer = toastTimers.current.get(id);
+      if (timer) {
+        clearTimeout(timer);
+        toastTimers.current.delete(id);
+      }
+    }
 
-  const removeToast = (id) => {
+    // Try to delete from server
+    if (authAxios) {
+      try {
+        await authAxios.delete(`/user/notification/${id}/`);
+      } catch (error) {
+        console.warn('Failed to delete notification from server:', error);
+        // Consider re-adding to local state if this is critical
+      }
+    }
+  }, [authAxios, ]);
+
+  // Mark as read
+  const markAsRead = useCallback(async (id) => {
+    if (!id) return;
+
+    // Update local state immediately
+    if (isMounted.current) {
+      setNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, read: true } : n)
+      );
+    }
+
+    // Try to update server
+    if (authAxios ) {
+      try {
+        await authAxios.patch(`/user/notification/${id}/`, { read: true });
+      } catch (error) {
+        console.warn('Failed to mark notification as read on server:', error);
+      }
+    }
+  }, [authAxios, ]);
+
+  // Mark all as read
+  const markAllAsRead = useCallback(async () => {
+    // Update local state immediately
+    if (isMounted.current) {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+
+    // Try to update server
+    if (authAxios) {
+      try {
+        await authAxios.patch('/user/notification/mark-all-read/');
+      } catch (error) {
+        console.warn('Failed to mark all notifications as read on server:', error);
+      }
+    }
+  }, [authAxios]);
+
+  // Clear all notifications
+  const clearAll = useCallback(async () => {
+    // Clear local state immediately
+    if (isMounted.current) {
+      setNotifications([]);
+      setToastNotifications([]);
+      
+      // Clear all timers
+      toastTimers.current.forEach(timer => clearTimeout(timer));
+      toastTimers.current.clear();
+    }
+
+    // Try to clear server
+    if (authAxios) {
+      try {
+        await authAxios.delete('/user/notification/clear-all/');
+      } catch (error) {
+        console.warn('Failed to clear notifications on server:', error);
+      }
+    }
+  }, [authAxios]);
+
+  // Remove toast notification
+  const removeToast = useCallback((id) => {
+    if (!id || !isMounted.current) return;
+    
     setToastNotifications(prev => prev.filter(n => n.id !== id));
-  };
+    
+    // Clear timer if exists
+    const timer = toastTimers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      toastTimers.current.delete(id);
+    }
+  }, []);
+
+  // Clear error
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Retry fetch
+  const retryFetch = useCallback(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const contextValue = React.useMemo(() => ({
+    notifications,
+    toastNotifications,
+    loading,
+    error,
+    addNotification,
+    removeNotification,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+    removeToast,
+    clearError,
+    retryFetch,
+    fetchNotifications
+  }), [
+    notifications,
+    toastNotifications,
+    loading,
+    error,
+    addNotification,
+    removeNotification,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+    removeToast,
+    clearError,
+    retryFetch,
+    fetchNotifications
+  ]);
 
   return (
-    <NotificationContext.Provider value={{
-      notifications,
-      NotificationBell,
-      NotificationToasts,
-      toastNotifications,
-      addNotification,
-      removeNotification,
-      markAsRead,
-      markAllAsRead,
-      clearAll,
-      removeToast
-    }}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
     </NotificationContext.Provider>
   );
-};
+}
 
 // Toast Notification Component
-const ToastNotification = ({ notification, onClose }) => {
+const ToastNotification = React.memo(({ notification, onClose }) => {
   const getIcon = () => {
+    if (notification.icon) return notification.icon;
+    
     switch (notification.type) {
       case 'success': return <CheckCircleIcon />;
       case 'error': return <ErrorIcon />;
@@ -152,7 +360,7 @@ const ToastNotification = ({ notification, onClose }) => {
             aria-label="close"
             color="inherit"
             size="small"
-            onClick={onClose}
+            onClick={() => onClose?.(notification.id)}
           >
             <CloseIcon fontSize="inherit" />
           </IconButton>
@@ -164,23 +372,13 @@ const ToastNotification = ({ notification, onClose }) => {
       </Alert>
     </motion.div>
   );
-};
+});
+
+ToastNotification.displayName = 'ToastNotification';
 
 // Toast Container
 export const NotificationToasts = () => {
   const { toastNotifications, removeToast } = useNotifications();
-
-  useEffect(() => {
-    toastNotifications.forEach(notification => {
-      if (notification.autoHide !== false) {
-        const timer = setTimeout(() => {
-          removeToast(notification.id);
-        }, notification.duration || 4000);
-        
-        return () => clearTimeout(timer);
-      }
-    });
-  }, [toastNotifications, removeToast]);
 
   return (
     <Box
@@ -191,15 +389,20 @@ export const NotificationToasts = () => {
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
-        gap: 1
+        gap: 1,
+        pointerEvents: 'none'
       }}
     >
-      <AnimatePresence>
+      <AnimatePresence mode="popLayout">
         {toastNotifications.map(notification => (
-          <motion.div key={notification.id} layout>
+          <motion.div 
+            key={notification.id} 
+            layout
+            style={{ pointerEvents: 'auto' }}
+          >
             <ToastNotification
               notification={notification}
-              onClose={() => removeToast(notification.id)}
+              onClose={removeToast}
             />
           </motion.div>
         ))}
@@ -209,7 +412,7 @@ export const NotificationToasts = () => {
 };
 
 // Individual Notification Item
-const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
+const NotificationItem = React.memo(({ notification, onClick, onMarkRead, onDelete }) => {
   const getIcon = () => {
     if (notification.icon) return notification.icon;
     
@@ -230,16 +433,40 @@ const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
   };
 
   const formatTime = (timestamp) => {
-    const now = new Date();
-    const diff = now - timestamp;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    if (!timestamp) return 'Unknown';
+    
+    try {
+      const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
 
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
+      if (days > 0) return `${days}d ago`;
+      if (hours > 0) return `${hours}h ago`;
+      if (minutes > 0) return `${minutes}m ago`;
+      return 'Just now';
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    onClick?.(notification);
+  };
+
+  const handleMarkRead = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onMarkRead?.(notification.id);
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onDelete?.(notification.id);
   };
 
   return (
@@ -261,7 +488,7 @@ const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
           position: 'relative',
           overflow: 'hidden'
         }}
-        onClick={() => onClick?.(notification)}
+        onClick={handleClick}
       >
         {!notification.read && (
           <Box
@@ -278,7 +505,13 @@ const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
         
         <Stack direction="row" spacing={2} alignItems="flex-start">
           {notification.avatar ? (
-            <Avatar src={notification.avatar} sx={{ width: 32, height: 32 }} />
+            <Avatar 
+              src={notification.avatar} 
+              sx={{ width: 32, height: 32 }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
           ) : (
             getIcon()
           )}
@@ -290,10 +523,28 @@ const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
                   variant="subtitle2"
                   fontWeight={notification.read ? 'normal' : 'bold'}
                   color={notification.read ? 'text.secondary' : 'text.primary'}
+                  sx={{ 
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}
                 >
                   {notification.title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ 
+                    mt: 0.5,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical'
+                  }}
+                >
                   {notification.message}
                 </Typography>
                 
@@ -324,10 +575,7 @@ const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
                 {!notification.read && (
                   <IconButton
                     size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMarkRead?.(notification.id);
-                    }}
+                    onClick={handleMarkRead}
                     title="Mark as read"
                   >
                     <MarkReadIcon fontSize="small" />
@@ -335,10 +583,7 @@ const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
                 )}
                 <IconButton
                   size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete?.(notification.id);
-                  }}
+                  onClick={handleDelete}
                   title="Delete"
                 >
                   <DeleteIcon fontSize="small" />
@@ -350,16 +595,22 @@ const NotificationItem = ({ notification, onClick, onMarkRead, onDelete }) => {
       </Paper>
     </motion.div>
   );
-};
+});
+
+NotificationItem.displayName = 'NotificationItem';
 
 // Main Notification Bell Component
 export const NotificationBell = ({ userRole = 'customer' }) => {
   const {
     notifications,
+    loading,
+    error,
     markAsRead,
     markAllAsRead,
     removeNotification,
-    clearAll
+    clearAll,
+    retryFetch,
+    clearError
   } = useNotifications();
   
   const [anchorEl, setAnchorEl] = useState(null);
@@ -370,6 +621,7 @@ export const NotificationBell = ({ userRole = 'customer' }) => {
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
+    if (error) clearError();
   };
 
   const handleClose = () => {
@@ -389,9 +641,27 @@ export const NotificationBell = ({ userRole = 'customer' }) => {
     if (!notification.read) {
       markAsRead(notification.id);
     }
-    if (notification.action) {
-      notification.action();
+    if (notification.action && typeof notification.action === 'function') {
+      try {
+        notification.action();
+      } catch (err) {
+        console.error('Error executing notification action:', err);
+      }
     }
+  };
+
+  const handleMarkAllRead = () => {
+    markAllAsRead();
+    handleClose();
+  };
+
+  const handleClearAll = () => {
+    clearAll();
+    handleClose();
+  };
+
+  const handleRetry = () => {
+    retryFetch();
   };
 
   return (
@@ -405,6 +675,7 @@ export const NotificationBell = ({ userRole = 'customer' }) => {
             backgroundColor: 'rgba(0,0,0,0.04)'
           }
         }}
+        disabled={loading}
       >
         <Badge badgeContent={unreadCount} color="error" max={99}>
           <NotificationsIcon />
@@ -435,19 +706,35 @@ export const NotificationBell = ({ userRole = 'customer' }) => {
             <Typography variant="h6">
               Notifications {unreadCount > 0 && `(${unreadCount})`}
             </Typography>
-            <IconButton size="small" onClick={handleMenuClick}>
-              <SettingsIcon />
-            </IconButton>
+            <Stack direction="row" spacing={1}>
+              {loading && <CircularProgress size={20} />}
+              <IconButton size="small" onClick={handleRetry} title="Refresh">
+                <RefreshIcon />
+              </IconButton>
+              <IconButton size="small" onClick={handleMenuClick}>
+                <SettingsIcon />
+              </IconButton>
+            </Stack>
           </Stack>
         </Box>
 
+        {/* Error State */}
+        {error && (
+          <Box sx={{ p: 2, backgroundColor: 'error.light', color: 'error.contrastText' }}>
+            <Typography variant="body2">{error}</Typography>
+            <Button size="small" onClick={handleRetry} sx={{ mt: 1, color: 'inherit' }}>
+              Retry
+            </Button>
+          </Box>
+        )}
+
         {/* Notifications List */}
         <Box sx={{ maxHeight: 400, overflow: 'auto', p: 1 }}>
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             {recentNotifications.length > 0 ? (
               recentNotifications.map(notification => (
                 <NotificationItem
-                  key={notification.id}
+                  key={`${notification.id}-${notification.timestamp}`}
                   notification={notification}
                   onClick={handleNotificationClick}
                   onMarkRead={markAsRead}
@@ -457,7 +744,7 @@ export const NotificationBell = ({ userRole = 'customer' }) => {
             ) : (
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography color="text.secondary">
-                  No notifications yet
+                  {loading ? 'Loading notifications...' : 'No notifications yet'}
                 </Typography>
               </Box>
             )}
@@ -471,28 +758,22 @@ export const NotificationBell = ({ userRole = 'customer' }) => {
             <Stack direction="row" spacing={1}>
               <Button
                 size="small"
-                onClick={() => {
-                  markAllAsRead();
-                  handleClose();
-                }}
-                disabled={unreadCount === 0}
+                onClick={handleMarkAllRead}
+                disabled={unreadCount === 0 || loading}
               >
                 Mark All Read
               </Button>
               <Button
                 size="small"
                 color="error"
-                onClick={() => {
-                  clearAll();
-                  handleClose();
-                }}
+                onClick={handleClearAll}
+                disabled={loading}
               >
                 Clear All
               </Button>
             </Stack>
           </Box>
         ]}
-
       </Menu>
 
       {/* Settings Menu */}
@@ -507,13 +788,25 @@ export const NotificationBell = ({ userRole = 'customer' }) => {
           </ListItemIcon>
           <ListItemText>Notification Settings</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem 
+          onClick={() => {
+            markAllAsRead();
+            handleMenuClose();
+          }}
+          disabled={unreadCount === 0}
+        >
           <ListItemIcon>
             <MarkReadIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Mark All as Read</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem 
+          onClick={() => {
+            clearAll();
+            handleMenuClose();
+          }}
+          disabled={notifications.length === 0}
+        >
           <ListItemIcon>
             <DeleteIcon fontSize="small" />
           </ListItemIcon>

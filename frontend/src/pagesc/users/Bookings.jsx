@@ -19,16 +19,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useBookingContext } from '../../context/BookingsContext';
 import BookingCard from '../../components/BookingCard';
 import LabelBottomNavigation from '../../components/LabelBottomNavigation';
-import BottomFooter from '../../components/BottomFooter';
-import {Rating} from '@mui/material';
+import Footer from '../../components/Footer';
 
 
 export default function Bookings() {
     const [bookings, setBookings] = useState([]);
     const {user, authAxios} = useAuth()
-    const [openReview, setOpenReview] = useState(false);
-    const [userRating, setUserRating] = useState(0);
-    const [reviewText, setReviewText] = useState('');
     const {fetchUserBookings} = useBookingContext()
     const [loading, setLoading] = useState()
     const [open, setOpen] = useState()
@@ -45,27 +41,14 @@ export default function Bookings() {
         setLoading(false)
     },[])
 
-    const handleSubmitReview = async() => {
-     const data = { rating: userRating, comment: reviewText }
-    try{
-      const res = await authAxios.post(`/user/create-review/${selectedBooking.service.id}/`, data)
-      console.log(res);
-      
-    }catch(err){
-      console.error(err);
-      
-    }
-    setOpenReview(false);
-    setUserRating(0);
-    setReviewText('');
-  };
+    console.log(selectedBooking);
 
 
 
     return (
         <>
         <DrawerAppBar/>
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }} >
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }} >
           <Typography variant="h4" component="h1" gutterBottom>
             Bookings
           </Typography>
@@ -107,7 +90,7 @@ export default function Bookings() {
                         (<Chip color="default" label="Pending" />
                         )}
                     </TableCell>
-                    <TableCell sx={{display:'flex', gap:'10px'}}>
+                    <TableCell>
                         <Button
                         variant="outlined"
                         color="primary"
@@ -118,17 +101,6 @@ export default function Bookings() {
                         }}
                         >
                         View
-                        </Button>
-                        <Button
-                        variant="outlined"
-                        color="primary"
-                        size='small'
-                        onClick={()=>{
-                          setSelectedBooking(booking)
-                          setOpenReview(true)
-                        }}
-                        >
-                        Review
                         </Button>
                     </TableCell>
 
@@ -177,54 +149,8 @@ export default function Bookings() {
 
           </DialogActions>
         </Dialog>}
-        <BottomFooter/>
+        <Footer sx={'#033043'} color='#fff' />
         <LabelBottomNavigation/>
-        <Dialog 
-        open={openReview} 
-        onClose={() => setOpenReview(false)} 
-        maxWidth='sm'
-      >
-        <DialogTitle>Write a Review</DialogTitle>
-        
-        <DialogContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography component="legend" sx={{ mr: 2 }}>Your Rating:</Typography>
-            <Rating
-              name="user-rating"
-              value={userRating}
-              onChange={(event, newValue) => {
-                setUserRating(newValue);
-              }}
-            />
-          </Box>
-          
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Your Review"
-            value={reviewText}
-            onChange={(e) => setReviewText(e.target.value)}
-            variant="outlined"
-            sx={{ mb: 2 }}
-          />
-        </DialogContent>
-        
-        <DialogActions>
-          <Button 
-            variant="contained"
-            onClick={handleSubmitReview}
-            disabled={!userRating || !reviewText.trim()}
-            // endIcon={<Send />}
-            sx={{ 
-              backgroundColor: '#033043',
-              '&:hover': { backgroundColor: '#022030' }
-            }}
-          >
-            Submit Review
-          </Button>
-        </DialogActions>
-      </Dialog>
         </>
       );
         
