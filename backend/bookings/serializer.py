@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Booking
 from vendors.models import Service, Vendor
+from django.shortcuts import get_object_or_404
 
 # funcs. to import serializers (avoiding circular import)
 def get_user_serializer_class():
@@ -18,7 +19,6 @@ def get_vendor_retrieve_serializer_class():
 def get_service_retrieve_serializer_class():
     from vendors.serializer import ServiceRetrieveSerializer
     return ServiceRetrieveSerializer
-
 
 
 #
@@ -45,9 +45,6 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             # additional fields
             "service_id",
             "vendor_id",
-        ]
-        read_only_fields = [
-            "id"
         ]
 
     # on create
@@ -114,7 +111,7 @@ class BookingRetrieveSerializer(serializers.ModelSerializer):
         return SerializerClass(obj.service).data
 
     def get_vendor(self, obj):
-        SerializerClass = get_vendor_retrieve_serializer_class
+        SerializerClass = get_vendor_retrieve_serializer_class()
         return SerializerClass(obj.vendor).data
 
     def get_user(self, obj):
@@ -162,8 +159,7 @@ class BookingDestroySerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['id']
         lookup_field = 'pk'
-       
-
+        
 
 #
 #
@@ -211,7 +207,7 @@ class BookingAdminSerializer(serializers.ModelSerializer):
         return SerializerClass(obj.service).data
 
     def get_vendor(self, obj):
-        SerializerClass = get_service_retrieve_serializer_class()
+        SerializerClass = get_vendor_retrieve_serializer_class()
         return SerializerClass(obj.vendor).data
 
     def get_user(self, obj):

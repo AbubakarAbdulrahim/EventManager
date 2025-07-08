@@ -10,7 +10,6 @@ from .models import (
     ServiceRecurringAvailability,
     ServicePricing,
     PricingPackage,
-    Review,
 )
 from django.contrib.auth import get_user_model
 from drf_extra_fields.fields import Base64ImageField
@@ -220,39 +219,11 @@ class ServiceAmenitiesSerializer(serializers.ModelSerializer):
         model = ServiceAmenity
         fields = ['name']
 
-# service reviews serializer
-class ReviewRetrieveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = [
-            "rating",
-            "comment",
-        ]
-        read_only_fields = [
-            "id",
-            "user",
-            "created_at",
-            "service",
-        ]
-
-# service reviews serializer
-class ReviewCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = [
-            "rating",
-            "comment",
-            # "user",
-            # "created_at",
-            # "service",
-        ]
-
 
 
 # 
 # 
 #
-
 
 
 # service retrieve serializer
@@ -262,7 +233,6 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
     service_images = ServiceImageRetrieveSerializer(many=True, read_only=True)
     pricing = ServicePricingRetrieveSerializer(many=True, read_only=True)
     amenities = ServiceAmenitiesSerializer(many=True, required=False)
-    reviews = ReviewRetrieveSerializer(many=True, read_only=True, required=False)
     # main_image_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -289,7 +259,6 @@ class ServiceRetrieveSerializer(serializers.ModelSerializer):
             "service_images",
             "pricing",
             "amenities",
-            "reviews",
             # "main_image_url",
             ]
         read_only_fields = [
@@ -449,11 +418,9 @@ class ServiceDestroySerializer(serializers.ModelSerializer):
         lookup_field = 'pk'
 
 
-
 #
 #
 #
-
 
 
 # vendor retrieve serializer
@@ -617,7 +584,7 @@ class VendorAdminSerializer(serializers.ModelSerializer):
             "service_images",
         ]
 
-# service serializer for admin
+# vendor service serializer for admin
 class ServiceAdminSerializer(serializers.ModelSerializer):
     specific_date_avail = SpecificDateAvailabilityRetrieveSerializer(many=True, read_only=True)
     recurring_avail = RecurringAvailabilityRetrieveSerializer(many=True, read_only=True)

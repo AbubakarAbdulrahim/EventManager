@@ -30,11 +30,9 @@ class BookingsAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminRole]
 
 
-
 #
 #
 #
-
 
 
 '''  for managing vendors  '''
@@ -119,20 +117,9 @@ class VendorAdminSuspendActivateView(APIView):
         return Response({"detail": f"vendor {message}"})
 
 
-
 #
 #
-## vendor = Vendor.objects.get(service=service)
-        # context = {
-        #     'vendor_username' : vendor.user.username,
-        #     'service_name' : service.service_name,
-        #     'vendor_dashboard_url' : '/',
-        #     'support_email' : config('EMAIL_HOST_USER')
-        # }
-        # template_prefix = 'service_emails/service_request_status'
-        # subject = 'Service Listing Status'
-
-
+#
 
 
 
@@ -155,29 +142,70 @@ class ServiceAdminSuspendActivateView(APIView):
 
     def post(self, request, pk):
         service = get_object_or_404(Service, pk=pk)
-        action = request.data.get('action')
-        
+        action = request.data.get('request')
+
+        vendor = Vendor.objects.get(Service=service)
+        context = {
+            'vendor_username' : vendor.user.username,
+            'service_name' : service.service_name,
+            'vendor_dashboard_url' : '/',
+            'support_email' : config('EMAIL_HOST_USER')
+        }
+        template_prefix = 'service_emails/service_request_status'
+        subject = 'Service Listing Status'
+
+
         if action == 'approve':
 
             service.is_approved = True
+            service.user.role = 'vendor'
             service.status = 'approved'
+            service.user.save()
             message = 'approved'
             service.save()
+
+            context['status'] = 'approved'
+            send_email_task(
+                subject=subject,
+                to_email=vendor.user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
 
         elif action == 'suspend':
 
             service.is_approved = False
+            service.user.role = 'customer'
             service.status = 'suspended'
+            service.user.save()
             message = 'suspended'
             service.save()
 
+            context['status'] = 'suspended'
+            context['reason'] = '....'
+            send_email_task(
+                subject=subject,
+                to_email=vendor.user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
         
         elif action == 'reject':
 
             service.is_approved = False
+            service.user.role = 'customer'
             service.status = 'rejected'
             message = 'rejected'
             service.save()
+
+            context['status'] = 'rejected'
+            context['reason'] = '....'
+            send_email_task(
+                subject=subject,
+                to_email=vendor.user.email,
+                context=context,
+                template_prefix=template_prefix
+            )
 
         return Response({"detail": f"vendor service {message} successfully"})
 

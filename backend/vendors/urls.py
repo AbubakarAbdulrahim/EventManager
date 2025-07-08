@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-from users.views import UserEventRetrieveView
 
 urlpatterns = [
     
@@ -19,7 +18,7 @@ urlpatterns = [
 
 
 
-    # vendor service endpoints
+    # vendor package endpoints
     path('services/', views.ServiceListView.as_view(), name='service-list'),
     path('services/create/', views.ServiceCreateView.as_view(), name='service-create'),
     path('services/<int:pk>/', views.ServiceRetrieveView.as_view(), name='service-detail'),
@@ -39,13 +38,4 @@ urlpatterns = [
     # vendor service availability endpoints
     path('service/<int:service_id>/availability/', views.ServiceAvailabilityListView.as_view(), name='service-availability-list'),
     path('service/<int:service_id>/availability/update/', views.ServiceAvailabilityBulkUpdateView.as_view(), name='service-availability-update'),
-
-
-    #
-    #
-    #
-
-
-    path("user-events-count/", UserEventRetrieveView.as_view(), name='user-event-count'),
-
 ]

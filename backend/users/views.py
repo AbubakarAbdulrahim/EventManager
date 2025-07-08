@@ -1,4 +1,3 @@
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework import generics
 from django.contrib.auth import get_user_model
 from .serializer import (
@@ -6,9 +5,6 @@ from .serializer import (
     UserCreateSerializer,
     UserUpdateSerializer,
     PasswordUpdateSerializer,
-    UserEventCreateSerializer,
-    UserEventRetrieveSerializer,
-    NotificationSerializer,
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
@@ -20,14 +16,6 @@ from rest_framework import status
 from tasks.tasks import send_email_task
 from datetime import datetime
 from decouple import config
-from .models import (
-    UserEvent,
-    Notification,
-)
-from vendors.models import Vendor, Service
-from django.shortcuts import get_object_or_404
-
-
 
 User = get_user_model() 
 
@@ -103,10 +91,10 @@ class UserUpdateView(generics.UpdateAPIView):
         user= self.request.user
         return User.objects.filter(id=user.id)
 
-    def update(self, request, *args, **kwargs):
-        kwargs['partial'] = True
-        return super().update(request, *args, **kwargs)
-
+    # on update
+    def perform_update(self, serializer):
+        pass
+    
 # user delete view
 class UserDestroyView(generics.DestroyAPIView):
     serializer_class = UserProfileSerializer
@@ -174,68 +162,3 @@ class PasswordUpdateView(generics.UpdateAPIView):
             )
         
         return response
-    
-# user event create view
-class UserEventCreateView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    queryset = UserEvent.objects.all()
-    serializer_class = UserEventCreateSerializer
-
-    def perform_create(self, serializer):
-        service_id = self.kwargs['service_id']
-        service = get_object_or_404(Service, id=service_id)
-        
-        serializer.save(
-            user=self.request.user,
-            vendor_id=service.vendor.id,
-            ip_address=self.get_client_ip(self.request),
-        )
-
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded_for:
-            return x_forwarded_for.split(",")[0]
-        return request.META.get("REMOTE_ADDR")
-
-# user event retrieve view
-class UserEventRetrieveView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        if request.user.role != 'vendor':
-            return Response({'error': 'Not a vendor'}, status=status.HTTP_403_FORBIDDEN)
-
-        vendor = Vendor.objects.get(user=request.user)
-        services = Service.objects.filter(vendor=vendor)
-
-        for service in services:
-            data = {
-                'service_id' : service.id,
-                'views': UserEvent.objects.filter(
-                    vendor=vendor.id,
-                    service=service.id,
-                    event_type='view_service').count(),
-            }
-
-        serializer = UserEventRetrieveSerializer(data)
-        return Response(serializer.data)
-
-# user notification list create view 
-class NotificationListCreateView(generics.ListCreateAPIView):
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-# user notification retrieve destroy view 
-class NotificationDetailView(generics.RetrieveDestroyAPIView):
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'pk'
-
-    def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
