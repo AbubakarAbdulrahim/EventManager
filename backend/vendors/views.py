@@ -5,7 +5,8 @@ from .models import (
     Service,
     ServiceImage,
     ServiceRecurringAvailability,
-    ServiceSpecificDateAvailability
+    ServiceSpecificDateAvailability,
+    Review,
 )
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
@@ -19,10 +20,9 @@ from .serializer import(
     ServiceRetrieveSerializer,
     ServiceDestroySerializer,
     ServiceImageDestroySerializer,
-    RecurringAvailabilityCreateSerializer,
     RecurringAvailabilityRetrieveSerializer,
-    SpecificDateAvailabilityCreateSerializer,
-    SpecificDateAvailabilityRetrieveSerializer
+    SpecificDateAvailabilityRetrieveSerializer,
+    ReviewCreateSerializer,
 )
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -33,15 +33,13 @@ import datetime
 from django.contrib.auth import get_user_model
 from decouple import config
 from tasks.tasks import send_email_task
-# from .availability import is_service_available
+
 
 
 User = get_user_model()
 
-'''
-views for vendors
-'''
 
+''' views for vendors '''
 # vendor retrieve view
 class VendorRetrieveView(generics.RetrieveAPIView):
     queryset = Vendor.objects.all()
@@ -145,18 +143,21 @@ class VendorDestroyView(generics.DestroyAPIView):
 
 
 
-'''
-for vendor service
-'''
+#
+#
+#
 
-# vendor service list view
+
+
+''' for service '''
+# service list view
 class ServiceListView(generics.ListAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceRetrieveSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
 
-# vendor service create view
+# service create view
 class ServiceCreateView(generics.CreateAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceCreateSerializer
@@ -207,14 +208,14 @@ class ServiceCreateView(generics.CreateAPIView):
 
         return response
 
-# vendor service retrieve view
+# service retrieve view
 class ServiceRetrieveView(generics.RetrieveAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceRetrieveSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]  
     parser_classes = [MultiPartParser, FormParser]
 
-# vendor service update view
+# service update view
 class ServiceUpdateView(generics.UpdateAPIView):
     serializer_class = ServiceCreateSerializer
     permission_classes = [IsVendorRole]  
@@ -258,7 +259,7 @@ class ServiceUpdateView(generics.UpdateAPIView):
         
         return response
 
-# vendor service destroy view
+# service destroy view
 class ServiceDestroyView(generics.DestroyAPIView):
     serializer_class = ServiceDestroySerializer
     permission_classes = [IsVendorRole]
@@ -279,7 +280,9 @@ class ServiceDestroyView(generics.DestroyAPIView):
 #
 
 
-# service availability lisst view
+
+''' for service  availability '''
+# service availability list view
 class ServiceAvailabilityListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     lookup_field = 'service_id'
@@ -404,6 +407,7 @@ class ServiceAvailabilityBulkUpdateView(APIView):
 
 
 
+''' for service image '''
 # service image update view
 class ServiceImageUpdateView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -445,8 +449,25 @@ class ServiceImageDestroyView(generics.DestroyAPIView):
 
 
 
-''' for users email preview '''
+# service review create view
+class ServiceReviewCreateView(generics.CreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewCreateSerializer
 
+    def perform_create(self, serializer):
+        service_id = self.kwargs['service_id']
+        service = get_object_or_404(Service, id=service_id)
+
+        serializer.save(
+            user=self.request.user,
+            service = service
+            )
+    
+
+
+
+
+''' for users email preview '''
 # welcome email view
 class WelcomeEmailView(generic.TemplateView):
     template_name = 'user_emails/welcome.html'
@@ -477,7 +498,6 @@ class PasswordResetEmailView(generic.TemplateView):
 
 
 ''' for vendors email previews '''
-
 # profile update email view
 class VendorProfileUpdateEmailView(generic.TemplateView):
     template_name = 'vendor_emails/vendor_profile_update.html'
@@ -525,7 +545,6 @@ class VendorApplicationEmailView(generic.TemplateView):
     
 
 ''' for bookings email previews'''
-
 # new booking email view
 class NewBookingEmailView(generic.TemplateView):
     template_name = 'booking_emails/new_booking_alert.html'
@@ -540,7 +559,6 @@ class BookingCancelledEmailView(generic.TemplateView):
 
 
 ''' other email previews '''
-
 # event reminder email view
 class EventReminderEmailView(generic.TemplateView):
     template_name = 'other_emails/event_reminder.html'
