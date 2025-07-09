@@ -6,14 +6,15 @@ User = get_user_model()
 
 STATUS_CHOICES = (
         ('pending', 'Pending'),
-        ('cancelled', 'Cancelled'),
+        ('accepted', 'Accepted'),
+        ('declined', 'Declined'),
         ('completed', 'Completed'),
     )
 
 
 # booking table
 class Booking(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings', null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
     vendor = models.ForeignKey(Vendor, related_name='bookings', blank=True, on_delete=models.CASCADE, null=True)
     service = models.ForeignKey(Service, related_name='bookings', on_delete=models.CASCADE, null=True, blank=True)
     event_date = models.DateField(null=True, blank=True)

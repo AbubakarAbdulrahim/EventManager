@@ -13,17 +13,20 @@ SERVICE_CHOICES = (
     ('music', 'Musician'),
     ('mc', 'MC'),
 )
+
 STATUS = (
     ('approved', 'Approved'),
     ('pending', 'Pending'),
     ('rejected', 'Rejected'),
     ('suspended', 'Suspended'),
 )
+
 LEVEL_CHOICES = (
     ('silver', 'Silver'),
     ('bronze', 'Bronze'),
     ('gold', 'Gold'),
 )
+
 AVAILABILITY_CHOICES = (
     ('specific_date', 'Specific Date'),
     ('recurring', 'Recurring'),
@@ -31,7 +34,7 @@ AVAILABILITY_CHOICES = (
 
 # vendor table
 class Vendor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
+    user = models.OneToOneField('users.User', on_delete=models.CASCADE, related_name="vendor_profile")
     business_name = models.CharField(max_length=200)
     address = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -67,8 +70,7 @@ class Service(models.Model):
     # main_image_url = models.URLField()
     service_quantity = models.CharField(max_length=50, null=True, blank=True)
     service_mode = models.CharField(max_length=50, null=True, blank=True)
-    
-    
+        
     def __str__(self):
         return f"{self.id}-{self.service_type.capitalize()} for {self.vendor.business_name}"
 
@@ -118,3 +120,15 @@ class PricingPackage(models.Model):
     description = models.TextField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     quantity_description = models.TextField(null=True, blank=True)
+
+
+# user reviews to service table
+class Review(models.Model):
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
+    rating = models.DecimalField(max_digits=50, decimal_places=2)
+    created_at = models.DateTimeField(auto_now=True)
+    comment = models.TextField()
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="reviews")
+    
+    def __str__(self):
+        return f"{self.service.service_name} review by {self.user.username}"

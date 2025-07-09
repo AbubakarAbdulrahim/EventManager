@@ -11,6 +11,7 @@ from .serializer import (
 from rest_framework.permissions import IsAuthenticated
 
 
+# booking slot view
 class BookedSlotsView(generics.RetrieveAPIView):
     def get(self, request, date):
         service_id = request.GET.get("service_id")
@@ -32,8 +33,7 @@ class BookedSlotsView(generics.RetrieveAPIView):
         ]
         return Response({'booked_slots': booked_slots})
 
-    
-
+# checking availability
 class CheckAvailabilityView(generics.RetrieveAPIView):
     def get(self, request):
         date_str = request.GET.get("date")
@@ -60,14 +60,12 @@ class CheckAvailabilityView(generics.RetrieveAPIView):
         start_time = start_datetime.time()
         end_time = end_datetime.time()
 
-
         bookings = Booking.objects.filter(event_date=date_obj, service=service)
         for booking in bookings:
             if not (end_time <= booking.start_time or start_time >= booking.end_time):
                 return Response({'available': False})
                 
         return Response({'available': True})
-
 
 # retrieve booking by id
 class BookingRetrieveView(generics.RetrieveAPIView):
@@ -127,11 +125,3 @@ class BookingDestroyView(generics.DestroyAPIView):
     def perform_destroy(self, instance):
         instance.delete()
 
-
-
-
-
-
-#
-#
-#
