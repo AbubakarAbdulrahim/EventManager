@@ -114,7 +114,7 @@ class BookingRetrieveSerializer(serializers.ModelSerializer):
         return SerializerClass(obj.service).data
 
     def get_vendor(self, obj):
-        SerializerClass = get_vendor_retrieve_serializer_class
+        SerializerClass = get_vendor_retrieve_serializer_class()
         return SerializerClass(obj.vendor).data
 
     def get_user(self, obj):
@@ -211,7 +211,7 @@ class BookingAdminSerializer(serializers.ModelSerializer):
         return SerializerClass(obj.service).data
 
     def get_vendor(self, obj):
-        SerializerClass = get_service_retrieve_serializer_class()
+        SerializerClass = get_vendor_retrieve_serializer_class()
         return SerializerClass(obj.vendor).data
 
     def get_user(self, obj):
