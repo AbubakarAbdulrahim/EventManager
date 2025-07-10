@@ -1,0 +1,26 @@
+<!-- Vendor Application -->
+{% extends 'base_email.html' %}
+
+{% block subject %}
+<!-- title -->
+{% endblock %}
+
+{% block content %}
+<!-- content -->
+<table style="width:100%; font-family: Arial, sans-serif; border-collapse: collapse;">
+    <tr>
+        <td style="padding:20px;">
+            <h2 style="color:#033043;">Thank You for Your Vendor Application</h2>
+            <p>Hi {{ vendor_username }},</p>
+            <p>Thank you for your interest in becoming a service provider on Event Master!</p>
+            <p>We’ve received your vendor registration request and our team is currently reviewing the details you submitted. 
+                This process ensures that all vendors on our platform meet the quality and reliability standards our clients expect.</p>
+            <p>We may contact you if additional information is needed. You’ll receive a confirmation email once your profile is approved and activated.</p>
+            <p>We aim to complete reviews within {{ review_days }}. In the meantime, feel free to explore our platform and see how others present their services.</p>
+            <p>If you have any questions, you can always reach us at {{support_email}} .</p>
+            <p>Thanks again for choosing Event Master – we look forward to partnering with you to create unforgettable events!</p>
+            <p>Warm regards,<br>The Event Master Team</p>
+        </td>
+    </tr>
+</table>
+{% endblock %}
